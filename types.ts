@@ -88,3 +88,71 @@ export interface CartItem {
   selectedType?: ProductTypeOption;
   quantity: number;
 }
+
+
+// Uploader Flow Types
+export type UploadFileStatus = 'queued' | 'uploading' | 'processing' | 'success' | 'failed';
+
+export interface UploadFile {
+  id: string;
+  file: File;
+  status: UploadFileStatus;
+  progress: number; // 0-100
+  error?: string;
+  sourcePath: string; // original folder path
+  mappedAlbumName?: string;
+}
+
+export interface ProjectDetails {
+    title: string;
+    client: string;
+    shootDate: string;
+    tags: string;
+    layoutPreset: string;
+    accessType: 'public' | 'private' | 'password';
+    watermark: string;
+}
+
+export interface UploadRules {
+    imageSize: 'full' | 'high' | 'web';
+    compression: number; // 0-100
+    applyWatermark: boolean;
+    aiTagging: boolean;
+    aiCulling: boolean;
+}
+
+export interface FolderMap {
+    sourcePath: string;
+    targetAlbumName: string;
+}
+
+export type UploadMode = 'new' | 'existing' | null;
+
+export interface UploadState {
+    step: number;
+    mode: UploadMode;
+    projectDetails: Partial<ProjectDetails>;
+    detectedFolders: { path: string; files: File[] }[];
+    folderMap: FolderMap[];
+    uploadRules: UploadRules;
+    uploadQueue: UploadFile[];
+    isUploading: boolean;
+}
+
+export interface UploadContextType {
+    state: UploadState;
+    nextStep: () => void;
+    prevStep: () => void;
+    goToStep: (step: number) => void;
+    setMode: (mode: UploadMode) => void;
+    updateProjectDetails: (details: Partial<ProjectDetails>) => void;
+    setFiles: (folders: { path: string, files: File[] }[]) => void;
+    updateFolderMap: (map: FolderMap[]) => void;
+    updateUploadRules: (rules: Partial<UploadRules>) => void;
+    startUpload: () => void;
+    pauseUpload: () => void;
+    resumeUpload: () => void;
+    retryFile: (fileId: string) => void;
+    cancelFile: (fileId: string) => void;
+    resetUpload: () => void;
+}

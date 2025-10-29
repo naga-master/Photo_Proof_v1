@@ -3,7 +3,7 @@ import type { Album, DashboardView } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
 import StudioProjects from './StudioProjects';
-import StudioUploadPage from './upload/UploadPage';
+import UploadWizard from './upload/UploadWizard';
 import ClientsPage from './ClientsPage';
 import LayoutsPage from './LayoutsPage';
 import InvoicesPage from './InvoicesPage';
@@ -28,7 +28,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ onLogout, albums }) => {
       case 'projects':
         return <StudioProjects albums={albums} setView={setView} />;
       case 'upload':
-        return <StudioUploadPage onNavigate={setView} />;
+        return <UploadWizard onExit={() => setView('projects')} />;
       case 'clients':
         return <ClientsPage />;
       case 'layouts':
