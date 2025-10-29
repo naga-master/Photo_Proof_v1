@@ -9,14 +9,18 @@ import Step5_Summary from './Step5_Summary';
 import UploadSidebar from './UploadSidebar';
 import { ArrowLeftIcon } from '../../icons';
 import OfflineBanner from './OfflineBanner';
+import type { ProjectDetails, UploadFile, Album } from '../../../types';
 
 interface UploadWizardProps {
   onExit: () => void;
+  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
+  onViewGallery: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => void;
+  showToast: (message: string) => void;
 }
 
 const steps = ['Mode', 'Project Setup', 'Folder Mapping', 'Upload Rules', 'Upload', 'Summary'];
 
-const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit }) => {
+const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast }) => {
   const { state, nextStep, prevStep, resetUpload } = useUpload();
   const { step, mode } = state;
   const currentStep = steps[step];
@@ -28,7 +32,12 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit }) => {
       case 2: return <Step2_FolderMapping />;
       case 3: return <Step3_UploadRules />;
       case 4: return <Step4_UploadManager />;
-      case 5: return <Step5_Summary />;
+      case 5: return <Step5_Summary 
+          onExit={onExit}
+          onProjectCreated={onProjectCreated}
+          onViewGallery={onViewGallery}
+          showToast={showToast}
+      />;
       default: return <Step0_SelectMode />;
     }
   };
@@ -84,9 +93,9 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit }) => {
   );
 };
 
-const UploadWizard: React.FC<UploadWizardProps> = ({ onExit }) => (
+const UploadWizard: React.FC<UploadWizardProps> = (props) => (
   <UploadProvider>
-    <UploadWizardContent onExit={onExit} />
+    <UploadWizardContent {...props} />
   </UploadProvider>
 );
 

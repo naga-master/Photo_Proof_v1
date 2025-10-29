@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { Album, DashboardView } from '../../types';
+import type { Album, DashboardView, ProjectDetails, UploadFile } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
 import StudioProjects from './StudioProjects';
@@ -15,9 +15,12 @@ import CommandPalette from './CommandPalette';
 interface StudioLayoutProps {
   onLogout: () => void;
   albums: Album[];
+  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
+  onViewGallery: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => void;
+  showToast: (message: string) => void;
 }
 
-const StudioLayout: React.FC<StudioLayoutProps> = ({ onLogout, albums }) => {
+const StudioLayout: React.FC<StudioLayoutProps> = ({ onLogout, albums, onProjectCreated, onViewGallery, showToast }) => {
   const [view, setView] = useState<DashboardView>('overview');
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
@@ -28,7 +31,12 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ onLogout, albums }) => {
       case 'projects':
         return <StudioProjects albums={albums} setView={setView} />;
       case 'upload':
-        return <UploadWizard onExit={() => setView('projects')} />;
+        return <UploadWizard 
+          onExit={() => setView('projects')}
+          onProjectCreated={onProjectCreated}
+          onViewGallery={onViewGallery}
+          showToast={showToast}
+        />;
       case 'clients':
         return <ClientsPage />;
       case 'layouts':

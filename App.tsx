@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Album, Photo, UserRole, Product, CartItem, Comment } from './types';
+import type { Album, Photo, UserRole, Product, CartItem, Comment, ProjectDetails, UploadFile } from './types';
 
 import { albums as initialAlbums } from './data/albums';
 import { products } from './data/products';
@@ -22,7 +22,7 @@ type Page =
   | { name: 'login' }
   | { name: 'dashboard' }
   | { name: 'albums' }
-  | { name: 'gallery'; album: Album }
+  | { name: 'gallery'; album: Album; returnTo?: 'albums' | 'dashboard' }
   | { name: 'about' }
   | { name: 'store' }
   | { name: 'productDetail'; product: Product }
@@ -32,6 +32,22 @@ type Page =
   | { name: 'checkout' }
   | { name: 'orderConfirmation' };
 
+const Toast: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onDismiss();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [onDismiss]);
+
+    return (
+        <div className="fixed top-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-md shadow-lg animate-fade-in z-50">
+            {message}
+        </div>
+    );
+};
+
+
 const App: React.FC = () => {
   const [page, setPage] = useState<Page>({ name: 'login' });
   const [userRole, setUserRole] = useState<UserRole>(null);
@@ -39,6 +55,7 @@ const App: React.FC = () => {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selections, setSelections] = useState<number[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Track the item being configured for the store across pages
   const [storeFlowPhoto, setStoreFlowPhoto] = useState<Photo | null>(null);
@@ -168,6 +185,43 @@ const App: React.FC = () => {
       setPage({name: 'orderConfirmation'});
   };
 
+  const showToast = (message: string) => {
+    setToast(message);
+  };
+
+  const handleProjectCreation = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]): Album => {
+    const successfulUploads = queue.filter(f => f.status === 'success');
+    const photoCount = successfulUploads.length;
+
+    const newPhotos: Photo[] = Array.from({ length: photoCount }, (_, i) => {
+         const photoId = Date.now() + i;
+         return {
+            id: photoId,
+            src: `https://picsum.photos/800/600?random=${photoId}&grayscale`,
+            width: 800,
+            height: 600,
+            alt: `Photo ${i + 1}`,
+            comments: [],
+        };
+    });
+
+    const newAlbum: Album = {
+        id: Date.now(), // Use timestamp for unique ID
+        title: projectDetails.title || 'Untitled Project',
+        photoCount: newPhotos.length,
+        coverPhotoSrc: newPhotos[0]?.src || `https://picsum.photos/800/600?random=${Date.now()}&grayscale`,
+        isLocked: projectDetails.accessType !== 'public',
+        photos: newPhotos,
+    };
+    setAlbumsData(prev => [...prev, newAlbum]);
+    return newAlbum;
+  };
+
+  const handleViewGallery = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => {
+    const newAlbum = handleProjectCreation(projectDetails, queue);
+    setPage({ name: 'gallery', album: newAlbum, returnTo: 'dashboard' });
+  };
+
 
   const renderPage = () => {
     const showNavBar = userRole === 'client' && page.name !== 'login' && page.name !== 'dashboard';
@@ -177,13 +231,25 @@ const App: React.FC = () => {
           case 'login':
             return <LoginPage onLogin={handleLogin} />;
           case 'dashboard':
-            return <StudioLayout albums={albumsData} onLogout={handleLogout} />;
+            return <StudioLayout
+              albums={albumsData}
+              onLogout={handleLogout}
+              onProjectCreated={handleProjectCreation}
+              onViewGallery={handleViewGallery}
+              showToast={showToast}
+            />;
           case 'albums':
             return <AlbumsPage albums={albumsData} onSelectAlbum={handleSelectAlbum} />;
           case 'gallery':
             return <GalleryPage 
               album={page.album} 
-              onBack={() => setPage({ name: 'albums' })}
+              onBack={() => {
+                if (page.returnTo === 'dashboard') {
+                  setPage({ name: 'dashboard' });
+                } else {
+                  setPage({ name: 'albums' });
+                }
+              }}
               favorites={favorites}
               selections={selections}
               toggleFavorite={toggleFavorite}
@@ -247,6 +313,7 @@ const App: React.FC = () => {
         <>
             {showNavBar && <TopNavBar onNavigate={handleNavigate} cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)} userRole={userRole} onLogout={handleLogout}/>}
             {pageContent()}
+            {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         </>
     );
   };

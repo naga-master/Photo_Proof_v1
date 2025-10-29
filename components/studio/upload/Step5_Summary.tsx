@@ -1,8 +1,16 @@
 import React, { useMemo } from 'react';
 import { useUpload } from './UploadContext';
 import { CheckCircleIcon, XCircleIcon } from '../../icons';
+import type { ProjectDetails, UploadFile, Album } from '../../../types';
 
-const Step5_Summary: React.FC = () => {
+interface Step5_SummaryProps {
+  onExit: () => void;
+  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
+  onViewGallery: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => void;
+  showToast: (message: string) => void;
+}
+
+const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated, onViewGallery, showToast }) => {
   const { state, goToStep } = useUpload();
   const { uploadQueue, projectDetails } = state;
 
@@ -14,6 +22,19 @@ const Step5_Summary: React.FC = () => {
   }, [uploadQueue]);
 
   const failedFiles = uploadQueue.filter(f => f.status === 'failed');
+
+  const handlePublish = () => {
+    onProjectCreated(projectDetails, uploadQueue);
+    onExit();
+  };
+
+  const handleViewGallery = () => {
+    onViewGallery(projectDetails, uploadQueue);
+  };
+
+  const handleNotifyClient = () => {
+    showToast('Client has been notified!');
+  };
 
   return (
     <div className="w-full max-w-2xl text-center bg-white p-8 rounded-lg border border-gray-200 animate-slide-up">
@@ -47,9 +68,9 @@ const Step5_Summary: React.FC = () => {
       <div className="mt-8 border-t pt-6">
         <h3 className="font-semibold text-gray-800">What's next?</h3>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button className="p-3 bg-gray-800 text-white rounded-md font-semibold hover:bg-gray-700">Publish Project</button>
-            <button className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">Notify Client</button>
-            <button className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">View Gallery</button>
+            <button onClick={handlePublish} className="p-3 bg-gray-800 text-white rounded-md font-semibold hover:bg-gray-700">Publish Project</button>
+            <button onClick={handleNotifyClient} className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">Notify Client</button>
+            <button onClick={handleViewGallery} className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">View Gallery</button>
         </div>
       </div>
     </div>
