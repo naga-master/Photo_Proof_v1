@@ -8,7 +8,7 @@ import type { ProjectDetails, UploadFile, Album } from '../../../types';
 interface Step5_SummaryProps {
   onExit: () => void;
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
-  // Fix: Changed signature to accept an Album, which aligns with the parent component's prop and fixes the type error.
+  // Fix: Updated onViewGallery prop to accept an Album object.
   onViewGallery: (album: Album) => void;
   showToast: (message: string) => void;
 }

@@ -1,15 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Photo Gallery Showcase</title>
+    <title>The Scobeys | Photo Gallery</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
@@ -18,10 +17,31 @@
               sans: ['Inter', 'sans-serif'],
               serif: ['Cormorant Garamond', 'serif'],
             },
+            colors: {
+              slate: {
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                200: '#e2e8f0',
+                300: '#cbd5e1',
+                400: '#94a3b8',
+                500: '#64748b',
+                600: '#475569',
+                700: '#334155',
+                800: '#1e293b',
+                900: '#0f172a',
+                950: '#020617',
+              },
+              sky: {
+                500: '#0ea5e9',
+                600: '#0284c7',
+              }
+            },
             animation: {
-              'fade-in': 'fadeIn 0.5s ease-in-out',
-              'fade-in-slow': 'fadeIn 1.5s ease-in-out',
-              'slide-up': 'slideUp 0.5s ease-out',
+              'fade-in': 'fadeIn 0.5s ease-in-out forwards',
+              'fade-in-slow': 'fadeIn 1.5s ease-in-out forwards',
+              'slide-up': 'slideUp 0.5s ease-out forwards',
+              'slide-down': 'slideDown 0.5s ease-out forwards',
+              'ken-burns': 'kenBurns 20s ease-out forwards',
             },
             keyframes: {
               fadeIn: {
@@ -31,6 +51,14 @@
               slideUp: {
                 '0%': { transform: 'translateY(20px)', opacity: 0 },
                 '100%': { transform: 'translateY(0)', opacity: 1 },
+              },
+              slideDown: {
+                '0%': { transform: 'translateY(-20px)', opacity: 0 },
+                '100%': { transform: 'translateY(0)', opacity: 1 },
+              },
+              kenBurns: {
+                '0%': { transform: 'scale(1.05) translate(0, 0)', opacity: 0.8 },
+                '100%': { transform: 'scale(1) translate(2%, -2%)', opacity: 1 },
               }
             }
           }
@@ -43,12 +71,15 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react-toastify/": "https://aistudiocdn.com/react-toastify@^11.0.5/"
+    "react-toastify/": "https://aistudiocdn.com/react-toastify@^11.0.5/",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.19",
+    "react-toastify": "https://aistudiocdn.com/react-toastify@^11.0.5"
   }
 }
 </script>
+<link rel="stylesheet" href="https://aistudiocdn.com/react-toastify@^11.0.5/dist/ReactToastify.css">
 </head>
-  <body>
+  <body class="bg-slate-50 antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

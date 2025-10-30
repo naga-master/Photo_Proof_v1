@@ -43,7 +43,7 @@ const useOnScreen = (options: IntersectionObserverInit) => {
 const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSelection, toggleFavorite, toggleSelection, onDownload, isInCompareList, isCompareMode, isSelectable = false }) => {
   const hasComments = photo.comments && photo.comments.length > 0;
   
-  const [ref, isVisible] = useOnScreen({ rootMargin: '100px' });
+  const [ref, isVisible] = useOnScreen({ rootMargin: '200px' });
   
   const handleButtonClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -51,11 +51,12 @@ const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSel
   };
 
   const aspectRatio = (photo.height / photo.width) * 100;
+  const isSelected = (isSelectable && isSelection) || (isCompareMode && isInCompareList);
 
   return (
     <div 
         ref={ref}
-        className="relative group cursor-pointer break-inside-avoid bg-gray-100" 
+        className="relative group cursor-pointer break-inside-avoid bg-slate-200 rounded-lg overflow-hidden" 
         onClick={onClick}
         style={{ paddingTop: `${aspectRatio}%` }}
     >
@@ -68,38 +69,36 @@ const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSel
                 loading="lazy"
             />
             <div 
-                className={`absolute inset-0 transition-all duration-300 ${isCompareMode || (isSelectable && isSelection) ? 'ring-4 ring-blue-500 ring-inset' : ''} ${isCompareMode ? '' : 'bg-black group-hover:bg-opacity-30 bg-opacity-0'}`}
+                className={`absolute inset-0 transition-all duration-300 ring-4 ring-inset ${isSelected ? 'ring-sky-500' : 'ring-transparent'} ${isCompareMode ? '' : 'bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100'}`}
             ></div>
             
             {(isCompareMode || isSelectable) && (
-                <div className="absolute top-3 left-3 w-6 h-6 rounded-full bg-white/80 flex items-center justify-center pointer-events-none ring-1 ring-gray-400/50">
-                {(isInCompareList || (isSelectable && isSelection)) && (
-                    <div className="w-full h-full rounded-full bg-blue-600 flex items-center justify-center animate-fade-in ring-2 ring-white">
-                      <CheckIcon className="w-3 h-3 text-white"/>
-                    </div>
+                <div className={`absolute top-3 left-3 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center pointer-events-none ring-1 ring-slate-400/50 transition-all duration-300 ${isSelected ? 'bg-sky-500 ring-sky-600' : ''}`}>
+                {isSelected && (
+                    <CheckIcon className="w-4 h-4 text-white"/>
                 )}
                 </div>
             )}
 
             {!isSelectable && (
-                <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 group-hover:animate-slide-down transition-all duration-300">
                     <button 
                     onClick={(e) => handleButtonClick(e, () => toggleSelection(photo.id))} 
-                    className={`p-2 rounded-full transition-colors ${isSelection ? 'bg-blue-600 text-white' : 'bg-white/80 text-gray-800 hover:bg-white'}`} 
+                    className={`p-2 rounded-full transition-all transform hover:scale-110 ${isSelection ? 'bg-sky-500 text-white' : 'bg-white/80 text-slate-800 hover:bg-white'}`} 
                     aria-label="Select"
                     >
                     <CheckIcon className="w-5 h-5" />
                     </button>
                     <button 
                     onClick={(e) => handleButtonClick(e, () => toggleFavorite(photo.id))} 
-                    className="p-2 rounded-full bg-white/80 text-gray-800 hover:bg-white transition-colors" 
+                    className="p-2 rounded-full bg-white/80 text-slate-800 hover:bg-white transition-all transform hover:scale-110" 
                     aria-label="Favorite"
                     >
                     {isFavorite ? <HeartFilledIcon className="w-5 h-5 text-red-500" /> : <HeartIcon className="w-5 h-5" />}
                     </button>
                     <button 
                     onClick={(e) => handleButtonClick(e, () => onDownload(photo.src, photo.alt))} 
-                    className="p-2 rounded-full bg-white/80 text-gray-800 hover:bg-white transition-colors" 
+                    className="p-2 rounded-full bg-white/80 text-slate-800 hover:bg-white transition-all transform hover:scale-110" 
                     aria-label="Download"
                     >
                     <DownloadIcon className="w-5 h-5" />
@@ -107,10 +106,9 @@ const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSel
                 </div>
             )}
 
-
             {hasComments && !isCompareMode && !isSelectable && (
-                <div className="absolute bottom-2 left-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm" aria-label={`${photo.comments.length} comments`}>
-                <ChatBubbleIcon className="w-5 h-5 text-gray-700" />
+                <div className="absolute bottom-3 left-3 p-1.5 rounded-full bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 group-hover:animate-slide-up transition-all duration-300" aria-label={`${photo.comments.length} comments`}>
+                    <ChatBubbleIcon className="w-5 h-5 text-slate-700" />
                 </div>
             )}
         </>

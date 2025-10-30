@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import type { Album, Client, Invoice, LayoutId, ServicePackage, InvoiceTemplateId, DashboardView, ProjectDetails, UploadFile, CommunicationSettings } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
@@ -56,12 +58,10 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [managingClient, setManagingClient] = useState<Client | null>(null);
     const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
     
-    // Responsive state
     const [isSidebarMobileOpen, setSidebarMobileOpen] = useState(false);
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
     
-    // State for specific views with sub-states
     const [uploadInitialClientId, setUploadInitialClientId] = useState<number | undefined>();
     const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
 
@@ -110,7 +110,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             id: Math.max(...clients.map(c => c.id)) + 1,
             ...newClientData,
             username: newClientData.email,
-            password: 'password', // default password
+            password: 'password',
             projects: [],
             lastActivity: 'Just now',
             avatarUrl: `https://i.pravatar.cc/150?u=${newClientData.email}`
@@ -163,15 +163,16 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'overview': return <StudioOverview albums={props.albums} setView={handleSetView} />;
             case 'projects': return <StudioProjects albums={props.albums} clients={props.clients} setView={handleSetView} onManageProject={handleManageProject} />;
             case 'clients': return <ClientsPage clients={props.clients} onManageClient={handleManageClient} onCreateClient={handleCreateClient} />;
-            case 'invoices': return <InvoicesListPage {...props} onNewInvoice={() => { setInvoiceInitialData(null); setView('invoiceEditor'); }} onPreviewInvoice={setViewingInvoice} logo={props.branding.logo} brandColor={props.branding.brandColor} />;
-            case 'invoiceEditor': return <InvoiceEditor {...props} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} defaultTemplateId={props.branding.defaultTemplateId} logo={props.branding.logo} brandColor={props.branding.brandColor} />;
+            case 'invoices': return <InvoicesListPage {...props} onNewInvoice={() => { setInvoiceInitialData(null); setView('invoiceEditor'); }} onPreviewInvoice={setViewingInvoice} />;
+            // Fix: Spread branding props into InvoiceEditor to provide required props.
+            case 'invoiceEditor': return <InvoiceEditor {...props} {...props.branding} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} />;
             case 'analytics': return <AnalyticsPage />;
             case 'settings': return <SettingsPage settings={communicationSettings} onUpdateSettings={onUpdateCommunicationSettings} />;
             case 'layouts': return <LayoutsPage defaultLayoutId={props.branding.defaultLayoutId} onSetDefaultLayout={props.onUpdateBranding.setDefaultLayoutId} {...props.branding} onSetLogo={props.onUpdateBranding.setLogo} onSetBrandColor={props.onUpdateBranding.setBrandColor} onSetTypography={props.onUpdateBranding.setTypography} />;
             case 'services': return <ServicesPage packages={props.packages} onUpdatePackages={props.onUpdatePackages} />;
             case 'tools': return <StudioToolsPage />;
             case 'notifications': return <NotificationsPage />;
-            case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={() => {}} />;
+            case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
             case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => setView('upload')} />;
             case 'clientDetails': return managingClient && <ClientDetailsPage client={managingClient} albums={props.albums} invoices={props.invoices} packages={props.packages} onBack={() => handleSetView('clients')} onUpdateClient={handleUpdateClient} onCreateProject={handleCreateProjectForClient} onCreateInvoice={handleCreateInvoiceForProject} onPreviewInvoice={setViewingInvoice} />;
             default: return <StudioOverview albums={props.albums} setView={handleSetView} />;
@@ -179,10 +180,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100 font-sans">
-            {isSidebarMobileOpen && (
-                <div className="lg:hidden fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarMobileOpen(false)}></div>
-            )}
+        <div className="min-h-screen bg-slate-100 font-sans">
             <StudioSidebar
                 view={view}
                 setView={handleSetView}
@@ -192,15 +190,15 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 isCollapsed={isSidebarCollapsed}
                 onToggleCollapse={() => setSidebarCollapsed(!isSidebarCollapsed)}
             />
-            <div className="flex-1 flex flex-col transition-all duration-300">
-                <header className="lg:hidden sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 z-20 flex justify-between items-center">
-                    <button onClick={() => setSidebarMobileOpen(true)} className="text-gray-600 p-1">
+            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+                 <header className="lg:hidden sticky top-0 bg-white/80 backdrop-blur-sm border-b border-slate-200 p-4 z-20 flex justify-between items-center">
+                    <button onClick={() => setSidebarMobileOpen(true)} className="text-slate-600 p-1">
                         <MenuIcon className="w-6 h-6" />
                     </button>
-                    <h1 className="text-lg font-semibold tracking-wider uppercase">THE SCOBEYS</h1>
+                    <h1 className="text-lg font-semibold tracking-wider uppercase text-slate-800">THE SCOBEYS</h1>
                     <div className="w-7"></div>
                 </header>
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1">
                     {renderView()}
                 </main>
             </div>

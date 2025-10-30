@@ -29,7 +29,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
     isSelectable = false,
 }) => {
   return (
-    <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
+    <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 lg:gap-6 space-y-4 lg:space-y-6">
       {photos.map((photo, index) => (
         <PhotoItem
           key={photo.id}

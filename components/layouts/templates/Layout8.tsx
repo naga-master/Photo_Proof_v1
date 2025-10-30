@@ -41,7 +41,7 @@ const Layout8: React.FC<LayoutComponentProps> = (props) => {
                             onClick={() => openLightbox(index)}
                             isFavorite={rest.favorites.includes(photo.id)}
                             isSelection={rest.selections.includes(photo.id)}
-                            // Fix: Added missing required prop 'isInCompareList'.
+                            // Fix: Added missing required prop 'isInCompareList' to PhotoItem.
                             isInCompareList={rest.compareList.some(p => p.id === photo.id)}
                             toggleFavorite={rest.toggleFavorite}
                             toggleSelection={rest.toggleSelection}

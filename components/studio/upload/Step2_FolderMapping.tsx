@@ -17,7 +17,7 @@ const Step2_FolderMapping: React.FC = () => {
 
         const folders: { [key: string]: File[] } = {};
 
-        // FIX: Cast FileList to File[] to correctly type the 'file' variable in the loop.
+        // Fix: Cast FileList to File[] to allow iteration.
         (Array.from(fileList) as File[]).forEach(file => {
             // The 'webkitRelativePath' property gives the path relative to the selected directory.
             const relativePath = (file as any).webkitRelativePath;
@@ -45,7 +45,7 @@ const Step2_FolderMapping: React.FC = () => {
         } else {
             // Fallback for browsers that don't support webkitdirectory but allow multiple file selection.
             // All files will be grouped into a single default album.
-            // FIX: Cast FileList to File[] to ensure 'allFiles' has the correct type.
+            // Fix: Cast FileList to File[] for correct type.
             const allFiles = Array.from(fileList) as File[];
             if (allFiles.length > 0) {
                  setFiles([{ path: "Uploaded Photos", files: allFiles }]);

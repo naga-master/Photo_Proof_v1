@@ -1,4 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
+// Fix: Import Transition type from framer-motion.
+import { motion, AnimatePresence, Transition } from 'framer-motion';
+import { ToastContainer, toast } from 'react-toastify';
+
 import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings } from './types';
 import CoverPage from './components/CoverPage';
 import GalleryPage from './components/GalleryPage';
@@ -21,6 +26,19 @@ import { initialPackages } from './data/services';
 
 type Page = 'login' | 'cover' | 'albums' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
 
+const pageVariants = {
+    initial: { opacity: 0 },
+    in: { opacity: 1 },
+    out: { opacity: 0 },
+};
+
+// Fix: Add explicit Transition type to prevent type inference issues.
+const pageTransition: Transition = {
+    type: "tween",
+    ease: "anticipate",
+    duration: 0.5
+};
+
 const App: React.FC = () => {
     // State
     const [page, setPage] = useState<Page>('login');
@@ -38,13 +56,10 @@ const App: React.FC = () => {
     const [photosForProduct, setPhotosForProduct] = useState<Photo[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     
-    // Toast state
-    const [toast, setToast] = useState<string | null>(null);
-    
     // Studio Branding State
     const [defaultLayoutId, setDefaultLayoutId] = useState<LayoutId>('layout1');
-    const [logo, setLogo] = useState<string | null>(null);
-    const [brandColor, setBrandColor] = useState('#2D3748'); // A slightly softer dark gray
+    const [logo, setLogo] = useState<string | null>('/logo-placeholder.svg');
+    const [brandColor, setBrandColor] = useState('#1e293b'); // slate-800
     const [typography, setTypography] = useState('System Default (Inter & Cormorant)');
     const [defaultTemplateId, setDefaultTemplateId] = useState<InvoiceTemplateId>('modern');
     
@@ -54,19 +69,6 @@ const App: React.FC = () => {
       whatsapp: { phoneNumberId: '', businessAccountId: '', accessToken: '' }
     });
 
-
-    // Effect for toast messages
-    useEffect(() => {
-        if (toast) {
-            const timer = setTimeout(() => setToast(null), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [toast]);
-
-    const showToast = (message: string) => {
-        setToast(message);
-    };
-
     // Handlers
     const handleLogin = (role: UserRole) => {
         setUserRole(role);
@@ -75,11 +77,13 @@ const App: React.FC = () => {
         } else {
             setPage('cover');
         }
+        toast.success(`Welcome! You are now logged in.`);
     };
 
     const handleLogout = () => {
         setUserRole(null);
         setPage('login');
+        toast.info("You have been successfully logged out.");
     };
 
     const handleOpenGallery = (album?: Album) => {
@@ -93,7 +97,7 @@ const App: React.FC = () => {
 
     const handleSelectAlbum = (album: Album) => {
         if (album.isLocked && userRole !== 'studio') {
-            alert('This gallery is locked. Please contact the studio for access.');
+            toast.warn('This gallery is locked. Please contact the studio for access.');
             return;
         }
         setCurrentAlbum(album);
@@ -200,15 +204,13 @@ const App: React.FC = () => {
         setAllInvoices(prevInvoices => {
             const index = prevInvoices.findIndex(inv => inv.id === invoice.id);
             if (index > -1) {
-                // Update existing invoice
                 const newInvoices = [...prevInvoices];
                 newInvoices[index] = invoice;
                 return newInvoices;
             }
-            // Add new invoice
             return [...prevInvoices, invoice];
         });
-        showToast(`Invoice ${invoice.invoiceNumber} saved successfully!`);
+        toast.success(`Invoice ${invoice.invoiceNumber} saved successfully!`);
     };
 
     // Store Handlers
@@ -239,6 +241,7 @@ const App: React.FC = () => {
         const newItems: CartItem[] = items.map(item => ({...item, id: `cart_${Date.now()}_${Math.random()}`}));
         setCart(prev => [...prev, ...newItems]);
         setPage('cart');
+        toast.success(`${items.length} item(s) added to your cart!`);
     };
     
     const handleUpdateCartItem = (itemId: string, newQuantity: number) => {
@@ -258,29 +261,38 @@ const App: React.FC = () => {
         setCart([]);
         setPage('orderConfirmation');
     };
-
+    
     const renderPage = () => {
+        const key = page + (currentAlbum?.id || '') + (currentProduct?.id || '');
+        let component;
         switch (page) {
             case 'login':
-                return <LoginPage onLogin={handleLogin} clients={allClients} />;
+                component = <LoginPage onLogin={handleLogin} clients={allClients} />;
+                break;
             case 'cover':
-                return <CoverPage onOpenGallery={() => handleOpenGallery(allAlbums[0])} album={allAlbums[0]} />;
+                component = <CoverPage onOpenGallery={() => handleOpenGallery(allAlbums[0])} album={allAlbums[0]} />;
+                break;
             case 'albums':
-                return <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                break;
             case 'gallery':
-                if (!currentAlbum) return <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
-                return <GalleryPage
-                    album={currentAlbum}
-                    onBack={handleBackToAlbums}
-                    favorites={favorites}
-                    selections={selections}
-                    toggleFavorite={toggleFavorite}
-                    toggleSelection={toggleSelection}
-                    onAddComment={addComment}
-                    onNavigateToStore={() => setPage('store')}
-                />;
+                if (!currentAlbum) {
+                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                } else {
+                    component = <GalleryPage
+                        album={currentAlbum}
+                        onBack={handleBackToAlbums}
+                        favorites={favorites}
+                        selections={selections}
+                        toggleFavorite={toggleFavorite}
+                        toggleSelection={toggleSelection}
+                        onAddComment={addComment}
+                        onNavigateToStore={() => setPage('store')}
+                    />;
+                }
+                break;
             case 'dashboard':
-                 return <DashboardPage
+                 component = <DashboardPage
                     albums={allAlbums}
                     clients={allClients}
                     packages={allPackages}
@@ -308,60 +320,99 @@ const App: React.FC = () => {
                     communicationSettings={communicationSettings}
                     onUpdateCommunicationSettings={setCommunicationSettings}
                  />;
+                 break;
             case 'store':
-                return <StorePage onSelectProduct={handleSelectProduct} />;
+                component = <StorePage onSelectProduct={handleSelectProduct} />;
+                break;
             case 'about':
-                return <AboutPage />;
+                component = <AboutPage />;
+                break;
             case 'productDetail':
-                 if (!currentProduct) return <StorePage onSelectProduct={handleSelectProduct} />;
-                return <ProductDetailPage
-                    product={currentProduct}
-                    selectedPhoto={photosForProduct.length > 0 ? photosForProduct[0] : null}
-                    onBack={() => setPage('store')}
-                    onSelectPhoto={handleSelectPhotoForProduct}
-                    onConfigure={handleConfigureProduct}
-                />;
+                 if (!currentProduct) {
+                    component = <StorePage onSelectProduct={handleSelectProduct} />;
+                 } else {
+                    component = <ProductDetailPage
+                        product={currentProduct}
+                        selectedPhoto={photosForProduct.length > 0 ? photosForProduct[0] : null}
+                        onBack={() => setPage('store')}
+                        onSelectPhoto={handleSelectPhotoForProduct}
+                        onConfigure={handleConfigureProduct}
+                    />;
+                 }
+                break;
             case 'photoSelection':
-                if (!currentProduct) return <StorePage onSelectProduct={handleSelectProduct} />;
-                return <PhotoSelectionPage 
-                    albums={allAlbums} 
-                    onPhotosSelect={handlePhotosSelected}
-                    onBack={() => setPage('productDetail')}
-                    productName={currentProduct.name}
-                />;
+                if (!currentProduct) {
+                     component = <StorePage onSelectProduct={handleSelectProduct} />;
+                } else {
+                     component = <PhotoSelectionPage 
+                        albums={allAlbums} 
+                        onPhotosSelect={handlePhotosSelected}
+                        onBack={() => setPage('productDetail')}
+                        productName={currentProduct.name}
+                    />;
+                }
+                break;
             case 'cartConfig':
-                if (!currentProduct || photosForProduct.length === 0) return <StorePage onSelectProduct={handleSelectProduct} />;
-                return <CartConfigPage 
-                    product={currentProduct}
-                    photos={photosForProduct}
-                    onAddToCart={handleAddToCart}
-                    onBack={() => setPage('productDetail')}
-                />;
+                if (!currentProduct || photosForProduct.length === 0) {
+                     component = <StorePage onSelectProduct={handleSelectProduct} />;
+                } else {
+                    component = <CartConfigPage 
+                        product={currentProduct}
+                        photos={photosForProduct}
+                        onAddToCart={handleAddToCart}
+                        onBack={() => setPage('productDetail')}
+                    />;
+                }
+                break;
             case 'cart':
-                return <ShoppingCartPage 
+                component = <ShoppingCartPage 
                     cartItems={cart}
                     onUpdateItem={handleUpdateCartItem}
                     onRemoveItem={handleRemoveCartItem}
                     onCheckout={handleCheckout}
                 />;
+                break;
             case 'checkout':
-                return <CheckoutPage onConfirm={handleConfirmOrder} onBack={() => setPage('cart')} />;
+                component = <CheckoutPage onConfirm={handleConfirmOrder} onBack={() => setPage('cart')} />;
+                break;
             case 'orderConfirmation':
-                return <OrderConfirmationPage onContinue={() => setPage('store')} />;
+                component = <OrderConfirmationPage onContinue={() => setPage('store')} />;
+                break;
             default:
-                return <LoginPage onLogin={handleLogin} clients={allClients} />;
+                component = <LoginPage onLogin={handleLogin} clients={allClients} />;
         }
+        return (
+            <motion.div
+                key={key}
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+            >
+                {component}
+            </motion.div>
+        )
     };
 
     return (
         <>
             {page !== 'login' && page !== 'cover' && page !== 'dashboard' && <TopNavBar onNavigate={handleNavigate} cartCount={cart.length} userRole={userRole} onLogout={handleLogout} />}
-            {renderPage()}
-            {toast && (
-                <div className="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-up z-50">
-                    {toast}
-                </div>
-            )}
+            <AnimatePresence mode="wait">
+                {renderPage()}
+            </AnimatePresence>
+            <ToastContainer
+                position="bottom-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+            />
         </>
     );
 };

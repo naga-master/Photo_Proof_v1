@@ -8,7 +8,7 @@ interface GalleryControlsProps {
     favoritesCount: number;
     selectionsCount: number;
     isCompareMode: boolean;
-    // Fix: Made props optional to support contexts where they aren't provided (e.g., previews).
+    // Fix: Made props optional for use in different contexts like previews.
     setCompareMode?: (isCompare: boolean) => void;
     compareList: Photo[];
     setCompareModalOpen?: (isOpen: boolean) => void;
@@ -21,14 +21,11 @@ const GalleryControls: React.FC<GalleryControlsProps> = ({
     favoritesCount,
     selectionsCount,
     isCompareMode,
-    // Fix: Provided default empty functions and values for optional props.
-    // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
+    // Fix: Provided default empty functions for optional props to prevent runtime errors.
     setCompareMode = (_isCompare: boolean) => {},
     compareList,
-    // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
     setCompareModalOpen = (_isOpen: boolean) => {},
     activeFilter = 'all',
-    // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
     setActiveFilter = (_filter: 'all' | 'favorites' | 'selections') => {},
     theme
 }) => {

@@ -36,7 +36,7 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
     };
 
     const groupedPackages = useMemo(() => {
-        // Fix: Explicitly type the accumulator for the `reduce` function to ensure correct type inference for `pkgs` later.
+        // Fix: Explicitly type the accumulator for the `reduce` function to ensure correct type inference.
         return packages.reduce((acc: Record<string, ServicePackage[]>, pkg) => {
             (acc[pkg.category] = acc[pkg.category] || []).push(pkg);
             return acc;
