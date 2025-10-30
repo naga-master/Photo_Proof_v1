@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useUpload } from './UploadContext';
 import { CheckCircleIcon, XCircleIcon } from '../../icons';
 import type { ProjectDetails, UploadFile, Album } from '../../../types';
@@ -6,13 +6,15 @@ import type { ProjectDetails, UploadFile, Album } from '../../../types';
 interface Step5_SummaryProps {
   onExit: () => void;
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
-  onViewGallery: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => void;
+  // Fix: Changed signature to accept an Album, which aligns with the parent component's prop and fixes the type error.
+  onViewGallery: (album: Album) => void;
   showToast: (message: string) => void;
 }
 
 const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated, onViewGallery, showToast }) => {
   const { state, retryFailedUploads } = useUpload();
   const { uploadQueue, projectDetails } = state;
+  const createdAlbumRef = useRef<Album | null>(null);
 
   const { successCount, failedCount } = useMemo(() => {
     return {
@@ -23,13 +25,21 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
 
   const failedFiles = uploadQueue.filter(f => f.status === 'failed');
 
+  const getOrCreateAlbum = () => {
+    if (!createdAlbumRef.current) {
+      createdAlbumRef.current = onProjectCreated(projectDetails, uploadQueue);
+    }
+    return createdAlbumRef.current;
+  };
+
   const handlePublish = () => {
-    onProjectCreated(projectDetails, uploadQueue);
+    getOrCreateAlbum();
     onExit();
   };
 
   const handleViewGallery = () => {
-    onViewGallery(projectDetails, uploadQueue);
+    const album = getOrCreateAlbum();
+    onViewGallery(album);
   };
 
   const handleNotifyClient = () => {

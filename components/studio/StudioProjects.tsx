@@ -1,14 +1,19 @@
 import React from 'react';
-import type { Album, DashboardView } from '../../types';
+import type { Album, DashboardView, Client } from '../../types';
 import { PlusIcon } from '../icons';
 
 interface StudioProjectsProps {
   albums: Album[];
+  clients: Client[];
   setView: (view: DashboardView) => void;
   onManageProject: (album: Album) => void;
 }
 
-const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView, onManageProject }) => {
+const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, setView, onManageProject }) => {
+  const getClientName = (clientId: number) => {
+    return clients.find(c => c.id === clientId)?.name || 'N/A';
+  }
+
   return (
     <div className="p-8 animate-fade-in">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -66,7 +71,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView, onMana
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{album.title}</div>
-                          <div className="text-sm text-gray-500">Client: {album.clientName || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">Client: {getClientName(album.clientId)}</div>
                         </div>
                       </div>
                     </td>

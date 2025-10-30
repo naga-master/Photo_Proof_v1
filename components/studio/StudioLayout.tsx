@@ -1,128 +1,127 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import type { Album, DashboardView, ProjectDetails, UploadFile } from '../../types';
+import React, { useState, useEffect } from 'react';
+import type { Album, DashboardView, Client, ProjectDetails, UploadFile } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
 import StudioProjects from './StudioProjects';
-import UploadWizard from './upload/UploadWizard';
 import ClientsPage from './ClientsPage';
-import LayoutsPage from './LayoutsPage';
 import InvoicesPage from './InvoicesPage';
 import AnalyticsPage from './AnalyticsPage';
 import SettingsPage from './SettingsPage';
+import UploadWizard from './upload/UploadWizard';
+import CommandPalette from './CommandPalette';
+import ProjectDetailsPage from './ProjectDetailsPage';
+import ClientDetailsPage from './ClientDetailsPage';
+import LayoutsPage from './LayoutsPage';
 import NotificationsPage from './NotificationsPage';
 import StudioToolsPage from './tools/StudioToolsPage';
-import ProjectDetailsPage from './ProjectDetailsPage';
-import CommandPalette from './CommandPalette';
 
 interface StudioLayoutProps {
-  onLogout: () => void;
+  initialState?: any;
   albums: Album[];
+  clients: Client[];
+  onLogout: () => void;
+  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity'>) => void;
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
-  onViewGallery: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => void;
-  onViewExistingProject: (album: Album, from: DashboardView) => void;
+  onViewGallery: (album: Album, returnToView: any) => void;
   onUpdateProject: (album: Album) => void;
-  showToast: (message: string) => void;
-  initialView?: DashboardView;
-  initialProject?: Album | null;
+  onDeleteProject: (albumId: number) => void;
 }
 
-const StudioLayout: React.FC<StudioLayoutProps> = ({ 
-  onLogout, 
-  albums, 
-  onProjectCreated, 
-  onViewGallery, 
-  onViewExistingProject, 
-  onUpdateProject, 
-  showToast,
-  initialView = 'overview',
-  initialProject = null,
-}) => {
-  const [view, setView] = useState<DashboardView>(initialView);
-  const [selectedProject, setSelectedProject] = useState<Album | null>(initialProject);
-  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
-
-  useEffect(() => {
-    setView(initialView);
-    setSelectedProject(initialProject);
-  }, [initialView, initialProject]);
-
-  const handleManageProject = (album: Album) => {
-    setSelectedProject(album);
-    setView('projectDetails');
-  };
-
-  const renderView = () => {
-    switch (view) {
-      case 'overview':
-        return <StudioOverview albums={albums} setView={setView} />;
-      case 'projects':
-        return <StudioProjects albums={albums} setView={setView} onManageProject={handleManageProject} />;
-      case 'upload':
-        return <UploadWizard 
-          onExit={() => setView('projects')}
-          onProjectCreated={onProjectCreated}
-          onViewGallery={onViewGallery}
-          showToast={showToast}
-        />;
-      case 'tools':
-        return <StudioToolsPage />;
-      case 'clients':
-        return <ClientsPage />;
-      case 'layouts':
-          return <LayoutsPage />;
-      case 'invoices':
-        return <InvoicesPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'notifications':
-        return <NotificationsPage />;
-      case 'projectDetails':
-        return selectedProject ? (
-          <ProjectDetailsPage
-            project={selectedProject}
-            onBack={() => setView('projects')}
-            onViewGallery={(project) => onViewExistingProject(project, 'projectDetails')}
-            onUpdateProject={(updatedProject) => {
-              onUpdateProject(updatedProject);
-              setSelectedProject(updatedProject); // Keep local state in sync
-            }}
-            setView={setView}
-          />
-        ) : <StudioProjects albums={albums} setView={setView} onManageProject={handleManageProject} />;
-      default:
-        return <StudioOverview albums={albums} setView={setView}/>;
-    }
-  };
+const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
+  const { 
+    initialState,
+    albums,
+    clients, 
+    onLogout, 
+    onCreateClient,
+    onProjectCreated, 
+    onViewGallery,
+    onUpdateProject,
+    onDeleteProject
+  } = props;
   
-  const handleNavigation = useCallback((targetView: DashboardView) => {
-    setView(targetView);
-    setCommandPaletteOpen(false);
-  }, []);
+  const [view, setView] = useState<DashboardView>(initialState?.view || 'overview');
+  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(initialState?.selectedAlbum || null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(initialState?.selectedClient || null);
+  const [initialClientIdForUpload, setInitialClientIdForUpload] = useState<number | undefined>(undefined);
+  const [toastMessage, setToastMessage] = useState<string>('');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setCommandPaletteOpen(prev => !prev);
+        setCommandPaletteOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+  
+  useEffect(() => {
+    if (toastMessage) {
+        const timer = setTimeout(() => setToastMessage(''), 3000);
+        return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleNavigate = (targetView: DashboardView) => {
+    setSelectedAlbum(null);
+    setSelectedClient(null);
+    setInitialClientIdForUpload(undefined);
+    setView(targetView);
+  }
+
+  const handleManageProject = (album: Album) => {
+    setSelectedAlbum(album);
+    setView('project-details');
+  };
+  
+  const handleViewClient = (client: Client) => {
+    setSelectedClient(client);
+    setView('client-details');
+  };
+  
+  const handleNewProjectForClient = (clientId: number) => {
+      setInitialClientIdForUpload(clientId);
+      setView('upload');
+  }
+
+  const handleViewGalleryClick = (album: Album) => {
+    const returnToView = { view, selectedAlbum, selectedClient };
+    onViewGallery(album, returnToView);
+  }
+
+  const renderView = () => {
+    switch (view) {
+      case 'overview': return <StudioOverview albums={albums} setView={handleNavigate} />;
+      case 'projects': return <StudioProjects albums={albums} clients={clients} setView={handleNavigate} onManageProject={handleManageProject} />;
+      case 'project-details': return selectedAlbum && <ProjectDetailsPage project={selectedAlbum} clients={clients} onBack={() => handleNavigate('projects')} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} onViewGallery={handleViewGalleryClick} onAddPhotos={() => setView('upload')} />;
+      case 'clients': return <ClientsPage clients={clients} onManageClient={handleViewClient} onCreateClient={onCreateClient} />;
+      case 'client-details': return selectedClient && <ClientDetailsPage client={selectedClient} albums={albums} onBack={() => handleNavigate('clients')} onManageProject={handleManageProject} onNewProjectForClient={handleNewProjectForClient} />;
+      case 'layouts': return <LayoutsPage />;
+      case 'invoices': return <InvoicesPage />;
+      case 'analytics': return <AnalyticsPage />;
+      case 'tools': return <StudioToolsPage />;
+      case 'notifications': return <NotificationsPage />;
+      case 'settings': return <SettingsPage />;
+      case 'upload': return <UploadWizard clients={clients} initialClientId={initialClientIdForUpload} onExit={() => handleNavigate('projects')} onProjectCreated={onProjectCreated} onViewGallery={(album) => handleViewGalleryClick(album)} showToast={setToastMessage} />;
+      default: return <StudioOverview albums={albums} setView={handleNavigate}/>;
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800">
-      <StudioSidebar activeView={view} setView={setView} onLogout={onLogout} />
+      <StudioSidebar activeView={view} setView={handleNavigate} onLogout={onLogout}/>
       <main className="flex-1 overflow-y-auto">
         {renderView()}
       </main>
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen} 
-        setIsOpen={setCommandPaletteOpen}
-        onNavigate={handleNavigation}
-      />
+      <CommandPalette isOpen={isCommandPaletteOpen} setIsOpen={setCommandPaletteOpen} onNavigate={handleNavigate} />
+      {toastMessage && (
+        <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-up">
+            {toastMessage}
+        </div>
+      )}
     </div>
   );
 };
