@@ -32,6 +32,11 @@ const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [photosForProduct, setPhotosForProduct] = useState<Photo[]>([]);
   const [returnTo, setReturnTo] = useState<{ page: 'studio', view: any } | null>(null);
+  
+  // Branding State
+  const [logo, setLogo] = useState<string | null>(null);
+  const [brandColor, setBrandColor] = useState<string>('#2D3748');
+  const [typography, setTypography] = useState<string>('System Default (Inter & Cormorant)');
   const [defaultLayout, setDefaultLayout] = useState<LayoutId>('layout1');
 
 
@@ -271,6 +276,12 @@ const App: React.FC = () => {
           albums={albums}
           clients={clients}
           defaultLayoutId={defaultLayout}
+          logo={logo}
+          brandColor={brandColor}
+          typography={typography}
+          onSetLogo={setLogo}
+          onSetBrandColor={setBrandColor}
+          onSetTypography={setTypography}
           onSetDefaultLayout={handleSetDefaultLayout}
           onLogout={handleLogout}
           onCreateClient={handleCreateClient}

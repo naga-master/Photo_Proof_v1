@@ -27,6 +27,12 @@ interface StudioLayoutProps {
   onViewGallery: (album: Album, returnToView: any) => void;
   onUpdateProject: (album: Album) => void;
   onDeleteProject: (albumId: number) => void;
+  logo: string | null;
+  brandColor: string;
+  typography: string;
+  onSetLogo: (logo: string | null) => void;
+  onSetBrandColor: (color: string) => void;
+  onSetTypography: (font: string) => void;
 }
 
 const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
@@ -41,7 +47,13 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     onProjectCreated, 
     onViewGallery,
     onUpdateProject,
-    onDeleteProject
+    onDeleteProject,
+    logo,
+    brandColor,
+    typography,
+    onSetLogo,
+    onSetBrandColor,
+    onSetTypography,
   } = props;
   
   const [view, setView] = useState<DashboardView>(initialState?.view || 'overview');
@@ -103,7 +115,16 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
       case 'project-details': return selectedAlbum && <ProjectDetailsPage project={selectedAlbum} clients={clients} onBack={() => handleNavigate('projects')} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} onViewGallery={handleViewGalleryClick} onAddPhotos={() => setView('upload')} />;
       case 'clients': return <ClientsPage clients={clients} onManageClient={handleViewClient} onCreateClient={onCreateClient} />;
       case 'client-details': return selectedClient && <ClientDetailsPage client={selectedClient} albums={albums} onBack={() => handleNavigate('clients')} onManageProject={handleManageProject} onNewProjectForClient={handleNewProjectForClient} />;
-      case 'layouts': return <LayoutsPage defaultLayoutId={defaultLayoutId} onSetDefaultLayout={onSetDefaultLayout} />;
+      case 'layouts': return <LayoutsPage 
+        defaultLayoutId={defaultLayoutId} 
+        onSetDefaultLayout={onSetDefaultLayout}
+        logo={logo}
+        brandColor={brandColor}
+        typography={typography}
+        onSetLogo={onSetLogo}
+        onSetBrandColor={onSetBrandColor}
+        onSetTypography={onSetTypography}
+      />;
       case 'invoices': return <InvoicesPage />;
       case 'analytics': return <AnalyticsPage />;
       case 'tools': return <StudioToolsPage />;
