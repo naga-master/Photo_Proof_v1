@@ -1,7 +1,7 @@
 import React from 'react';
 import type { UploadFile } from '../../../types';
 import { useUpload } from './UploadContext';
-import { CheckCircleIcon, XCircleIcon, FolderIcon, UploadCloudIcon } from '../../icons';
+import { CheckCircleIcon, FolderIcon, UploadCloudIcon, ArrowPathIcon } from '../../icons';
 
 interface FileRowProps {
   file: UploadFile;
@@ -19,15 +19,19 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
     retryFile(file.id);
   }
 
-  const getStatusIcon = () => {
+  const renderStatus = () => {
     switch (status) {
       case 'success':
         return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
       case 'failed':
-        return <XCircleIcon className="w-5 h-5 text-red-500" />;
+        return (
+          <button onClick={handleRetry} className="text-gray-500 hover:text-gray-800 transition-colors" aria-label="Retry upload">
+            <ArrowPathIcon className="w-5 h-5" />
+          </button>
+        );
       case 'uploading':
         return <UploadCloudIcon className="w-5 h-5 text-blue-500 animate-pulse" />;
-      default:
+      default: // queued
         return <FolderIcon className="w-5 h-5 text-gray-400" />;
     }
   };
@@ -36,7 +40,6 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
     <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
-          {/* In a real app, you'd generate a thumbnail URL here */}
           <FolderIcon className="w-6 h-6 text-gray-500" />
         </div>
         <div className="flex-1 min-w-0">
@@ -44,13 +47,9 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
           <p className="text-xs text-gray-500">{(fileData.size / 1024 / 1024).toFixed(2)} MB</p>
         </div>
         <div className="w-24 text-center">
-            {status === 'failed' ? (
-                <button onClick={handleRetry} className="text-xs font-semibold text-blue-600 hover:underline">Retry</button>
-            ) : (
-                <p className="text-sm font-medium text-gray-600">{Math.round(progress)}%</p>
-            )}
+          <p className={`text-sm font-medium ${status === 'failed' ? 'text-red-500' : 'text-gray-600'}`}>{Math.round(progress)}%</p>
         </div>
-        <div className="w-6">{getStatusIcon()}</div>
+        <div className="w-6 flex items-center justify-center">{renderStatus()}</div>
       </div>
       {status !== 'success' && (
         <div className="mt-2 pl-14">

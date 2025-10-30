@@ -128,7 +128,6 @@ export const useUpload = () => {
 
     const filesToUpload = state.uploadQueue.filter(f => f.status === 'queued' || f.status === 'uploading');
     if (filesToUpload.length === 0) {
-        // All done
         if (state.uploadQueue.length > 0 && state.step === 4) {
              dispatch({ type: 'NEXT_STEP' });
         }
@@ -136,7 +135,6 @@ export const useUpload = () => {
         return;
     }
 
-    // Simulate uploading a few files at a time
     const activeUploads = state.uploadQueue.filter(f => f.status === 'uploading').length;
     const filesToStart = filesToUpload.slice(0, 3 - activeUploads);
 
@@ -145,23 +143,33 @@ export const useUpload = () => {
             const simulateUpload = () => {
                 let progress = file.progress;
                 dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
+
+                const isSetToFail = Math.random() < 0.2; // 20% chance of failure
+                const failAtProgress = Math.random() * 80 + 10; // Fails between 10% and 90%
                 
                 const interval = setInterval(() => {
-                    if (!context.state.isUploading) { // check if paused
+                    if (!context.state.isUploading) {
                         clearInterval(interval);
                         return;
                     }
                     progress += Math.random() * 20;
+
+                    if (isSetToFail && progress >= failAtProgress) {
+                        progress = Math.min(progress, failAtProgress);
+                        clearInterval(interval);
+                        dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
+                        dispatch({ type: 'FILE_UPLOAD_FAIL', payload: { id: file.id, error: 'Network error' }});
+                        return;
+                    }
+
                     if (progress >= 100) {
                         progress = 100;
                         clearInterval(interval);
-                        if (Math.random() > 0.1) { // 10% chance of failure
-                           dispatch({ type: 'FILE_UPLOAD_SUCCESS', payload: file.id });
-                        } else {
-                           dispatch({ type: 'FILE_UPLOAD_FAIL', payload: { id: file.id, error: 'Network error' }});
-                        }
+                        dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
+                        dispatch({ type: 'FILE_UPLOAD_SUCCESS', payload: file.id });
+                    } else {
+                      dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
                     }
-                    dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
                 }, 200);
             };
             simulateUpload();
