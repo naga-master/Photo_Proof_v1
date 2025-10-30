@@ -14,7 +14,7 @@ const ClassicTemplate: React.FC<TemplateProps> = ({ invoice, logo }) => {
         {logo ? (
           <img src={logo} alt="Studio Logo" className="h-16 mx-auto mb-4" />
         ) : (
-          <h1 className="text-3xl font-bold tracking-wider uppercase">THE SCOBEYS</h1>
+          <h1 className="text-3xl font-bold tracking-wider uppercase">NAPSTER's Photo Lab</h1>
         )}
         <p className="text-sm text-gray-600">123 Photography Lane, Suite 100, Artville, USA</p>
       </header>

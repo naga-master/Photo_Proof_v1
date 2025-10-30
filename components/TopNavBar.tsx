@@ -29,7 +29,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ onNavigate, cartCount, userRole, 
                             onClick={() => onNavigate('albums')} 
                             className="text-2xl font-serif tracking-widest uppercase cursor-pointer text-slate-800"
                         >
-                            The Scobeys
+                            NAPSTER's Photo Lab
                         </span>
                     </div>
                     <div className="hidden md:block">

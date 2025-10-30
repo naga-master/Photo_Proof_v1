@@ -195,7 +195,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                     <button onClick={() => setSidebarMobileOpen(true)} className="text-slate-600 p-1">
                         <MenuIcon className="w-6 h-6" />
                     </button>
-                    <h1 className="text-lg font-semibold tracking-wider uppercase text-slate-800">THE SCOBEYS</h1>
+                    <h1 className="text-lg font-semibold tracking-wider uppercase text-slate-800">NAPSTER's Photo Lab</h1>
                     <div className="w-7"></div>
                 </header>
                 <main className="flex-1">

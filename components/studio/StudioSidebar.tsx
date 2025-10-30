@@ -78,7 +78,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
         <div className={`px-4 py-6 border-b border-slate-700 text-center transition-all duration-300`}>
-          <h1 className="text-xl font-bold tracking-wider uppercase truncate">{isCollapsed && 'TS' || 'The Scobeys'}</h1>
+          <h1 className="text-xl font-bold tracking-wider uppercase truncate">{isCollapsed ? 'NPL' : "NAPSTER's Photo Lab"}</h1>
           <p className={`text-xs text-slate-400 mt-1 uppercase ${isCollapsed ? 'lg:hidden' : ''}`}>STUDIO</p>
         </div>
 

@@ -48,7 +48,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings 
                             <div className="mt-4 p-6 bg-gray-50 border rounded-lg space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">"From" Name</label>
-                                    <input type="text" name="fromName" value={localSettings.email.fromName} onChange={handleEmailChange} className={inputClasses} placeholder="The Scobeys Studio" />
+                                    <input type="text" name="fromName" value={localSettings.email.fromName} onChange={handleEmailChange} className={inputClasses} placeholder="NAPSTER's Photo Lab" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">"From" Email Address</label>

@@ -14,13 +14,13 @@ const AboutPage: React.FC = () => {
             <div>
               <img 
                 src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=1480&auto=format&fit=crop"
-                alt="The Scobeys"
+                alt="NAPSTER's Photo Lab"
                 className="rounded-lg shadow-xl"
               />
             </div>
             <div className="prose prose-lg text-gray-600">
               <p>
-                We are the Scobeys, a husband and wife photography duo with a passion for storytelling. 
+                We are NAPSTER's Photo Lab, a professional photography studio with a passion for storytelling.
                 Our journey began with a shared love for capturing the authentic, unscripted moments that make life beautiful.
               </p>
               <p>

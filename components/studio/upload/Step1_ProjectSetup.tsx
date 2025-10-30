@@ -40,7 +40,8 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
         return packages.reduce((acc: Record<string, ServicePackage[]>, pkg) => {
             (acc[pkg.category] = acc[pkg.category] || []).push(pkg);
             return acc;
-        }, {});
+        // Fix: Add type assertion to initial value to ensure correct return type from reduce.
+        }, {} as Record<string, ServicePackage[]>);
     }, [packages]);
 
     const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm";

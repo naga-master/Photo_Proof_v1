@@ -15,7 +15,7 @@ const MinimalistTemplate: React.FC<TemplateProps> = ({ invoice, logo }) => {
           {logo ? (
             <img src={logo} alt="Studio Logo" className="h-8" />
           ) : (
-            <h1 className="text-lg font-semibold tracking-wider uppercase text-gray-800">THE SCOBEYS</h1>
+            <h1 className="text-lg font-semibold tracking-wider uppercase text-gray-800">NAPSTER's Photo Lab</h1>
           )}
         </div>
         <div className="text-right">

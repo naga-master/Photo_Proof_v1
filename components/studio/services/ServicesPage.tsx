@@ -90,7 +90,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages, onUpdatePackages 
         return packages.reduce((acc: Record<string, ServicePackage[]>, pkg) => {
             (acc[pkg.category] = acc[pkg.category] || []).push(pkg);
             return acc;
-        }, {});
+        // Fix: Add type assertion to initial value to ensure correct return type from reduce.
+        }, {} as Record<string, ServicePackage[]>);
     }, [packages]);
 
     const handleCreateNew = () => {

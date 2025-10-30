@@ -39,7 +39,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
       <div className="relative z-20 w-full max-w-sm bg-slate-900/50 backdrop-blur-lg p-8 rounded-xl shadow-2xl border border-slate-700/50 animate-fade-in">
         <div className="text-center">
             <h1 className="font-serif text-4xl tracking-wider uppercase mb-2">
-            THE SCOBEYS
+            NAPSTER's Photo Lab
             </h1>
             <p className="text-sm text-slate-400 tracking-wider uppercase mb-8">
             Photo Gallery Login

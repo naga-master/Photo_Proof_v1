@@ -16,7 +16,7 @@ const ModernTemplate: React.FC<TemplateProps> = ({ invoice, logo, brandColor }) 
             {logo ? (
               <img src={logo} alt="Studio Logo" className="h-12" />
             ) : (
-              <h1 className="text-2xl font-bold uppercase tracking-widest">THE SCOBEYS</h1>
+              <h1 className="text-2xl font-bold uppercase tracking-widest">NAPSTER's Photo Lab</h1>
             )}
           </div>
           <div className="text-right">
