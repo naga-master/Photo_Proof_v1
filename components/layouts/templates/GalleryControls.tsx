@@ -20,11 +20,14 @@ const GalleryControls: React.FC<GalleryControlsProps> = ({
     selectionsCount,
     isCompareMode,
     // Fix: Provided default empty functions and values for optional props.
-    setCompareMode = () => {},
+    // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
+    setCompareMode = (_isCompare) => {},
     compareList,
-    setCompareModalOpen = () => {},
+    // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
+    setCompareModalOpen = (_isOpen) => {},
     activeFilter = 'all',
-    setActiveFilter = () => {},
+    // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
+    setActiveFilter = (_filter) => {},
     theme
 }) => {
     const baseClasses = "flex items-center rounded-md border p-0.5 text-sm";
