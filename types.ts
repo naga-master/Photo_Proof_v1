@@ -108,6 +108,8 @@ export interface Client {
     id: number;
     name: string;
     email: string;
+    username: string;
+    password: string;
     phone?: string;
     address?: string;
     avatarUrl?: string;

@@ -1,11 +1,37 @@
 import React, { useState } from 'react';
 import type { Client } from '../../types';
-import { PlusIcon, XCircleIcon } from '../icons';
+import { PlusIcon, XCircleIcon, EyeIcon, EyeSlashIcon } from '../icons';
+
+const PasswordDisplay: React.FC<{ password?: string, onTriggerClick?: (e: React.MouseEvent) => void }> = ({ password = '', onTriggerClick }) => {
+    const [isRevealed, setIsRevealed] = useState(false);
+    
+    if (!password) return <span className="text-gray-400 italic">Not set</span>;
+    
+    const handleClick = (e: React.MouseEvent) => {
+        setIsRevealed(!isRevealed);
+        if (onTriggerClick) {
+            onTriggerClick(e);
+        }
+    };
+    
+    return (
+        <div className="flex items-center gap-2">
+            <span className="font-mono">{isRevealed ? password : '••••••••'}</span>
+            <button
+                onClick={handleClick}
+                className="text-gray-500 hover:text-gray-800"
+                aria-label={isRevealed ? 'Hide password' : 'Show password'}
+            >
+                {isRevealed ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+            </button>
+        </div>
+    );
+};
 
 interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity'>) => void;
+  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => void;
 }
 
 const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCreateClient }) => {
@@ -99,7 +125,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
 interface ClientsPageProps {
   clients: Client[];
   onManageClient: (client: Client) => void;
-  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity'>) => void;
+  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => void;
 }
 
 const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCreateClient }) => {
@@ -124,6 +150,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credentials</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Manage</span></th>
@@ -142,6 +169,15 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                           <div className="text-sm text-gray-500">{client.email}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                            <span className="font-semibold text-gray-700">User:</span> {client.username}
+                        </div>
+                         <div className="flex items-center">
+                            <span className="font-semibold text-gray-700 mr-1">Pass:</span>
+                            <PasswordDisplay password={client.password} onTriggerClick={(e) => e.stopPropagation()} />
+                        </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.projects.length}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.lastActivity}</td>

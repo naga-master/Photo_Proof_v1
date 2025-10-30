@@ -20,6 +20,15 @@ import OrderConfirmationPage from './components/store/OrderConfirmationPage';
 
 type Page = 'cover' | 'albums' | 'gallery' | 'store' | 'about' | 'cart' | 'login' | 'studio' | 'product-detail' | 'photo-selection' | 'cart-config' | 'checkout' | 'order-confirmation' | 'album-cover';
 
+const generatePassword = (length = 8) => {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let retVal = "";
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
+    }
+    return retVal;
+};
+
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('cover');
   const [userRole, setUserRole] = useState<UserRole>(null);
@@ -157,10 +166,12 @@ const App: React.FC = () => {
     navigate('order-confirmation');
   }
 
-  const handleCreateClient = (clientDetails: Omit<Client, 'id' | 'projects' | 'lastActivity'>) => {
+  const handleCreateClient = (clientDetails: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => {
     const newClient: Client = {
       ...clientDetails,
       id: clients.length + 1,
+      username: clientDetails.email,
+      password: generatePassword(),
       projects: [],
       lastActivity: 'Just added',
       avatarUrl: clientDetails.avatarUrl || `https://i.pravatar.cc/150?u=${clientDetails.email}`
@@ -176,6 +187,8 @@ const App: React.FC = () => {
               id: clients.length + 1,
               name: `${projectDetails.newClientDetails.firstName} ${projectDetails.newClientDetails.lastName}`,
               email: projectDetails.newClientDetails.email,
+              username: projectDetails.newClientDetails.email,
+              password: generatePassword(),
               phone: projectDetails.newClientDetails.phone,
               projects: [],
               lastActivity: 'Just added',
@@ -263,8 +276,8 @@ const App: React.FC = () => {
         // Public pages
         switch (currentPage) {
           case 'cover': return <CoverPage onOpenGallery={() => navigate('login')} />;
-          case 'login': return <LoginPage onLogin={handleLogin} />;
-          default: return <LoginPage onLogin={handleLogin} />;
+          case 'login': return <LoginPage onLogin={handleLogin} clients={clients} />;
+          default: return <LoginPage onLogin={handleLogin} clients={clients} />;
         }
     }
     

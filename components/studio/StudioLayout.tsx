@@ -22,7 +22,7 @@ interface StudioLayoutProps {
   defaultLayoutId: LayoutId;
   onSetDefaultLayout: (layoutId: LayoutId) => void;
   onLogout: () => void;
-  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity'>) => void;
+  onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => void;
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
   onViewGallery: (album: Album, returnToView: any) => void;
   onUpdateProject: (album: Album) => void;

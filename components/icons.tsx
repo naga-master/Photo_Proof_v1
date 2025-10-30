@@ -201,3 +201,16 @@ export const SettingsIcon: React.FC<IconProps> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-.95.542.057 1.007.56 1.065 1.11L12 6c.096.542.54 1.007 1.07 1.065.542.057 1.007.56 1.065 1.11L14.06 10.2c.057.542.56 1.007 1.11 1.065.542.057 1.007.56 1.065 1.11l.315 1.884c.057.542-.228 1.065-.772 1.282l-2.05 1.025c-.542.228-1.065.228-1.282.772l-1.025 2.05c-.228.542-.772.772-1.282.772l-1.884.315c-.542.057-1.065-.228-1.282-.772l-1.025-2.05c-.228-.542-.772-.772-1.282-.772l-2.05-1.025c-.542-.228-.772-.772-.772-1.282L4.94 12c-.057-.542.228-1.065.772-1.282l2.05-1.025c.542-.228 1.065-.228 1.282-.772l1.025-2.05c.228-.542.772-.772 1.282-.772l1.884-.315zM12 8.25a3.75 3.75 0 100 7.5 3.75 3.75 0 000-7.5z" />
     </svg>
 );
+
+export const EyeIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639l4.43-4.44a1.012 1.012 0 011.428 0l4.43 4.44a1.012 1.012 0 010 .639l-4.43 4.44a1.012 1.012 0 01-1.428 0l-4.43-4.44z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+);
+
+export const EyeSlashIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" />
+    </svg>
+);

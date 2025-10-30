@@ -1,6 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Album, Client } from '../../types';
-import { ArrowLeftIcon, PlusIcon } from '../icons';
+import { ArrowLeftIcon, PlusIcon, EyeIcon, EyeSlashIcon } from '../icons';
+
+const PasswordDisplay: React.FC<{ password?: string }> = ({ password = '' }) => {
+    const [isRevealed, setIsRevealed] = useState(false);
+    
+    if (!password) return <span className="text-gray-400 italic">Not set</span>;
+    
+    return (
+        <div className="flex items-center gap-2">
+            <span className="font-mono text-gray-800">{isRevealed ? password : '••••••••'}</span>
+            <button
+                onClick={() => setIsRevealed(!isRevealed)}
+                className="text-gray-500 hover:text-gray-800"
+                aria-label={isRevealed ? 'Hide password' : 'Show password'}
+            >
+                {isRevealed ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+            </button>
+        </div>
+    );
+};
 
 interface ClientDetailsPageProps {
   client: Client;
@@ -64,6 +83,14 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, o
                 <div className="lg:col-span-1">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Client Details</h2>
                     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+                        <div>
+                            <h3 className="text-xs font-medium text-gray-500 uppercase">Login Credentials</h3>
+                            <p className="text-gray-800"><span className="font-semibold">Username:</span> {client.username}</p>
+                            <div className="flex items-center">
+                                <span className="font-semibold text-gray-800 mr-1">Password:</span>
+                                <PasswordDisplay password={client.password} />
+                            </div>
+                        </div>
                         <div>
                             <h3 className="text-xs font-medium text-gray-500 uppercase">Contact Info</h3>
                             <p className="text-gray-800">{client.phone || 'Not provided'}</p>

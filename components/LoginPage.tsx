@@ -1,27 +1,32 @@
 import React, { useState } from 'react';
-import type { UserRole } from '../types';
+import type { UserRole, Client } from '../types';
 
 interface LoginPageProps {
   onLogin: (role: UserRole) => void;
+  clients: Client[];
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const studioCreds = { user: 'studio@admin.com', pass: 'password123' };
-  const clientCreds = { user: 'client@email.com', pass: 'clientpass' };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (username === studioCreds.user && password === studioCreds.pass) {
       onLogin('studio');
-    } else if (username === clientCreds.user && password === clientCreds.pass) {
-      onLogin('client');
-    } else {
-      setError('Invalid username or password.');
+      return;
     }
+    
+    const client = clients.find(c => c.username === username && c.password === password);
+    if (client) {
+      onLogin('client');
+      return;
+    }
+
+    setError('Invalid username or password.');
   };
 
   return (
@@ -81,7 +86,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="mt-8 pt-6 border-t border-gray-600 text-xs text-gray-300 text-center">
             <p className="font-bold mb-2 uppercase tracking-wider">Demo Credentials</p>
             <p><strong className="font-medium">Studio Login:</strong> {studioCreds.user} / {studioCreds.pass}</p>
-            <p><strong className="font-medium">Client Login:</strong> {clientCreds.user} / {clientCreds.pass}</p>
+            <p><strong className="font-medium">Client Login:</strong> {clients[0]?.username || 'client@email.com'} / {clients[0]?.password || 'clientpass'}</p>
         </div>
       </div>
     </div>
