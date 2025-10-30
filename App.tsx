@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Album, Photo, Comment, UserRole, Product, CartItem, ProjectDetails, UploadFile, Client } from './types';
+import type { Album, Photo, Comment, UserRole, Product, CartItem, ProjectDetails, UploadFile, Client, LayoutId } from './types';
 import { albums as initialAlbums } from './data/albums';
 import { clients as initialClients } from './data/clients';
 import { products } from './data/products';
@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [photosForProduct, setPhotosForProduct] = useState<Photo[]>([]);
   const [returnTo, setReturnTo] = useState<{ page: 'studio', view: any } | null>(null);
+  const [defaultLayout, setDefaultLayout] = useState<LayoutId>('layout1');
 
 
   // Simple routing based on currentPage
@@ -185,6 +186,7 @@ const App: React.FC = () => {
           id: albums.length + 1,
           title: projectDetails.title || 'New Project',
           clientId: finalClientId,
+          layout: projectDetails.layout || defaultLayout,
           shootDate: projectDetails.shootDate,
           isLocked: true,
           coverPhotoSrc: queue.length > 0 ? URL.createObjectURL(queue[0].file) : 'https://picsum.photos/800/600',
@@ -247,6 +249,10 @@ const App: React.FC = () => {
     }
   }
 
+  const handleSetDefaultLayout = (layoutId: LayoutId) => {
+    setDefaultLayout(layoutId);
+  }
+
   const renderPage = () => {
     if (!userRole) {
         // Public pages
@@ -264,6 +270,8 @@ const App: React.FC = () => {
           initialState={returnTo?.view}
           albums={albums}
           clients={clients}
+          defaultLayoutId={defaultLayout}
+          onSetDefaultLayout={handleSetDefaultLayout}
           onLogout={handleLogout}
           onCreateClient={handleCreateClient}
           onProjectCreated={handleProjectCreated}

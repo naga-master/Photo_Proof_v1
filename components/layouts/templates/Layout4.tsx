@@ -1,0 +1,43 @@
+import React from 'react';
+import { LayoutComponentProps } from '../LayoutRenderer';
+import PhotoGrid from '../../PhotoGrid';
+import GalleryControls from './GalleryControls';
+
+const Layout4: React.FC<LayoutComponentProps> = (props) => {
+    const { album, photos, openLightbox, ...rest } = props;
+    
+    return (
+        <div className="bg-[#FAF0E6] text-gray-800">
+            {/* Cover Header */}
+            <div className="h-[60vh] flex items-center justify-center text-white bg-cover bg-center" style={{ backgroundImage: `url(${album.coverPhotoSrc})`}}>
+                <div className="text-center bg-black/30 p-8 rounded">
+                    <h1 className="text-5xl font-serif">{album.title}</h1>
+                    <p className="text-lg mt-2">{album.photoCount} photos</p>
+                </div>
+            </div>
+
+            {/* Controls */}
+            <header className="sticky top-16 z-30 bg-[#FAF0E6]/80 backdrop-blur-sm border-b border-gray-300">
+                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-semibold">{album.title}</h2>
+                        <p className="text-sm text-gray-500">{album.photoCount} photos</p>
+                    </div>
+                    <GalleryControls 
+                        favoritesCount={rest.favorites.length}
+                        selectionsCount={rest.selections.length}
+                        theme="light"
+                        {...rest}
+                    />
+                </div>
+            </header>
+
+            {/* Photo Grid */}
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <PhotoGrid photos={photos} onImageClick={openLightbox} {...rest} />
+            </main>
+        </div>
+    );
+};
+
+export default Layout4;

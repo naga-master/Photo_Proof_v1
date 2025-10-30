@@ -10,11 +10,12 @@ import Step5_Summary from './Step5_Summary';
 import UploadSidebar from './UploadSidebar';
 import { ArrowLeftIcon } from '../../icons';
 import OfflineBanner from './OfflineBanner';
-import type { ProjectDetails, UploadFile, Album, Client } from '../../../types';
+import type { ProjectDetails, UploadFile, Album, Client, LayoutId } from '../../../types';
 
 interface UploadWizardProps {
   clients: Client[];
   initialClientId?: number;
+  defaultLayoutId: LayoutId;
   onExit: () => void;
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
   onViewGallery: (album: Album) => void;
@@ -97,7 +98,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
 };
 
 const UploadWizard: React.FC<UploadWizardProps> = (props) => (
-  <UploadProvider initialClientId={props.initialClientId}>
+  <UploadProvider initialClientId={props.initialClientId} defaultLayoutId={props.defaultLayoutId}>
     <UploadWizardContent {...props} />
   </UploadProvider>
 );

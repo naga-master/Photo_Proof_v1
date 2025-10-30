@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type UserRole = 'client' | 'studio' | null;
 
 export interface Comment {
@@ -17,6 +19,18 @@ export interface Photo {
   comments: Comment[];
 }
 
+export type LayoutId = 'layout1' | 'layout2' | 'layout3' | 'layout4' | 'layout5' | 'layout6' | 'layout7' | 'layout8' | 'layout9';
+
+export interface LayoutTemplate {
+    id: LayoutId;
+    name: string;
+    description: string;
+    header: 'Cover' | 'Title Only';
+    grid: 'Masonry' | 'Grid' | 'Stacked';
+    aspect: 'Portrait' | 'Landscape';
+    theme: 'White' | 'Gray' | 'Black' | 'Cream';
+}
+
 export interface Album {
   id: number;
   title: string;
@@ -26,6 +40,7 @@ export interface Album {
   photoCount: number;
   isLocked: boolean;
   photos: Photo[];
+  layout: LayoutId;
 }
 
 export interface StoreCategory {
@@ -120,7 +135,7 @@ export interface ProjectDetails {
     newClientDetails?: NewClientDetails;
     shootDate: string;
     tags: string;
-    layout: string;
+    layout: LayoutId;
     watermark: string;
 }
 

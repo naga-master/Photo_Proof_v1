@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import type { UploadState, UploadMode, UploadFile, DetectedFolder, FolderMap, UploadRules, ProjectDetails } from '../../../types';
+import type { UploadState, UploadMode, UploadFile, DetectedFolder, FolderMap, UploadRules, ProjectDetails, LayoutId } from '../../../types';
 
 type UploadAction =
   | { type: 'SET_MODE'; payload: UploadMode }
@@ -19,11 +19,12 @@ type UploadAction =
   | { type: 'RETRY_FILE'; payload: string }
   | { type: 'RETRY_FAILED' };
 
-const getInitialState = (initialClientId?: number): UploadState => ({
+const getInitialState = (initialClientId?: number, defaultLayoutId?: LayoutId): UploadState => ({
   step: 0,
   mode: null,
   projectDetails: {
     clientId: initialClientId ? String(initialClientId) : '',
+    layout: defaultLayoutId || 'layout1',
   },
   detectedFolders: [],
   folderMap: [],
@@ -110,8 +111,8 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
   }
 };
 
-export const UploadProvider: React.FC<{ children: React.ReactNode, initialClientId?: number }> = ({ children, initialClientId }) => {
-  const [state, dispatch] = useReducer(uploadReducer, getInitialState(initialClientId));
+export const UploadProvider: React.FC<{ children: React.ReactNode, initialClientId?: number, defaultLayoutId?: LayoutId }> = ({ children, initialClientId, defaultLayoutId }) => {
+  const [state, dispatch] = useReducer(uploadReducer, getInitialState(initialClientId, defaultLayoutId));
   return <UploadContext.Provider value={{ state, dispatch }}>{children}</UploadContext.Provider>;
 };
 

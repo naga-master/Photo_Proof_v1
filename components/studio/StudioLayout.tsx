@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Album, DashboardView, Client, ProjectDetails, UploadFile } from '../../types';
+import type { Album, DashboardView, Client, ProjectDetails, UploadFile, LayoutId } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
 import StudioProjects from './StudioProjects';
@@ -19,6 +19,8 @@ interface StudioLayoutProps {
   initialState?: any;
   albums: Album[];
   clients: Client[];
+  defaultLayoutId: LayoutId;
+  onSetDefaultLayout: (layoutId: LayoutId) => void;
   onLogout: () => void;
   onCreateClient: (client: Omit<Client, 'id' | 'projects' | 'lastActivity'>) => void;
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
@@ -32,6 +34,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     initialState,
     albums,
     clients, 
+    defaultLayoutId,
+    onSetDefaultLayout,
     onLogout, 
     onCreateClient,
     onProjectCreated, 
@@ -99,13 +103,13 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
       case 'project-details': return selectedAlbum && <ProjectDetailsPage project={selectedAlbum} clients={clients} onBack={() => handleNavigate('projects')} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} onViewGallery={handleViewGalleryClick} onAddPhotos={() => setView('upload')} />;
       case 'clients': return <ClientsPage clients={clients} onManageClient={handleViewClient} onCreateClient={onCreateClient} />;
       case 'client-details': return selectedClient && <ClientDetailsPage client={selectedClient} albums={albums} onBack={() => handleNavigate('clients')} onManageProject={handleManageProject} onNewProjectForClient={handleNewProjectForClient} />;
-      case 'layouts': return <LayoutsPage />;
+      case 'layouts': return <LayoutsPage defaultLayoutId={defaultLayoutId} onSetDefaultLayout={onSetDefaultLayout} />;
       case 'invoices': return <InvoicesPage />;
       case 'analytics': return <AnalyticsPage />;
       case 'tools': return <StudioToolsPage />;
       case 'notifications': return <NotificationsPage />;
       case 'settings': return <SettingsPage />;
-      case 'upload': return <UploadWizard clients={clients} initialClientId={initialClientIdForUpload} onExit={() => handleNavigate('projects')} onProjectCreated={onProjectCreated} onViewGallery={(album) => handleViewGalleryClick(album)} showToast={setToastMessage} />;
+      case 'upload': return <UploadWizard clients={clients} initialClientId={initialClientIdForUpload} defaultLayoutId={defaultLayoutId} onExit={() => handleNavigate('projects')} onProjectCreated={onProjectCreated} onViewGallery={(album) => handleViewGalleryClick(album)} showToast={setToastMessage} />;
       default: return <StudioOverview albums={albums} setView={handleNavigate}/>;
     }
   };

@@ -11,6 +11,7 @@ export const albums: Album[] = [
     photoCount: weddingPhotos.length,
     isLocked: false,
     photos: weddingPhotos,
+    layout: 'layout1',
   },
   {
     id: 2,
@@ -21,6 +22,7 @@ export const albums: Album[] = [
     photoCount: familyPortraits.length,
     isLocked: true,
     photos: familyPortraits,
+    layout: 'layout2',
   },
   {
     id: 3,
@@ -31,5 +33,6 @@ export const albums: Album[] = [
     photoCount: engagementPhotos.length,
     isLocked: false,
     photos: engagementPhotos,
+    layout: 'layout6',
   },
 ];

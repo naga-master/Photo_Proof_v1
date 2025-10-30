@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUpload } from './UploadContext';
-import type { ProjectDetails, Client } from '../../../types';
+import type { ProjectDetails, Client, LayoutId } from '../../../types';
+import { layoutTemplates } from '../../../data/layouts';
 
 interface Step1ProjectSetupProps {
     clients: Client[];
@@ -89,9 +90,9 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients }) => {
                  <div>
                     <label htmlFor="layout" className="block text-sm font-medium text-gray-700">Default Layout Preset</label>
                     <select id="layout" name="layout" value={projectDetails.layout || ''} onChange={handleChange} className={inputClasses}>
-                        <option value="Modern Masonry">Modern Masonry</option>
-                        <option value="Classic Filmstrip">Classic Filmstrip</option>
-                        <option value="Minimalist Grid">Minimalist Grid</option>
+                        {layoutTemplates.map(template => (
+                           <option key={template.id} value={template.id}>{template.name}</option>
+                        ))}
                     </select>
                 </div>
                  <div>
