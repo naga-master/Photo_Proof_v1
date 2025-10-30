@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Album, Client } from '../../types';
+import type { Album, Client, ServicePackage } from '../../types';
 import { ArrowLeftIcon, PlusIcon, EyeIcon, EyeSlashIcon } from '../icons';
 
 const PasswordDisplay: React.FC<{ password?: string }> = ({ password = '' }) => {
@@ -21,16 +21,51 @@ const PasswordDisplay: React.FC<{ password?: string }> = ({ password = '' }) => 
     );
 };
 
+const PaymentStatusBadge: React.FC<{ status: Album['paymentStatus'] }> = ({ status }) => {
+    const statusStyles: Record<Album['paymentStatus'], string> = {
+        Paid: 'bg-green-100 text-green-800',
+        Unpaid: 'bg-yellow-100 text-yellow-800',
+        Due: 'bg-red-100 text-red-800',
+    };
+    return (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[status]}`}>
+            {status}
+        </span>
+    );
+};
+
+
 interface ClientDetailsPageProps {
   client: Client;
   albums: Album[];
+  packages: ServicePackage[];
   onBack: () => void;
   onManageProject: (album: Album) => void;
   onNewProjectForClient: (clientId: number) => void;
+  onUpdateProject: (album: Album) => void;
+  showToast: (message: string) => void;
 }
 
-const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, onBack, onManageProject, onNewProjectForClient }) => {
+const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, packages, onBack, onManageProject, onNewProjectForClient, onUpdateProject, showToast }) => {
     const clientProjects = albums.filter(album => client.projects.includes(album.id));
+
+    const handleStatusChange = (album: Album, newStatus: Album['paymentStatus']) => {
+        onUpdateProject({ ...album, paymentStatus: newStatus });
+    };
+    
+    const handleGenerateInvoice = (album: Album) => {
+        showToast(`Invoice generated for ${album.title}`);
+    }
+
+    const formatCurrency = (amount?: number) => {
+        if (typeof amount !== 'number') return 'N/A';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount);
+    }
 
     return (
         <div className="p-8 animate-fade-in">
@@ -60,19 +95,32 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, o
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                         {clientProjects.length > 0 ? (
-                             <ul className="divide-y divide-gray-200">
+                             <div className="divide-y divide-gray-200">
                                 {clientProjects.map(album => (
-                                    <li key={album.id} onClick={() => onManageProject(album)} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                                    <div key={album.id} className="p-4 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center gap-4">
                                             <img src={album.coverPhotoSrc} alt={album.title} className="w-16 h-12 rounded-md object-cover"/>
-                                            <div>
+                                            <div className="flex-1">
                                                 <p className="font-semibold text-sm text-gray-800">{album.title}</p>
                                                 <p className="text-xs text-gray-500">{album.photoCount} photos</p>
                                             </div>
+                                            <div className="text-right">
+                                                <p className="font-semibold text-gray-800">{formatCurrency(album.price)}</p>
+                                                <PaymentStatusBadge status={album.paymentStatus} />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                 <select value={album.paymentStatus} onChange={(e) => handleStatusChange(album, e.target.value as Album['paymentStatus'])} className="text-xs bg-white border-gray-200 rounded-md shadow-sm">
+                                                    <option value="Unpaid">Unpaid</option>
+                                                    <option value="Due">Due</option>
+                                                    <option value="Paid">Paid</option>
+                                                </select>
+                                                <button onClick={() => handleGenerateInvoice(album)} className="text-xs text-indigo-600 hover:text-indigo-900 font-semibold">Invoice</button>
+                                                <button onClick={() => onManageProject(album)} className="text-xs text-indigo-600 hover:text-indigo-900 font-semibold">Manage</button>
+                                            </div>
                                         </div>
-                                    </li>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         ) : (
                             <div className="p-12 text-center">
                                 <p className="text-gray-500">This client doesn't have any projects yet.</p>

@@ -10,6 +10,7 @@ import {
     LayoutTemplateIcon,
     BellIcon,
     WrenchScrewdriverIcon,
+    TagIcon,
 } from '../icons';
 
 interface StudioSidebarProps {
@@ -22,6 +23,7 @@ const navItems: NavItem[] = [
     { view: 'overview', label: 'Overview', icon: <DashboardIcon className="w-5 h-5" /> },
     { view: 'projects', label: 'Projects', icon: <ProjectsIcon className="w-5 h-5" /> },
     { view: 'clients', label: 'Clients', icon: <ClientsIcon className="w-5 h-5" /> },
+    { view: 'services', label: 'Services', icon: <TagIcon className="w-5 h-5" /> },
     { view: 'layouts', label: 'Layouts', icon: <LayoutTemplateIcon className="w-5 h-5" /> },
     { view: 'invoices', label: 'Invoices', icon: <InvoicesIcon className="w-5 h-5" /> },
     { view: 'analytics', label: 'Analytics', icon: <AnalyticsIcon className="w-5 h-5" /> },

@@ -41,6 +41,9 @@ export interface Album {
   isLocked: boolean;
   photos: Photo[];
   layout: LayoutId;
+  packageId?: string;
+  price?: number;
+  paymentStatus: 'Paid' | 'Unpaid' | 'Due';
 }
 
 export interface StoreCategory {
@@ -96,7 +99,7 @@ export interface CartItem {
 }
 
 // Studio Types
-export type DashboardView = 'overview' | 'projects' | 'clients' | 'invoices' | 'analytics' | 'settings' | 'upload' | 'project-details' | 'client-details' | 'layouts' | 'tools' | 'notifications';
+export type DashboardView = 'overview' | 'projects' | 'clients' | 'invoices' | 'analytics' | 'settings' | 'upload' | 'project-details' | 'client-details' | 'layouts' | 'tools' | 'notifications' | 'services';
 
 export interface NavItem {
     view: DashboardView;
@@ -126,6 +129,16 @@ export interface NewClientDetails {
     phone?: string;
 }
 
+export interface ServicePackage {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    price: number;
+    isPredefined: boolean;
+    features: string[];
+}
+
 // Upload Wizard Types
 export type UploadMode = 'new' | 'existing' | null;
 export type UploadStep = 0 | 1 | 2 | 3 | 4 | 5;
@@ -139,6 +152,7 @@ export interface ProjectDetails {
     tags: string;
     layout: LayoutId;
     watermark: string;
+    packageId?: string;
 }
 
 export interface UploadFile {

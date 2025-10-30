@@ -12,6 +12,9 @@ export const albums: Album[] = [
     isLocked: false,
     photos: weddingPhotos,
     layout: 'layout1',
+    paymentStatus: 'Paid',
+    price: 90000,
+    packageId: 'wedding-complete',
   },
   {
     id: 2,
@@ -23,6 +26,9 @@ export const albums: Album[] = [
     isLocked: true,
     photos: familyPortraits,
     layout: 'layout2',
+    paymentStatus: 'Unpaid',
+    price: 12000,
+    packageId: 'portrait-family',
   },
   {
     id: 3,
@@ -34,5 +40,8 @@ export const albums: Album[] = [
     isLocked: false,
     photos: engagementPhotos,
     layout: 'layout6',
+    paymentStatus: 'Due',
+    price: 45000,
+    packageId: 'wedding-essential',
   },
 ];

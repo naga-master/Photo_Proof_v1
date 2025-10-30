@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import type { Album, Photo, Comment, UserRole, Product, CartItem, ProjectDetails, UploadFile, Client, LayoutId } from './types';
+import type { Album, Photo, Comment, UserRole, Product, CartItem, ProjectDetails, UploadFile, Client, LayoutId, ServicePackage } from './types';
 import { albums as initialAlbums } from './data/albums';
 import { clients as initialClients } from './data/clients';
 import { products } from './data/products';
+import { initialPackages } from './data/services';
 import CoverPage from './components/CoverPage';
 import AlbumsPage from './components/AlbumsPage';
 import GalleryPage from './components/GalleryPage';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [albums, setAlbums] = useState<Album[]>(initialAlbums);
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [packages, setPackages] = useState<ServicePackage[]>(initialPackages);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selections, setSelections] = useState<number[]>([]);
@@ -200,6 +202,8 @@ const App: React.FC = () => {
           finalClientId = parseInt(projectDetails.clientId || '0', 10);
       }
       
+      const selectedPackage = packages.find(p => p.id === projectDetails.packageId);
+
       const newAlbum: Album = {
           id: albums.length + 1,
           title: projectDetails.title || 'New Project',
@@ -216,7 +220,10 @@ const App: React.FC = () => {
               width: 800,
               height: 600,
               comments: [],
-          }))
+          })),
+          packageId: projectDetails.packageId,
+          price: selectedPackage?.price,
+          paymentStatus: 'Unpaid',
       };
       setAlbums(prev => [...prev, newAlbum]);
       
@@ -255,6 +262,10 @@ const App: React.FC = () => {
         return c;
     }));
   };
+  
+  const handleUpdatePackages = (updatedPackages: ServicePackage[]) => {
+      setPackages(updatedPackages);
+  }
 
   const handleViewGalleryFromStudio = (album: Album, returnToView: { page: 'studio', view: any }) => {
     setReturnTo(returnToView);
@@ -288,6 +299,7 @@ const App: React.FC = () => {
           initialState={returnTo?.view}
           albums={albums}
           clients={clients}
+          packages={packages}
           defaultLayoutId={defaultLayout}
           logo={logo}
           brandColor={brandColor}
@@ -302,6 +314,7 @@ const App: React.FC = () => {
           onViewGallery={(album, returnView) => handleViewGalleryFromStudio(album, { page: 'studio', view: returnView })}
           onUpdateProject={handleUpdateProject}
           onDeleteProject={handleDeleteProject}
+          onUpdatePackages={handleUpdatePackages}
         />;
         case 'albums': return <AlbumsPage albums={albums} onSelectAlbum={handleSelectAlbum} />;
         case 'album-cover': return selectedAlbum && <CoverPage album={selectedAlbum} onOpenGallery={handleOpenGalleryFromCover} />;

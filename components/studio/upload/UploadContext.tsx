@@ -25,6 +25,7 @@ const getInitialState = (initialClientId?: number, defaultLayoutId?: LayoutId): 
   projectDetails: {
     clientId: initialClientId ? String(initialClientId) : '',
     layout: defaultLayoutId || 'layout1',
+    packageId: '',
   },
   detectedFolders: [],
   folderMap: [],

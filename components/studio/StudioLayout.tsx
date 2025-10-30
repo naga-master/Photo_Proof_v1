@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Album, DashboardView, Client, ProjectDetails, UploadFile, LayoutId } from '../../types';
+import type { Album, DashboardView, Client, ProjectDetails, UploadFile, LayoutId, ServicePackage } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
 import StudioProjects from './StudioProjects';
@@ -14,11 +14,13 @@ import ClientDetailsPage from './ClientDetailsPage';
 import LayoutsPage from './LayoutsPage';
 import NotificationsPage from './NotificationsPage';
 import StudioToolsPage from './tools/StudioToolsPage';
+import ServicesPage from './services/ServicesPage';
 
 interface StudioLayoutProps {
   initialState?: any;
   albums: Album[];
   clients: Client[];
+  packages: ServicePackage[];
   defaultLayoutId: LayoutId;
   onSetDefaultLayout: (layoutId: LayoutId) => void;
   onLogout: () => void;
@@ -27,6 +29,7 @@ interface StudioLayoutProps {
   onViewGallery: (album: Album, returnToView: any) => void;
   onUpdateProject: (album: Album) => void;
   onDeleteProject: (albumId: number) => void;
+  onUpdatePackages: (packages: ServicePackage[]) => void;
   logo: string | null;
   brandColor: string;
   typography: string;
@@ -40,6 +43,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     initialState,
     albums,
     clients, 
+    packages,
     defaultLayoutId,
     onSetDefaultLayout,
     onLogout, 
@@ -48,6 +52,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     onViewGallery,
     onUpdateProject,
     onDeleteProject,
+    onUpdatePackages,
     logo,
     brandColor,
     typography,
@@ -114,7 +119,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
       case 'projects': return <StudioProjects albums={albums} clients={clients} setView={handleNavigate} onManageProject={handleManageProject} />;
       case 'project-details': return selectedAlbum && <ProjectDetailsPage project={selectedAlbum} clients={clients} onBack={() => handleNavigate('projects')} onUpdateProject={onUpdateProject} onDeleteProject={onDeleteProject} onViewGallery={handleViewGalleryClick} onAddPhotos={() => setView('upload')} />;
       case 'clients': return <ClientsPage clients={clients} onManageClient={handleViewClient} onCreateClient={onCreateClient} />;
-      case 'client-details': return selectedClient && <ClientDetailsPage client={selectedClient} albums={albums} onBack={() => handleNavigate('clients')} onManageProject={handleManageProject} onNewProjectForClient={handleNewProjectForClient} />;
+      case 'client-details': return selectedClient && <ClientDetailsPage client={selectedClient} albums={albums} packages={packages} onBack={() => handleNavigate('clients')} onManageProject={handleManageProject} onNewProjectForClient={handleNewProjectForClient} onUpdateProject={onUpdateProject} showToast={setToastMessage} />;
+      case 'services': return <ServicesPage packages={packages} onUpdatePackages={onUpdatePackages} />;
       case 'layouts': return <LayoutsPage 
         defaultLayoutId={defaultLayoutId} 
         onSetDefaultLayout={onSetDefaultLayout}
@@ -130,7 +136,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
       case 'tools': return <StudioToolsPage />;
       case 'notifications': return <NotificationsPage />;
       case 'settings': return <SettingsPage />;
-      case 'upload': return <UploadWizard clients={clients} initialClientId={initialClientIdForUpload} defaultLayoutId={defaultLayoutId} onExit={() => handleNavigate('projects')} onProjectCreated={onProjectCreated} onViewGallery={(album) => handleViewGalleryClick(album)} showToast={setToastMessage} />;
+      case 'upload': return <UploadWizard clients={clients} packages={packages} initialClientId={initialClientIdForUpload} defaultLayoutId={defaultLayoutId} onExit={() => handleNavigate('projects')} onProjectCreated={onProjectCreated} onViewGallery={(album) => handleViewGalleryClick(album)} showToast={setToastMessage} />;
       default: return <StudioOverview albums={albums} setView={handleNavigate}/>;
     }
   };

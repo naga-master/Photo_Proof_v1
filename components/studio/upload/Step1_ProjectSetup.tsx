@@ -1,13 +1,15 @@
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { useUpload } from './UploadContext';
-import type { ProjectDetails, Client, LayoutId } from '../../../types';
+import type { ProjectDetails, Client, LayoutId, ServicePackage } from '../../../types';
 import { layoutTemplates } from '../../../data/layouts';
 
 interface Step1ProjectSetupProps {
     clients: Client[];
+    packages: ServicePackage[];
 }
 
-const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients }) => {
+const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, packages }) => {
     const { state, dispatch } = useUpload();
     const { projectDetails } = state;
 
@@ -31,6 +33,14 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients }) => {
             }
         });
     };
+
+    const groupedPackages = useMemo(() => {
+        // Fix: Explicitly type the accumulator to ensure correct type inference for `pkgs` later.
+        return packages.reduce((acc: Record<string, ServicePackage[]>, pkg) => {
+            (acc[pkg.category] = acc[pkg.category] || []).push(pkg);
+            return acc;
+        }, {});
+    }, [packages]);
 
     const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm";
     const newClientInputClasses = "mt-1 block w-full bg-gray-50/50 text-gray-800 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm placeholder-gray-400";
@@ -83,21 +93,38 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients }) => {
                     <label htmlFor="shootDate" className="block text-sm font-medium text-gray-700">Shoot Date</label>
                     <input type="date" id="shootDate" name="shootDate" value={projectDetails.shootDate || ''} onChange={handleChange} className={inputClasses} />
                 </div>
+                
                 <div>
-                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Project Tags</label>
-                    <input type="text" id="tags" name="tags" value={projectDetails.tags || ''} onChange={handleChange} className={inputClasses} placeholder="Wedding, Portrait, 2024" />
-                </div>
-                 <div>
-                    <label htmlFor="layout" className="block text-sm font-medium text-gray-700">Default Layout Preset</label>
-                    <select id="layout" name="layout" value={projectDetails.layout || ''} onChange={handleChange} className={inputClasses}>
-                        {layoutTemplates.map(template => (
-                           <option key={template.id} value={template.id}>{template.name}</option>
+                    <label htmlFor="packageId" className="block text-sm font-medium text-gray-700">Service Package</label>
+                    <select id="packageId" name="packageId" value={projectDetails.packageId || ''} onChange={handleChange} className={inputClasses}>
+                        <option value="">No package selected</option>
+                        {Object.entries(groupedPackages).map(([category, pkgs]) => (
+                           <optgroup label={category} key={category}>
+                               {pkgs.map(pkg => (
+                                   <option key={pkg.id} value={pkg.id}>{pkg.name}</option>
+                               ))}
+                           </optgroup>
                         ))}
                     </select>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                    <div>
+                        <label htmlFor="layout" className="block text-sm font-medium text-gray-700">Layout Preset</label>
+                        <select id="layout" name="layout" value={projectDetails.layout || ''} onChange={handleChange} className={inputClasses}>
+                            {layoutTemplates.map(template => (
+                               <option key={template.id} value={template.id}>{template.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="watermark" className="block text-sm font-medium text-gray-700">Watermark</label>
+                        <input type="text" id="watermark" name="watermark" value={projectDetails.watermark || ''} onChange={handleChange} className={inputClasses} placeholder="Default studio watermark" />
+                    </div>
+                </div>
                  <div>
-                    <label htmlFor="watermark" className="block text-sm font-medium text-gray-700">Watermark</label>
-                    <input type="text" id="watermark" name="watermark" value={projectDetails.watermark || ''} onChange={handleChange} className={inputClasses} placeholder="Default studio watermark" />
+                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Project Tags</label>
+                    <input type="text" id="tags" name="tags" value={projectDetails.tags || ''} onChange={handleChange} className={inputClasses} placeholder="Wedding, Portrait, 2024" />
                 </div>
             </form>
         </div>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { UploadProvider, useUpload } from './UploadContext';
 import Step0_SelectMode from './Step0_SelectMode';
-// Fix: Corrected the import path for Step1_ProjectSetup. The old path was incorrect.
 import Step1_ProjectSetup from './Step1_ProjectSetup';
 import Step2_FolderMapping from './Step2_FolderMapping';
 import Step3_UploadRules from './Step3_UploadRules';
@@ -10,10 +9,11 @@ import Step5_Summary from './Step5_Summary';
 import UploadSidebar from './UploadSidebar';
 import { ArrowLeftIcon } from '../../icons';
 import OfflineBanner from './OfflineBanner';
-import type { ProjectDetails, UploadFile, Album, Client, LayoutId } from '../../../types';
+import type { ProjectDetails, UploadFile, Album, Client, LayoutId, ServicePackage } from '../../../types';
 
 interface UploadWizardProps {
   clients: Client[];
+  packages: ServicePackage[];
   initialClientId?: number;
   defaultLayoutId: LayoutId;
   onExit: () => void;
@@ -24,7 +24,7 @@ interface UploadWizardProps {
 
 const steps = ['Mode', 'Project Setup', 'Folder Mapping', 'Upload Rules', 'Upload', 'Summary'];
 
-const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients }) => {
+const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients, packages }) => {
   const { state, nextStep, prevStep, resetUpload } = useUpload();
   const { step, mode } = state;
   const currentStep = steps[step];
@@ -32,7 +32,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
   const renderStep = () => {
     switch (step) {
       case 0: return <Step0_SelectMode />;
-      case 1: return <Step1_ProjectSetup clients={clients} />;
+      case 1: return <Step1_ProjectSetup clients={clients} packages={packages} />;
       case 2: return <Step2_FolderMapping />;
       case 3: return <Step3_UploadRules />;
       case 4: return <Step4_UploadManager />;
