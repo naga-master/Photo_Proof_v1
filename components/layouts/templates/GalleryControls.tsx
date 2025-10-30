@@ -1,8 +1,9 @@
 
 
+
 import React from 'react';
 import type { Photo } from '../../../types';
-import { HeartIcon, CheckIcon, CompareIcon } from '../../icons';
+import { HeartIcon, CheckIcon, ArrowDownCircleIcon } from '../../icons';
 
 interface GalleryControlsProps {
     favoritesCount: number;
@@ -70,7 +71,7 @@ const GalleryControls: React.FC<GalleryControlsProps> = ({
                 onClick={() => setCompareMode(!isCompareMode)} 
                 className={`p-2.5 rounded-md flex items-center gap-2 border transition-colors ${isCompareMode ? currentTheme.compareActive : currentTheme.compareButton}`}
                 >
-                <CompareIcon className="w-5 h-5"/>
+                <ArrowDownCircleIcon className="w-5 h-5"/>
                 </button>
             </div>
              {isCompareMode && (

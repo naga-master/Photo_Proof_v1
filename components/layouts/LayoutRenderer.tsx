@@ -34,6 +34,7 @@ export interface LayoutComponentProps {
     setCompareModalOpen?: (isOpen: boolean) => void;
     activeFilter?: 'all' | 'favorites' | 'selections';
     setActiveFilter?: (filter: 'all' | 'favorites' | 'selections') => void;
+    toggleCompare?: (photo: Photo) => void;
 }
 
 const layouts: Record<LayoutId, React.FC<LayoutComponentProps>> = {

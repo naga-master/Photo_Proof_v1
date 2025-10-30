@@ -7,6 +7,7 @@ import GalleryControls from './GalleryControls';
 
 const Layout9: React.FC<LayoutComponentProps> = (props) => {
     const { album, photos, openLightbox, ...rest } = props;
+    const { toggleCompare = () => {} } = rest;
     
     return (
         <div className="bg-[#FAF0E6] text-gray-800">
@@ -33,10 +34,9 @@ const Layout9: React.FC<LayoutComponentProps> = (props) => {
                         <PhotoItem
                             key={photo.id}
                             photo={photo}
-                            onClick={() => openLightbox(index)}
+                            onClick={rest.isCompareMode ? () => toggleCompare(photo) : () => openLightbox(index)}
                             isFavorite={rest.favorites.includes(photo.id)}
                             isSelection={rest.selections.includes(photo.id)}
-                            // Fix: Added missing required prop 'isInCompareList' to PhotoItem.
                             isInCompareList={rest.compareList.some(p => p.id === photo.id)}
                             toggleFavorite={rest.toggleFavorite}
                             toggleSelection={rest.toggleSelection}

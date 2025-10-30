@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { Photo } from '../types';
 import PhotoItem from './PhotoItem';
@@ -14,6 +15,7 @@ interface PhotoGridProps {
   compareList?: Photo[];
   isCompareMode?: boolean;
   isSelectable?: boolean;
+  toggleCompare?: (photo: Photo) => void;
 }
 
 const PhotoGrid: React.FC<PhotoGridProps> = ({ 
@@ -27,6 +29,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
     compareList = [],
     isCompareMode = false,
     isSelectable = false,
+    toggleCompare = () => {},
 }) => {
   return (
     <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 lg:gap-6 space-y-4 lg:space-y-6">
@@ -34,7 +37,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
         <PhotoItem
           key={photo.id}
           photo={photo}
-          onClick={() => onImageClick(index)}
+          onClick={isCompareMode ? () => toggleCompare(photo) : () => onImageClick(index)}
           isFavorite={favorites.includes(photo.id)}
           isSelection={selections.includes(photo.id)}
           toggleFavorite={toggleFavorite}

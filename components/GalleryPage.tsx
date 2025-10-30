@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { toast } from 'react-toastify';
 import type { Album, Photo } from '../types';
 import Lightbox from './Lightbox';
 import CompareModal from './store/CompareModal';
@@ -67,6 +68,19 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
       document.body.removeChild(link);
   };
 
+  const toggleCompare = (photo: Photo) => {
+    setCompareList(prev => {
+        if (prev.some(p => p.id === photo.id)) {
+            return prev.filter(p => p.id !== photo.id);
+        }
+        if (prev.length < 4) {
+            return [...prev, photo];
+        }
+        toast.warn("You can only compare up to 4 photos at a time.");
+        return prev;
+    });
+  };
+
   return (
     <div className="bg-white min-h-screen">
       <LayoutRenderer
@@ -81,6 +95,7 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
         activeFilter={activeFilter}
         setActiveFilter={setActiveFilter}
         onDownload={handleDownload}
+        toggleCompare={toggleCompare}
       />
 
       {lightboxIndex !== null && (
