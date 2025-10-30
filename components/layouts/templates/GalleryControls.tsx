@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import type { Photo } from '../../../types';
 import { HeartIcon, CheckIcon, CompareIcon } from '../../icons';
@@ -21,13 +23,13 @@ const GalleryControls: React.FC<GalleryControlsProps> = ({
     isCompareMode,
     // Fix: Provided default empty functions and values for optional props.
     // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
-    setCompareMode = (_isCompare) => {},
+    setCompareMode = (_isCompare: boolean) => {},
     compareList,
     // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
-    setCompareModalOpen = (_isOpen) => {},
+    setCompareModalOpen = (_isOpen: boolean) => {},
     activeFilter = 'all',
     // FIX: Update default function definitions to accept arguments, resolving TypeScript errors.
-    setActiveFilter = (_filter) => {},
+    setActiveFilter = (_filter: 'all' | 'favorites' | 'selections') => {},
     theme
 }) => {
     const baseClasses = "flex items-center rounded-md border p-0.5 text-sm";

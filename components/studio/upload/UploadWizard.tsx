@@ -2,7 +2,7 @@ import React from 'react';
 import { UploadProvider, useUpload } from './UploadContext';
 import Step0_SelectMode from './Step0_SelectMode';
 import Step1_ProjectSetup from './Step1_ProjectSetup';
-import Step2_FolderMapping from './Step2_FolderMapping';
+import Step2FolderMapping from './Step2FolderMapping';
 import Step3_UploadRules from './Step3_UploadRules';
 import Step4_UploadManager from './Step4_UploadManager';
 import Step5_Summary from './Step5_Summary';
@@ -33,7 +33,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
     switch (step) {
       case 0: return <Step0_SelectMode />;
       case 1: return <Step1_ProjectSetup clients={clients} packages={packages} />;
-      case 2: return <Step2_FolderMapping />;
+      case 2: return <Step2FolderMapping />;
       case 3: return <Step3_UploadRules />;
       case 4: return <Step4_UploadManager />;
       case 5: return <Step5_Summary 

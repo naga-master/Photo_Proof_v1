@@ -1,13 +1,18 @@
 import React from 'react';
 
-export type UserRole = 'client' | 'studio' | null;
+export interface Reply {
+  id: number;
+  author: 'Client' | 'Studio';
+  text: string;
+  timestamp: string;
+}
 
 export interface Comment {
   id: number;
   author: 'Client' | 'Studio';
   text: string;
   timestamp: string;
-  replies?: Comment[];
+  replies?: Reply[];
 }
 
 export interface Photo {
@@ -19,17 +24,16 @@ export interface Photo {
   comments: Comment[];
 }
 
-export type LayoutId = 'layout1' | 'layout2' | 'layout3' | 'layout4' | 'layout5' | 'layout6' | 'layout7' | 'layout8' | 'layout9';
-
-export interface LayoutTemplate {
-    id: LayoutId;
-    name: string;
-    description: string;
-    header: 'Cover' | 'Title Only';
-    grid: 'Masonry' | 'Grid' | 'Stacked';
-    aspect: 'Portrait' | 'Landscape';
-    theme: 'White' | 'Gray' | 'Black' | 'Cream';
-}
+export type LayoutId =
+  | 'layout1'
+  | 'layout2'
+  | 'layout3'
+  | 'layout4'
+  | 'layout5'
+  | 'layout6'
+  | 'layout7'
+  | 'layout8'
+  | 'layout9';
 
 export interface Album {
   id: number;
@@ -41,9 +45,47 @@ export interface Album {
   isLocked: boolean;
   photos: Photo[];
   layout: LayoutId;
-  packageId?: string;
+  paymentStatus?: 'Paid' | 'Unpaid' | 'Due';
   price?: number;
-  paymentStatus: 'Paid' | 'Unpaid' | 'Due';
+  packageId?: string;
+}
+
+export interface Client {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  password?: string;
+  phone?: string;
+  address?: string;
+  avatarUrl?: string;
+  whatsappOptIn?: boolean;
+  emailOptIn?: boolean;
+  projects: number[];
+  lastActivity: string;
+}
+
+export type UserRole = 'client' | 'studio' | null;
+
+export type DashboardView = 
+  | 'overview'
+  | 'projects'
+  | 'clients'
+  | 'invoices'
+  | 'analytics'
+  | 'settings'
+  | 'layouts'
+  | 'services'
+  | 'tools'
+  | 'notifications'
+  | 'upload'
+  | 'projectDetails'
+  | 'clientDetails';
+
+export interface NavItem {
+    view: DashboardView;
+    label: string;
+    icon: React.ReactNode;
 }
 
 export interface StoreCategory {
@@ -57,12 +99,10 @@ export interface PricingItem {
     type: string;
     price: number;
 }
-
 export interface PricingSizeGroup {
     size: string;
     items: PricingItem[];
 }
-
 export interface PricingCategory {
     id: string;
     name: string;
@@ -70,98 +110,95 @@ export interface PricingCategory {
 }
 
 export interface ProductSizeOption {
-    size: string;
-    price: number;
+  size: string;
+  price: number;
 }
-  
 export interface ProductTypeOption {
     name: string;
 }
-  
+
 export interface Product {
-    id: string;
-    name: string;
-    shortDescription: string;
-    detailedDescription: string;
-    specs: Record<string, string>;
-    sizes: ProductSizeOption[];
-    types?: ProductTypeOption[];
-    mockupImages: string[];
+  id: string;
+  name: string;
+  shortDescription: string;
+  detailedDescription: string;
+  specs: Record<string, string>;
+  sizes: ProductSizeOption[];
+  types?: ProductTypeOption[];
+  mockupImages: string[];
 }
 
 export interface CartItem {
-    id: string;
-    photo: Photo;
-    product: Product;
-    selectedOption: ProductSizeOption;
-    selectedType?: ProductTypeOption;
-    quantity: number;
+  id: string;
+  photo: Photo;
+  product: Product;
+  selectedOption: ProductSizeOption;
+  selectedType?: ProductTypeOption;
+  quantity: number;
 }
 
-// Studio Types
-export type DashboardView = 'overview' | 'projects' | 'clients' | 'invoices' | 'analytics' | 'settings' | 'upload' | 'project-details' | 'client-details' | 'layouts' | 'tools' | 'notifications' | 'services';
-
-export interface NavItem {
-    view: DashboardView;
-    label: string;
-    icon: React.ReactNode;
-}
-
-export interface Client {
-    id: number;
+export interface LayoutTemplate {
+    id: LayoutId;
     name: string;
-    email: string;
-    username: string;
-    password: string;
-    phone?: string;
-    address?: string;
-    avatarUrl?: string;
-    whatsappOptIn?: boolean;
-    emailOptIn?: boolean;
-    projects: number[]; // array of album ids
-    lastActivity: string;
-}
-
-export interface NewClientDetails {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-}
-
-export interface ServicePackage {
-    id: string;
-    name: string;
-    category: string;
     description: string;
-    price: number;
-    isPredefined: boolean;
-    features: string[];
+    header: 'Cover' | 'Title Only';
+    grid: 'Masonry' | 'Grid' | 'Stacked';
+    aspect: 'Portrait' | 'Landscape';
+    theme: 'White' | 'Gray' | 'Cream' | 'Black';
 }
 
-// Upload Wizard Types
-export type UploadMode = 'new' | 'existing' | null;
-export type UploadStep = 0 | 1 | 2 | 3 | 4 | 5;
-export type ImageSizeRule = 'full' | 'high' | 'web';
+export type InvoiceStatus = 'Paid' | 'Unpaid' | 'Draft' | 'Overdue';
+export type InvoiceTemplateId = 'modern' | 'classic' | 'minimalist';
+
+export interface InvoiceItem {
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+}
+
+export interface Invoice {
+    id: string;
+    invoiceNumber: string;
+    invoiceDate: string;
+    dueDate: string;
+    clientId?: number;
+    projectId?: number;
+    clientName: string;
+    clientAddress: string;
+    items: InvoiceItem[];
+    notes?: string;
+    subtotal: number;
+    tax: number;
+    total: number;
+    status: InvoiceStatus;
+    template: InvoiceTemplateId;
+}
+
+export interface InvoiceTemplate {
+    id: InvoiceTemplateId;
+    name: string;
+    description: string;
+    imageUrl: string;
+}
 
 export interface ProjectDetails {
-    title: string;
-    clientId: string; // Can be a number string or 'new'
-    newClientDetails?: NewClientDetails;
-    shootDate: string;
-    tags: string;
-    layout: LayoutId;
-    watermark: string;
+    title?: string;
+    clientId?: string;
+    newClientDetails?: {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        phone?: string;
+    };
+    shootDate?: string;
+    tags?: string;
+    layout?: LayoutId;
     packageId?: string;
+    watermark?: string;
 }
-
-export interface UploadFile {
-    id: string;
-    file: File;
-    status: 'queued' | 'uploading' | 'success' | 'failed';
-    progress: number;
-    error?: string;
-}
+  
+export type UploadMode = 'new' | 'existing' | null;
 
 export interface DetectedFolder {
     path: string;
@@ -172,21 +209,39 @@ export interface FolderMap {
     sourcePath: string;
     targetAlbumName: string;
 }
-
+  
 export interface UploadRules {
-    imageSize: ImageSizeRule;
+    imageSize: 'full' | 'high' | 'web';
     compression: number;
     aiTagging: boolean;
     aiCulling: boolean;
 }
 
+export interface UploadFile {
+    id: string;
+    file: File;
+    status: 'queued' | 'uploading' | 'success' | 'failed';
+    progress: number;
+    error?: string;
+}
+
 export interface UploadState {
-    step: UploadStep;
+    step: 0 | 1 | 2 | 3 | 4 | 5;
     mode: UploadMode;
-    projectDetails: Partial<ProjectDetails>;
+    projectDetails: ProjectDetails;
     detectedFolders: DetectedFolder[];
     folderMap: FolderMap[];
     uploadRules: UploadRules;
     uploadQueue: UploadFile[];
     isUploading: boolean;
+}
+
+export interface ServicePackage {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    price: number;
+    isPredefined: boolean;
+    features: string[];
 }

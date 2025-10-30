@@ -1,3 +1,5 @@
+
+
 import React, { useMemo, useRef } from 'react';
 import { useUpload } from './UploadContext';
 import { CheckCircleIcon, XCircleIcon } from '../../icons';
@@ -39,7 +41,9 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
 
   const handleViewGallery = () => {
     const album = getOrCreateAlbum();
-    onViewGallery(album);
+    if (album) {
+        onViewGallery(album);
+    }
   };
 
   const handleNotifyClient = () => {

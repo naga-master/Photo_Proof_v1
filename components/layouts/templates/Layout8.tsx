@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { LayoutComponentProps } from '../LayoutRenderer';
 import PhotoItem from '../../PhotoItem';
@@ -41,7 +43,10 @@ const Layout8: React.FC<LayoutComponentProps> = (props) => {
                             isSelection={rest.selections.includes(photo.id)}
                             // Fix: Added missing required prop 'isInCompareList'.
                             isInCompareList={rest.compareList.some(p => p.id === photo.id)}
-                            {...rest}
+                            toggleFavorite={rest.toggleFavorite}
+                            toggleSelection={rest.toggleSelection}
+                            onDownload={rest.onDownload}
+                            isCompareMode={rest.isCompareMode}
                         />
                     ))}
                 </div>

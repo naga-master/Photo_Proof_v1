@@ -1,8 +1,12 @@
 import React from 'react';
 import { useUpload } from './UploadContext';
-import type { ProjectDetails } from '../../../types';
+import type { ProjectDetails, Client } from '../../../types';
 
-const Step1ProjectSetup: React.FC = () => {
+interface Step1ProjectSetupProps {
+    clients: Client[];
+}
+
+const Step1ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients }) => {
     const { state, dispatch } = useUpload();
     const { projectDetails } = state;
     
@@ -25,11 +29,11 @@ const Step1ProjectSetup: React.FC = () => {
                 </div>
                 <div>
                     <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">Client</label>
-                    {/* Fix: Changed 'client' to 'clientId' to match the ProjectDetails type. */}
                     <select id="clientId" name="clientId" value={projectDetails.clientId || ''} onChange={handleChange} className={inputClasses}>
                         <option value="">Select an existing client</option>
-                        <option value="Andrew + Samantha">Andrew + Samantha</option>
-                        <option value="The Miller Family">The Miller Family</option>
+                        {clients.map(client => (
+                             <option key={client.id} value={client.id}>{client.name}</option>
+                        ))}
                         <option value="new">+ Create new client</option>
                     </select>
                 </div>
@@ -44,9 +48,9 @@ const Step1ProjectSetup: React.FC = () => {
                  <div>
                     <label htmlFor="layout" className="block text-sm font-medium text-gray-700">Default Layout Preset</label>
                     <select id="layout" name="layout" value={projectDetails.layout || ''} onChange={handleChange} className={inputClasses}>
-                        <option value="Modern Masonry">Modern Masonry</option>
-                        <option value="Classic Filmstrip">Classic Filmstrip</option>
-                        <option value="Minimalist Grid">Minimalist Grid</option>
+                        <option value="layout1">Modern Masonry</option>
+                        <option value="layout6">Classic Grid</option>
+                        <option value="layout8">Cinematic Stacked</option>
                     </select>
                 </div>
             </form>
