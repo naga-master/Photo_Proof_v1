@@ -263,3 +263,15 @@ export interface CommunicationSettings {
   email: EmailSettings;
   whatsapp: WhatsAppSettings;
 }
+
+export type NotificationType = 'comment' | 'favorite' | 'order' | 'payment' | 'system';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  text: string;
+  context: string;
+  timestamp: string;
+  isRead: boolean;
+  avatarUrl?: string;
+}
