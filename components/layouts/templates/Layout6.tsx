@@ -6,7 +6,7 @@ import PhotoItem from '../../PhotoItem';
 import GalleryControls from './GalleryControls';
 
 const Layout6: React.FC<LayoutComponentProps> = (props) => {
-    const { album, photos, openLightbox, ...rest } = props;
+    const { album, photos, title, openLightbox, ...rest } = props;
     const { toggleCompare = () => {} } = rest;
     
     return (
@@ -14,8 +14,8 @@ const Layout6: React.FC<LayoutComponentProps> = (props) => {
             {/* Cover Header */}
             <div className="h-[60vh] flex items-center justify-center text-white bg-cover bg-center" style={{ backgroundImage: `url(${album.coverPhotoSrc})`}}>
                 <div className="text-center bg-black/30 p-8 rounded">
-                    <h1 className="text-5xl font-serif">{album.title}</h1>
-                    <p className="text-lg mt-2">{album.photoCount} photos</p>
+                    <h1 className="text-5xl font-serif">{title}</h1>
+                    <p className="text-lg mt-2">{photos.length} photos</p>
                 </div>
             </div>
 

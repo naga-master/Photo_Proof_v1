@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Transition } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
 
-import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings } from './types';
+import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings, Folder } from './types';
 import CoverPage from './components/CoverPage';
 import GalleryPage from './components/GalleryPage';
+import GalleryFoldersPage from './components/GalleryFoldersPage';
 import AlbumsPage from './components/AlbumsPage';
 import LoginPage from './components/LoginPage';
 import DashboardPage from './components/DashboardPage';
@@ -24,7 +25,7 @@ import { albums as initialAlbums } from './data/albums';
 import { clients as initialClients } from './data/clients';
 import { initialPackages } from './data/services';
 
-type Page = 'login' | 'cover' | 'albums' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
+type Page = 'login' | 'cover' | 'albums' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
 
 const pageVariants = {
     initial: { opacity: 0 },
@@ -44,6 +45,7 @@ const App: React.FC = () => {
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
+    const [galleryContent, setGalleryContent] = useState<{photos: Photo[], title: string} | null>(null);
     const [favorites, setFavorites] = useState<number[]>([]);
     const [selections, setSelections] = useState<number[]>([]);
     const [allAlbums, setAllAlbums] = useState<Album[]>(initialAlbums);
@@ -87,12 +89,16 @@ const App: React.FC = () => {
     };
 
     const handleOpenGallery = (album?: Album) => {
-        if (album) {
-            setCurrentAlbum(album);
+        const targetAlbum = album || allAlbums[0];
+        if (!targetAlbum) return;
+
+        setCurrentAlbum(targetAlbum);
+        if (targetAlbum.folders && targetAlbum.folders.length > 0) {
+            setPage('galleryFolders');
         } else {
-            setCurrentAlbum(allAlbums[0]);
+            setGalleryContent({ photos: targetAlbum.photos || [], title: targetAlbum.title });
+            setPage('gallery');
         }
-        setPage('gallery');
     };
 
     const handleSelectAlbum = (album: Album) => {
@@ -101,10 +107,25 @@ const App: React.FC = () => {
             return;
         }
         setCurrentAlbum(album);
+        if (album.folders && album.folders.length > 0) {
+            setPage('galleryFolders');
+        } else {
+            setGalleryContent({ photos: album.photos || [], title: album.title });
+            setPage('gallery');
+        }
+    };
+    
+    const handleSelectFolder = (folder: Folder) => {
+        setGalleryContent({ photos: folder.photos, title: folder.name });
         setPage('gallery');
     };
 
     const handleBackToAlbums = () => setPage('albums');
+    const handleBackToFolders = () => {
+        setPage('galleryFolders');
+        setGalleryContent(null);
+    };
+
     const handleNavigate = (targetPage: 'albums' | 'store' | 'about' | 'cart') => {
         setPage(targetPage);
     };
@@ -132,7 +153,10 @@ const App: React.FC = () => {
         const newAlbums = allAlbums.map(album => {
             if (album.id !== currentAlbum.id) return album;
 
-            const newPhotos = album.photos.map(photo => {
+            const photosSource = album.photos || album.folders?.flatMap(f => f.photos);
+            if (!photosSource) return album;
+
+            const newPhotos = photosSource.map(photo => {
                 if (photo.id !== photoId) return photo;
 
                 const newComment: {id: number, author: 'Client' | 'Studio', text: string, timestamp: string, replies?: any[]} = {
@@ -159,6 +183,14 @@ const App: React.FC = () => {
 
                 return { ...photo, comments: [...photo.comments, newComment] };
             });
+
+            if (album.folders) {
+                 const newFolders = album.folders.map(folder => ({
+                    ...folder,
+                    photos: folder.photos.map(p => newPhotos.find(np => np.id === p.id) || p)
+                 }));
+                 return { ...album, folders: newFolders };
+            }
 
             return { ...album, photos: newPhotos };
         });
@@ -263,7 +295,7 @@ const App: React.FC = () => {
     };
     
     const renderPage = () => {
-        const key = page + (currentAlbum?.id || '') + (currentProduct?.id || '');
+        const key = page + (currentAlbum?.id || '') + (currentProduct?.id || '') + (galleryContent?.title || '');
         let component;
         switch (page) {
             case 'login':
@@ -275,13 +307,26 @@ const App: React.FC = () => {
             case 'albums':
                 component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
                 break;
-            case 'gallery':
+            case 'galleryFolders':
                 if (!currentAlbum) {
+                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                } else {
+                    component = <GalleryFoldersPage 
+                        album={currentAlbum} 
+                        onSelectFolder={handleSelectFolder} 
+                        onBackToAlbums={handleBackToAlbums} 
+                    />;
+                }
+                break;
+            case 'gallery':
+                if (!currentAlbum || !galleryContent) {
                     component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
                     component = <GalleryPage
                         album={currentAlbum}
-                        onBack={handleBackToAlbums}
+                        photos={galleryContent.photos}
+                        title={galleryContent.title}
+                        onBack={currentAlbum.folders ? handleBackToFolders : handleBackToAlbums}
                         favorites={favorites}
                         selections={selections}
                         toggleFavorite={toggleFavorite}

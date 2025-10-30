@@ -7,6 +7,8 @@ import LayoutRenderer from './layouts/LayoutRenderer';
 
 interface GalleryPageProps {
   album: Album;
+  photos: Photo[];
+  title: string;
   onBack: () => void;
   favorites: number[];
   selections: number[];
@@ -18,7 +20,7 @@ interface GalleryPageProps {
 }
 
 const GalleryPage: React.FC<GalleryPageProps> = (props) => {
-  const { album, favorites, selections } = props;
+  const { photos, favorites, selections, title } = props;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isSlideshowActive, setSlideshowActive] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'favorites' | 'selections'>('all');
@@ -29,13 +31,13 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
   const filteredPhotos = useMemo(() => {
     switch (activeFilter) {
       case 'favorites':
-        return album.photos.filter(p => favorites.includes(p.id));
+        return photos.filter(p => favorites.includes(p.id));
       case 'selections':
-        return album.photos.filter(p => selections.includes(p.id));
+        return photos.filter(p => selections.includes(p.id));
       default:
-        return album.photos;
+        return photos;
     }
-  }, [album.photos, activeFilter, favorites, selections]);
+  }, [photos, activeFilter, favorites, selections]);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -85,6 +87,7 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
     <div className="bg-white min-h-screen">
       <LayoutRenderer
         {...props}
+        title={title}
         photos={filteredPhotos}
         openLightbox={openLightbox}
         isCompareMode={isCompareMode}

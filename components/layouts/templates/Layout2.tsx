@@ -4,7 +4,7 @@ import PhotoGrid from '../../PhotoGrid';
 import GalleryControls from './GalleryControls';
 
 const Layout2: React.FC<LayoutComponentProps> = (props) => {
-    const { album, photos, openLightbox, ...rest } = props;
+    const { album, photos, title, openLightbox, ...rest } = props;
     
     return (
         <div className="bg-gray-100 text-gray-800">
@@ -20,8 +20,8 @@ const Layout2: React.FC<LayoutComponentProps> = (props) => {
             <header className="sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b">
                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div>
-                        <h2 className="text-xl font-semibold">{album.title}</h2>
-                        <p className="text-sm text-gray-500">{album.photoCount} photos</p>
+                        <h2 className="text-xl font-semibold">{title}</h2>
+                        <p className="text-sm text-gray-500">{photos.length} photos</p>
                     </div>
                     <GalleryControls 
                         favoritesCount={rest.favorites.length}

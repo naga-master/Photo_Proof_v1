@@ -1,5 +1,5 @@
 import type { Album } from '../types';
-import { weddingPhotos, engagementPhotos, familyPortraits } from './photos';
+import { weddingPhotos, engagementPhotos, familyPortraits, gettingReadyPhotos, ceremonyPhotos, receptionPhotos } from './photos';
 
 export const albums: Album[] = [
   {
@@ -10,7 +10,29 @@ export const albums: Album[] = [
     coverPhotoSrc: weddingPhotos[0].src,
     photoCount: weddingPhotos.length,
     isLocked: false,
-    photos: weddingPhotos,
+    folders: [
+      {
+        id: 'getting-ready',
+        name: 'Getting Ready',
+        coverPhotoSrc: gettingReadyPhotos[0].src,
+        photoCount: gettingReadyPhotos.length,
+        photos: gettingReadyPhotos,
+      },
+      {
+        id: 'ceremony',
+        name: 'The Ceremony',
+        coverPhotoSrc: ceremonyPhotos[0].src,
+        photoCount: ceremonyPhotos.length,
+        photos: ceremonyPhotos,
+      },
+      {
+        id: 'reception',
+        name: 'The Reception',
+        coverPhotoSrc: receptionPhotos[0].src,
+        photoCount: receptionPhotos.length,
+        photos: receptionPhotos,
+      },
+    ],
     layout: 'layout1',
     paymentStatus: 'Paid',
     price: 90000,

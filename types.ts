@@ -35,6 +35,14 @@ export type LayoutId =
   | 'layout8'
   | 'layout9';
 
+export interface Folder {
+  id: string;
+  name: string;
+  coverPhotoSrc: string;
+  photoCount: number;
+  photos: Photo[];
+}
+
 export interface Album {
   id: number;
   title: string;
@@ -43,7 +51,8 @@ export interface Album {
   coverPhotoSrc: string;
   photoCount: number;
   isLocked: boolean;
-  photos: Photo[];
+  photos?: Photo[];
+  folders?: Folder[];
   layout: LayoutId;
   paymentStatus?: 'Paid' | 'Unpaid' | 'Due';
   price?: number;

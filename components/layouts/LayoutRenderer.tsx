@@ -16,6 +16,7 @@ import Layout9 from './templates/Layout9';
 export interface LayoutComponentProps {
     album: Album;
     photos: Photo[];
+    title: string;
     favorites: number[];
     selections: number[];
     toggleFavorite: (photoId: number) => void;

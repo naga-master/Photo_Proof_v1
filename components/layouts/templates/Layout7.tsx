@@ -6,7 +6,7 @@ import PhotoItem from '../../PhotoItem';
 import GalleryControls from './GalleryControls';
 
 const Layout7: React.FC<LayoutComponentProps> = (props) => {
-    const { album, photos, openLightbox, ...rest } = props;
+    const { photos, title, openLightbox, ...rest } = props;
     const { toggleCompare = () => {} } = rest;
     
     return (
@@ -15,8 +15,8 @@ const Layout7: React.FC<LayoutComponentProps> = (props) => {
             <header className="sticky top-16 z-30 bg-black/80 backdrop-blur-sm border-b border-gray-700">
                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-semibold">{album.title}</h1>
-                        <p className="text-sm text-gray-400">{album.photoCount} photos</p>
+                        <h1 className="text-2xl font-semibold">{title}</h1>
+                        <p className="text-sm text-gray-400">{photos.length} photos</p>
                     </div>
                     <GalleryControls 
                         favoritesCount={rest.favorites.length}
