@@ -192,7 +192,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 isCollapsed={isSidebarCollapsed}
                 onToggleCollapse={() => setSidebarCollapsed(!isSidebarCollapsed)}
             />
-            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+            <div className="flex-1 flex flex-col transition-all duration-300">
                 <header className="lg:hidden sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 z-20 flex justify-between items-center">
                     <button onClick={() => setSidebarMobileOpen(true)} className="text-gray-600 p-1">
                         <MenuIcon className="w-6 h-6" />

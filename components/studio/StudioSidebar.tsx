@@ -65,7 +65,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
   );
 
   return (
-    <aside className={`bg-gray-800 text-white flex flex-col h-screen fixed z-40 transition-all duration-300
+    <aside className={`bg-gray-800 text-white flex-shrink-0 flex flex-col h-screen fixed lg:relative z-40 transition-all duration-300
       ${isCollapsed ? 'lg:w-20' : 'w-64'}
       ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
     `}>
