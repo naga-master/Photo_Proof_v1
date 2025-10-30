@@ -32,7 +32,7 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     ]
 
     return (
-        <div className="animate-fade-in space-y-8">
+        <div className="p-8 animate-fade-in space-y-8">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900">Studio Dashboard</h1>

@@ -24,7 +24,7 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
   };
 
   return (
-    <div className="animate-fade-in">
+    <div className="p-8 animate-fade-in">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Invoices</h1>
