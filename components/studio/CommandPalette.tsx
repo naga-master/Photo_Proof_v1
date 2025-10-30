@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import { DashboardView, NavItem } from '../../types';
 import {
-  DashboardIcon, ProjectsIcon, ClientsIcon, InvoicesIcon, AnalyticsIcon, SettingsIcon,
+  DashboardIcon, ProjectsIcon, ClientsIcon, InvoicesIcon, AnalyticsIcon, SettingsIcon, WrenchScrewdriverIcon,
 } from '../icons';
 
 interface CommandPaletteProps {
@@ -20,6 +20,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, setIsOpen, onNa
     { view: 'clients', label: 'Clients', icon: <ClientsIcon className="w-5 h-5" />, category: 'Navigation', shortcut: 'Ctrl+C' },
     { view: 'invoices', label: 'Invoices', icon: <InvoicesIcon className="w-5 h-5" />, category: 'Navigation', shortcut: 'Ctrl+I' },
     { view: 'analytics', label: 'Analytics', icon: <AnalyticsIcon className="w-5 h-5" />, category: 'Navigation', shortcut: 'Ctrl+A' },
+    { view: 'tools', label: 'AI Tools', icon: <WrenchScrewdriverIcon className="w-5 h-5" />, category: 'Features', shortcut: 'Ctrl+T' },
     { view: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" />, category: 'Navigation', shortcut: 'Ctrl+,' },
   ];
 

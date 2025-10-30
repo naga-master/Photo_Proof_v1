@@ -8,8 +8,16 @@ interface FileRowProps {
 }
 
 const FileRow: React.FC<FileRowProps> = ({ file }) => {
-  const { retryFile } = useUpload();
+  const { retryFile, resumeUpload, state } = useUpload();
   const { status, progress, file: fileData, error } = file;
+  const { isUploading } = state;
+
+  const handleRetry = () => {
+    if (!isUploading) {
+      resumeUpload();
+    }
+    retryFile(file.id);
+  }
 
   const getStatusIcon = () => {
     switch (status) {
@@ -37,7 +45,7 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
         </div>
         <div className="w-24 text-center">
             {status === 'failed' ? (
-                <button onClick={() => retryFile(file.id)} className="text-xs font-semibold text-blue-600 hover:underline">Retry</button>
+                <button onClick={handleRetry} className="text-xs font-semibold text-blue-600 hover:underline">Retry</button>
             ) : (
                 <p className="text-sm font-medium text-gray-600">{Math.round(progress)}%</p>
             )}

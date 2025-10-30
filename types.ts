@@ -24,10 +24,12 @@ export interface Album {
   coverPhotoSrc: string;
   isLocked?: boolean;
   photos: Photo[];
+  clientName?: string; // Added for display
+  shootDate?: string; // Added for display
 }
 
 export interface StoreCategory {
-  id: string;
+  id:string;
   name: string;
   priceFrom: number;
   imageUrl: string;
@@ -51,7 +53,7 @@ export interface PricingCategory {
 
 export type UserRole = 'studio' | 'client' | null;
 
-export type DashboardView = 'overview' | 'projects' | 'clients' | 'invoices' | 'analytics' | 'settings' | 'upload' | 'layouts' | 'notifications';
+export type DashboardView = 'overview' | 'projects' | 'clients' | 'invoices' | 'analytics' | 'settings' | 'upload' | 'layouts' | 'notifications' | 'tools' | 'projectDetails';
 
 export interface NavItem {
   view: DashboardView;
@@ -111,6 +113,12 @@ export interface ProjectDetails {
     layoutPreset: string;
     accessType: 'public' | 'private' | 'password';
     watermark: string;
+    newClientDetails?: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+    }
 }
 
 export interface UploadRules {
@@ -153,6 +161,7 @@ export interface UploadContextType {
     pauseUpload: () => void;
     resumeUpload: () => void;
     retryFile: (fileId: string) => void;
+    retryFailedUploads: () => void;
     cancelFile: (fileId: string) => void;
     resetUpload: () => void;
 }

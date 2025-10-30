@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import type { Album, Photo, UserRole, Product, CartItem, Comment, ProjectDetails, UploadFile } from './types';
+import type { Album, Photo, UserRole, Product, CartItem, Comment, ProjectDetails, UploadFile, DashboardView } from './types';
 
 import { albums as initialAlbums } from './data/albums';
 import { products } from './data/products';
@@ -20,9 +21,9 @@ import OrderConfirmationPage from './components/store/OrderConfirmationPage';
 
 type Page =
   | { name: 'login' }
-  | { name: 'dashboard' }
+  | { name: 'dashboard'; initialView?: DashboardView; initialProject?: Album }
   | { name: 'albums' }
-  | { name: 'gallery'; album: Album; returnTo?: 'albums' | 'dashboard' }
+  | { name: 'gallery'; album: Album; returnTo?: 'albums' | { view: DashboardView; project?: Album } }
   | { name: 'about' }
   | { name: 'store' }
   | { name: 'productDetail'; product: Product }
@@ -82,7 +83,8 @@ const App: React.FC = () => {
   const handleLogout = () => setUserRole(null);
   
   const handleNavigate = (pageName: 'albums' | 'store' | 'about' | 'cart') => {
-    setPage({ name: pageName });
+    // FIX: Using a functional update for `setPage` can resolve some rare TypeScript inference issues with complex union types.
+    setPage(() => ({ name: pageName }));
   };
 
   const handleSelectAlbum = (album: Album) => {
@@ -212,6 +214,8 @@ const App: React.FC = () => {
         coverPhotoSrc: newPhotos[0]?.src || `https://picsum.photos/800/600?random=${Date.now()}&grayscale`,
         isLocked: projectDetails.accessType !== 'public',
         photos: newPhotos,
+        clientName: 'New Client',
+        shootDate: projectDetails.shootDate,
     };
     setAlbumsData(prev => [...prev, newAlbum]);
     return newAlbum;
@@ -219,9 +223,20 @@ const App: React.FC = () => {
 
   const handleViewGallery = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => {
     const newAlbum = handleProjectCreation(projectDetails, queue);
-    setPage({ name: 'gallery', album: newAlbum, returnTo: 'dashboard' });
+    // FIX: The `returnTo.view` property must be of type `DashboardView`, and 'dashboard' is not a valid view type.
+    // Changed to 'projects' to return the user to the projects list after viewing a newly created gallery.
+    setPage({ name: 'gallery', album: newAlbum, returnTo: { view: 'projects' } });
+  };
+  
+  const handleViewExistingProject = (album: Album, fromView: DashboardView = 'projects') => {
+    const returnState = { view: fromView, project: fromView === 'projectDetails' ? album : undefined };
+    setPage({ name: 'gallery', album, returnTo: returnState });
   };
 
+  const handleUpdateProject = (updatedAlbum: Album) => {
+    setAlbumsData(prevAlbums => prevAlbums.map(a => a.id === updatedAlbum.id ? updatedAlbum : a));
+    showToast("Project updated successfully!");
+  };
 
   const renderPage = () => {
     const showNavBar = userRole === 'client' && page.name !== 'login' && page.name !== 'dashboard';
@@ -236,16 +251,25 @@ const App: React.FC = () => {
               onLogout={handleLogout}
               onProjectCreated={handleProjectCreation}
               onViewGallery={handleViewGallery}
+              onViewExistingProject={handleViewExistingProject}
+              onUpdateProject={handleUpdateProject}
               showToast={showToast}
+              initialView={page.initialView}
+              initialProject={page.initialProject}
             />;
           case 'albums':
             return <AlbumsPage albums={albumsData} onSelectAlbum={handleSelectAlbum} />;
           case 'gallery':
             return <GalleryPage 
-              album={page.album} 
+              album={page.album}
+              isStudioPreview={!!page.returnTo}
               onBack={() => {
-                if (page.returnTo === 'dashboard') {
-                  setPage({ name: 'dashboard' });
+                if (typeof page.returnTo === 'object') {
+                   setPage({ 
+                      name: 'dashboard', 
+                      initialView: page.returnTo.view,
+                      initialProject: page.returnTo.project
+                  });
                 } else {
                   setPage({ name: 'albums' });
                 }

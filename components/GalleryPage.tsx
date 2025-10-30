@@ -14,6 +14,7 @@ interface GalleryPageProps {
   toggleSelection: (photoId: number) => void;
   onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
   onNavigateToStore: () => void;
+  isStudioPreview?: boolean;
 }
 
 type Filter = 'all' | 'favorites' | 'selections';
@@ -27,6 +28,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   toggleSelection,
   onAddComment,
   onNavigateToStore,
+  isStudioPreview = false,
 }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isSlideshowActive, setSlideshowActive] = useState(false);
@@ -100,12 +102,14 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
 
   return (
     <div className="bg-white min-h-screen">
-      <header className="sticky top-16 z-30 bg-white/90 backdrop-blur-md border-b">
+      <header className={`sticky z-30 bg-white border-b ${isStudioPreview ? 'top-0' : 'top-16'}`}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100">
-              <ArrowLeftIcon className="w-5 h-5" />
-            </button>
+            {isStudioPreview && (
+                <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100 flex-shrink-0">
+                    <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
+                </button>
+            )}
             <div>
               <h1 className="text-xl font-semibold text-gray-800">{album.title}</h1>
               <p className="text-sm text-gray-500">{album.photoCount} photos</p>
@@ -123,7 +127,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
             </div>
             <button 
               onClick={() => setCompareMode(!isCompareMode)} 
-              className={`p-2.5 rounded-md flex items-center gap-2 border transition-colors ${isCompareMode ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-100'}`}
+              className={`p-2.5 rounded-md flex items-center gap-2 border transition-colors ${isCompareMode ? 'bg-blue-50 border-blue-200 text-blue-700' : 'text-gray-800 hover:bg-gray-100 border-gray-300'}`}
             >
               <CompareIcon className="w-5 h-5"/>
             </button>

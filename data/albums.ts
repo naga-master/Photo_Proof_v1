@@ -49,14 +49,14 @@ const generatePhotos = (count: number, albumId: number): Photo[] => {
 };
 
 const albumData = [
-    { id: 1, title: 'Engagement Session', photoCount: 72, isLocked: false },
-    { id: 2, title: 'Getting Ready', photoCount: 64, isLocked: true },
-    { id: 3, title: 'First Look', photoCount: 61, isLocked: false },
-    { id: 4, title: 'Ceremony', photoCount: 123, isLocked: false },
-    { id: 5, title: 'Reception', photoCount: 150, isLocked: false },
-    { id: 6, title: 'Portraits', photoCount: 88, isLocked: false },
-    { id: 7, title: 'Details', photoCount: 45, isLocked: false },
-    { id: 8, title: 'Dancing', photoCount: 110, isLocked: false },
+    { id: 1, title: 'Engagement Session', photoCount: 72, isLocked: false, clientName: 'Andrew + Samantha', shootDate: '2023-08-15' },
+    { id: 2, title: 'Getting Ready', photoCount: 64, isLocked: true, clientName: 'Andrew + Samantha', shootDate: '2023-10-20' },
+    { id: 3, title: 'First Look', photoCount: 61, isLocked: false, clientName: 'Andrew + Samantha', shootDate: '2023-10-20' },
+    { id: 4, title: 'Ceremony', photoCount: 123, isLocked: false, clientName: 'Andrew + Samantha', shootDate: '2023-10-20' },
+    { id: 5, title: 'Reception', photoCount: 150, isLocked: false, clientName: 'Andrew + Samantha', shootDate: '2023-10-20' },
+    { id: 6, title: 'Portraits', photoCount: 88, isLocked: false, clientName: 'Jessica & Tom', shootDate: '2023-09-05' },
+    { id: 7, title: 'Details', photoCount: 45, isLocked: false, clientName: 'Jessica & Tom', shootDate: '2023-09-05' },
+    { id: 8, title: 'Dancing', photoCount: 110, isLocked: false, clientName: 'Maria & Carlos', shootDate: '2023-11-12' },
 ];
 
 export const albums: Album[] = albumData.map(album => {

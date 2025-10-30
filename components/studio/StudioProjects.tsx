@@ -5,9 +5,10 @@ import { PlusIcon } from '../icons';
 interface StudioProjectsProps {
   albums: Album[];
   setView: (view: DashboardView) => void;
+  onManageProject: (album: Album) => void;
 }
 
-const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView }) => {
+const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView, onManageProject }) => {
   return (
     <div className="p-8 animate-fade-in">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -57,7 +58,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView }) => {
               {albums.map((album) => {
                 const commentCount = album.photos.reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
                 return (
-                  <tr key={album.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={album.id} onClick={() => onManageProject(album)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -65,7 +66,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView }) => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{album.title}</div>
-                          <div className="text-sm text-gray-500">Client: Andrew + Samantha</div>
+                          <div className="text-sm text-gray-500">Client: {album.clientName || 'N/A'}</div>
                         </div>
                       </div>
                     </td>
@@ -77,7 +78,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, setView }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{album.photoCount}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{commentCount}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <a href="#" className="text-indigo-600 hover:text-indigo-900">Manage</a>
+                      <button onClick={(e) => { e.stopPropagation(); onManageProject(album); }} className="text-indigo-600 hover:text-indigo-900">Manage</button>
                     </td>
                   </tr>
                 )

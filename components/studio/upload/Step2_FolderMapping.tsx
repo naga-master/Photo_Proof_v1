@@ -1,35 +1,54 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { useUpload } from './UploadContext';
 import { UploadCloudIcon, FolderIcon } from '../../icons';
 import type { FolderMap } from '../../../types';
-
-// Mock data to simulate file drop
-const mockFolders = [
-    {
-        path: "Getting Ready",
-        files: Array.from({ length: 15 }, (_, i) => new File([""], `GR_00${i+1}.jpg`))
-    },
-    {
-        path: "First Look",
-        files: Array.from({ length: 25 }, (_, i) => new File([""], `FL_00${i+1}.jpg`))
-    },
-    {
-        path: "Ceremony",
-        files: Array.from({ length: 50 }, (_, i) => new File([""], `Ceremony_00${i+1}.jpg`))
-    },
-    {
-        path: "Reception",
-        files: Array.from({ length: 75 }, (_, i) => new File([""], `Reception_00${i+1}.jpg`))
-    },
-];
-
 
 const Step2_FolderMapping: React.FC = () => {
     const { state, setFiles, updateFolderMap } = useUpload();
     const { detectedFolders, folderMap } = state;
 
-    const handleFileDrop = () => {
-       setFiles(mockFolders);
+    const handleFolderSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const fileList = event.target.files;
+        if (!fileList || fileList.length === 0) {
+            return;
+        }
+
+        const folders: { [key: string]: File[] } = {};
+
+        // FIX: Cast FileList to File[] to correctly type the 'file' variable in the loop.
+        (Array.from(fileList) as File[]).forEach(file => {
+            // The 'webkitRelativePath' property gives the path relative to the selected directory.
+            const relativePath = (file as any).webkitRelativePath;
+            if (relativePath) {
+                const pathParts = relativePath.split('/');
+                // The folder path is everything except the last part (the filename)
+                const folderPath = pathParts.slice(0, -1).join('/');
+                
+                if (folderPath) {
+                    if (!folders[folderPath]) {
+                        folders[folderPath] = [];
+                    }
+                    folders[folderPath].push(file);
+                }
+            }
+        });
+        
+        const detectedFoldersArray = Object.keys(folders).map(path => ({
+            path,
+            files: folders[path],
+        }));
+
+        if (detectedFoldersArray.length > 0) {
+            setFiles(detectedFoldersArray);
+        } else {
+            // Fallback for browsers that don't support webkitdirectory but allow multiple file selection.
+            // All files will be grouped into a single default album.
+            // FIX: Cast FileList to File[] to ensure 'allFiles' has the correct type.
+            const allFiles = Array.from(fileList) as File[];
+            if (allFiles.length > 0) {
+                 setFiles([{ path: "Uploaded Photos", files: allFiles }]);
+            }
+        }
     };
 
     const handleAlbumNameChange = (sourcePath: string, newName: string) => {
@@ -40,14 +59,26 @@ const Step2_FolderMapping: React.FC = () => {
     if (detectedFolders.length === 0) {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center animate-slide-up p-4">
-                <div 
-                    onClick={handleFileDrop}
+                <label 
+                    htmlFor="folder-upload"
                     className="w-full max-w-3xl flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg text-center bg-white cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-all"
                 >
                     <UploadCloudIcon className="w-12 h-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-semibold text-gray-800">Click here to simulate dropping folders</h3>
-                    <p className="mt-1 text-sm text-gray-500">This will load a predefined set of folders and files.</p>
-                </div>
+                    <h3 className="mt-4 text-lg font-semibold text-gray-800">Select Folders to Upload</h3>
+                    <p className="mt-1 text-sm text-gray-500">Your folder structure will be preserved as albums.</p>
+                     <input
+                        id="folder-upload"
+                        type="file"
+                        className="sr-only"
+                        multiple
+                        // These non-standard properties allow for folder selection in most modern browsers
+                        // @ts-ignore 
+                        webkitdirectory=""
+                        // @ts-ignore 
+                        directory=""
+                        onChange={handleFolderSelection}
+                    />
+                </label>
             </div>
         );
     }

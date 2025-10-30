@@ -9,6 +9,7 @@ import {
     SettingsIcon,
     LayoutTemplateIcon,
     BellIcon,
+    WrenchScrewdriverIcon,
 } from '../icons';
 
 interface StudioSidebarProps {
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
     { view: 'layouts', label: 'Layouts', icon: <LayoutTemplateIcon className="w-5 h-5" /> },
     { view: 'invoices', label: 'Invoices', icon: <InvoicesIcon className="w-5 h-5" /> },
     { view: 'analytics', label: 'Analytics', icon: <AnalyticsIcon className="w-5 h-5" /> },
+    { view: 'tools', label: 'Tools', icon: <WrenchScrewdriverIcon className="w-5 h-5" /> },
 ];
 
 const secondaryNavItems: NavItem[] = [

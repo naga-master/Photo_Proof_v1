@@ -11,7 +11,7 @@ interface Step5_SummaryProps {
 }
 
 const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated, onViewGallery, showToast }) => {
-  const { state, goToStep } = useUpload();
+  const { state, retryFailedUploads } = useUpload();
   const { uploadQueue, projectDetails } = state;
 
   const { successCount, failedCount } = useMemo(() => {
@@ -61,7 +61,7 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
               <ul className="mt-2 text-sm text-gray-600 space-y-1 max-h-32 overflow-y-auto bg-gray-50 p-3 rounded-md border">
                   {failedFiles.map(f => <li key={f.id} className="flex items-center gap-2"><XCircleIcon className="w-4 h-4 text-red-500" /> {f.file.name}</li>)}
               </ul>
-              <button onClick={() => goToStep(4)} className="mt-2 text-sm font-semibold text-blue-600 hover:underline">Retry Failed Uploads</button>
+              <button onClick={retryFailedUploads} className="mt-2 text-sm font-semibold text-blue-600 hover:underline">Retry Failed Uploads</button>
           </div>
       )}
 

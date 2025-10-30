@@ -151,6 +151,18 @@ export const BellIcon: React.FC<IconProps> = ({ className }) => (
     </svg>
 );
 
+export const WrenchScrewdriverIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.664 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.474-4.474c-.048-.58-.122-1.163-.266-1.743m-1.5 0A4.496 4.496 0 0012 3a4.5 4.5 0 00-4.474 4.474c-.048.58-.122 1.163-.266 1.743m1.5 0l-.21.643m.643-.21c-.293.048-.587.122-.87.233m.87-.233l.643-.21m-1.086.444c.293-.048.587-.122.87-.233m-1.5 0l-1.086.444m1.086-.444l-.21.643m0 0l-1.086.444m0 0l.21.643m0 0l-1.086.444m0 0l.21.643m.87-.233l.643-.21" />
+    </svg>
+);
+
+export const CameraIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+    </svg>
+);
 
 // Studio Icons
 export const DashboardIcon: React.FC<IconProps> = ({ className }) => (

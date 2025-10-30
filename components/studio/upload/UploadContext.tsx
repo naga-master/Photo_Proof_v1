@@ -12,6 +12,12 @@ const initialState: UploadState = {
     layoutPreset: 'Modern Masonry',
     accessType: 'private',
     watermark: 'default',
+    newClientDetails: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+    }
   },
   detectedFolders: [],
   folderMap: [],
@@ -30,7 +36,6 @@ const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
 export const UploadProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, setState] = useState<UploadState>(initialState);
-    // FIX: Replaced NodeJS.Timeout with a browser-compatible type for setInterval's return value.
     const uploadInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const nextStep = useCallback(() => setState(s => ({ ...s, step: s.step + 1 })), []);
@@ -50,15 +55,6 @@ export const UploadProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }, []);
 
     const resetUpload = useCallback(() => setState(initialState), []);
-
-    const updateFileStatus = (fileId: string, status: UploadFileStatus, progress?: number, error?: string) => {
-        setState(prevState => ({
-            ...prevState,
-            uploadQueue: prevState.uploadQueue.map(f =>
-                f.id === fileId ? { ...f, status, progress: progress ?? f.progress, error: error ?? f.error } : f
-            ),
-        }));
-    };
     
     const processQueue = useCallback(() => {
        if (uploadInterval.current) clearInterval(uploadInterval.current);
@@ -154,7 +150,22 @@ export const UploadProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             uploadQueue: prevState.uploadQueue.map(f =>
                 f.id === fileId ? { ...f, status: 'queued', progress: 0, error: undefined } : f
             ),
+            isUploading: true,
         }));
+    }, []);
+    
+    const retryFailedUploads = useCallback(() => {
+        setState(prevState => {
+            const newQueue = prevState.uploadQueue.map(f => 
+                f.status === 'failed' ? { ...f, status: 'queued' as UploadFileStatus, progress: 0, error: undefined } : f
+            );
+            return {
+                ...prevState,
+                uploadQueue: newQueue,
+                isUploading: true,
+                step: 4,
+            };
+        });
     }, []);
 
     const cancelFile = useCallback((fileId: string) => {
@@ -178,6 +189,7 @@ export const UploadProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         pauseUpload,
         resumeUpload,
         retryFile,
+        retryFailedUploads,
         cancelFile,
         resetUpload,
     };

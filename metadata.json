@@ -1,5 +1,7 @@
 {
   "name": "Photo Gallery Showcase",
   "description": "A clone of a professional wedding photo gallery website. It features a stunning cover page, a responsive masonry-style photo grid, and an immersive full-screen lightbox for viewing high-resolution images.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
