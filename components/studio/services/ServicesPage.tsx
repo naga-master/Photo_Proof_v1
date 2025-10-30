@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useState, useMemo } from 'react';
 import type { ServicePackage } from '../../../types';
 import { PlusIcon, CheckIcon } from '../../icons';

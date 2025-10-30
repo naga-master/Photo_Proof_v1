@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Album, Client, Invoice, LayoutId, ServicePackage, InvoiceTemplateId } from '../types';
+import type { Album, Client, Invoice, LayoutId, ServicePackage, InvoiceTemplateId, CommunicationSettings } from '../types';
 import StudioLayout from './studio/StudioLayout';
 
 interface DashboardPageProps {
@@ -27,6 +27,8 @@ interface DashboardPageProps {
     setDefaultLayoutId: (layoutId: LayoutId) => void;
     setDefaultTemplateId: (templateId: InvoiceTemplateId) => void;
   };
+  communicationSettings: CommunicationSettings;
+  onUpdateCommunicationSettings: (settings: CommunicationSettings) => void;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = (props) => {

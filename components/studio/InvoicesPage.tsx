@@ -10,7 +10,7 @@ interface InvoicesPageProps {
     clients: Client[];
     albums: Album[];
     invoices: Invoice[];
-    onUpdateInvoices: (invoices: Invoice[]) => void;
+    onSaveInvoice: (invoice: Invoice) => void;
     initialData: { client: Client, project: Album } | null;
     clearInitialData: () => void;
     defaultTemplateId: InvoiceTemplateId;
@@ -28,7 +28,7 @@ const getNextInvoiceNumber = (invoices: Invoice[]) => {
 };
 
 const InvoicesPage: React.FC<InvoicesPageProps> = (props) => {
-    const { clients, albums, invoices, onUpdateInvoices, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor } = props;
+    const { clients, albums, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor } = props;
 
     const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
 
@@ -43,7 +43,7 @@ const InvoicesPage: React.FC<InvoicesPageProps> = (props) => {
                 setCurrentInvoice(inv => inv ? { ...inv, subtotal, tax, total } : null);
             }
         }
-    }, [currentInvoice]);
+    }, [currentInvoice?.items]);
 
     const today = new Date().toISOString().split('T')[0];
     const dueDate = new Date();
@@ -129,8 +129,6 @@ const InvoicesPage: React.FC<InvoicesPageProps> = (props) => {
         if (!currentInvoice?.clientId) return [];
         return albums.filter(a => a.clientId === currentInvoice.clientId);
     }, [currentInvoice?.clientId, albums]);
-    
-    const subtotal = currentInvoice?.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) || 0;
 
     const inputClasses = "block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus:ring-gray-500 focus:border-gray-500";
     
@@ -141,9 +139,14 @@ const InvoicesPage: React.FC<InvoicesPageProps> = (props) => {
     return (
         <div className="flex h-full animate-fade-in">
             <div className="w-1/2 flex-shrink-0 p-8 overflow-y-auto bg-gray-50 border-r">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Create Invoice</h1>
-                    <p className="mt-1 text-gray-600">Fill in the details to generate a new invoice.</p>
+                <header className="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">Create Invoice</h1>
+                        <p className="mt-1 text-gray-600">Fill in the details to generate a new invoice.</p>
+                    </div>
+                    <button onClick={() => onSaveInvoice(currentInvoice)} className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700">
+                        Save Invoice
+                    </button>
                 </header>
 
                 <div className="space-y-8">
@@ -195,10 +198,10 @@ const InvoicesPage: React.FC<InvoicesPageProps> = (props) => {
                                         <input type="text" placeholder="Description" value={item.description} onChange={e => handleItemChange(item.id, 'description', e.target.value)} className={inputClasses} />
                                     </div>
                                     <div className="col-span-2">
-                                        <input type="number" placeholder="Qty" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', parseFloat(e.target.value))} className={inputClasses} />
+                                        <input type="number" placeholder="Qty" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)} className={inputClasses} />
                                     </div>
                                     <div className="col-span-2">
-                                        <input type="number" placeholder="Price" value={item.unitPrice} onChange={e => handleItemChange(item.id, 'unitPrice', parseFloat(e.target.value))} className={inputClasses} />
+                                        <input type="number" placeholder="Price" value={item.unitPrice} onChange={e => handleItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className={inputClasses} />
                                     </div>
                                     <div className="col-span-1 text-right font-medium">
                                         ${(item.quantity * item.unitPrice).toFixed(2)}
@@ -211,7 +214,7 @@ const InvoicesPage: React.FC<InvoicesPageProps> = (props) => {
                         </div>
                         <button onClick={addItem} className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"><PlusIcon className="w-4 h-4"/> Add Item</button>
                         <div className="mt-6 pt-4 border-t text-right">
-                            <span className="font-semibold text-lg">Total: ${subtotal.toFixed(2)}</span>
+                            <span className="font-semibold text-lg">Total: ${currentInvoice.total.toFixed(2)}</span>
                         </div>
                     </div>
                     

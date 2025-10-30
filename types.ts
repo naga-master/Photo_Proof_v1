@@ -72,6 +72,7 @@ export type DashboardView =
   | 'projects'
   | 'clients'
   | 'invoices'
+  | 'invoiceEditor'
   | 'analytics'
   | 'settings'
   | 'layouts'
@@ -244,4 +245,21 @@ export interface ServicePackage {
     price: number;
     isPredefined: boolean;
     features: string[];
+}
+
+export interface EmailSettings {
+  fromAddress: string;
+  fromName: string;
+  apiKey: string;
+}
+
+export interface WhatsAppSettings {
+  phoneNumberId: string;
+  businessAccountId: string;
+  accessToken: string;
+}
+
+export interface CommunicationSettings {
+  email: EmailSettings;
+  whatsapp: WhatsAppSettings;
 }

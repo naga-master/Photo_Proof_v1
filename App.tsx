@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId } from './types';
+import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings } from './types';
 import CoverPage from './components/CoverPage';
 import GalleryPage from './components/GalleryPage';
 import AlbumsPage from './components/AlbumsPage';
@@ -47,6 +47,13 @@ const App: React.FC = () => {
     const [brandColor, setBrandColor] = useState('#2D3748'); // A slightly softer dark gray
     const [typography, setTypography] = useState('System Default (Inter & Cormorant)');
     const [defaultTemplateId, setDefaultTemplateId] = useState<InvoiceTemplateId>('modern');
+    
+    // Communication Settings
+    const [communicationSettings, setCommunicationSettings] = useState<CommunicationSettings>({
+      email: { fromAddress: '', fromName: '', apiKey: '' },
+      whatsapp: { phoneNumberId: '', businessAccountId: '', accessToken: '' }
+    });
+
 
     // Effect for toast messages
     useEffect(() => {
@@ -298,6 +305,8 @@ const App: React.FC = () => {
                         setDefaultLayoutId,
                         setDefaultTemplateId,
                     }}
+                    communicationSettings={communicationSettings}
+                    onUpdateCommunicationSettings={setCommunicationSettings}
                  />;
             case 'store':
                 return <StorePage onSelectProduct={handleSelectProduct} />;

@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useMemo } from 'react';
 import { useUpload } from './UploadContext';
 import type { ProjectDetails, Client, LayoutId, ServicePackage } from '../../../types';
