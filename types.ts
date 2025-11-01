@@ -286,3 +286,58 @@ export interface Notification {
   isRead: boolean;
   avatarUrl?: string;
 }
+
+// Studio User Management Types
+export type StudioUserRole = 'admin' | 'manager' | 'editor' | 'viewer';
+
+export interface StudioUserPermissions {
+  // Project Management
+  canCreateProjects: boolean;
+  canEditProjects: boolean;
+  canDeleteProjects: boolean;
+  canViewProjects: boolean;
+  
+  // Client Management
+  canCreateClients: boolean;
+  canEditClients: boolean;
+  canDeleteClients: boolean;
+  canViewClients: boolean;
+  
+  // Financial
+  canCreateInvoices: boolean;
+  canEditInvoices: boolean;
+  canDeleteInvoices: boolean;
+  canViewInvoices: boolean;
+  canViewAnalytics: boolean;
+  
+  // Content Management
+  canUploadPhotos: boolean;
+  canEditPhotos: boolean;
+  canDeletePhotos: boolean;
+  
+  // Services & Packages
+  canManageServices: boolean;
+  canManagePackages: boolean;
+  
+  // Studio Settings
+  canManageSettings: boolean;
+  canManageUsers: boolean;
+  canManageBranding: boolean;
+  
+  // Communication
+  canSendNotifications: boolean;
+  canManageCommunication: boolean;
+}
+
+export interface StudioUser {
+  id: string;
+  name: string;
+  email: string;
+  username: string;
+  role: StudioUserRole;
+  permissions: StudioUserPermissions;
+  avatarUrl?: string;
+  isActive: boolean;
+  lastLogin?: string;
+  createdAt: string;
+}
