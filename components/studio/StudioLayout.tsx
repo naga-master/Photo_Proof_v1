@@ -146,7 +146,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setView('invoiceEditor');
     };
 
-    const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]): Album => {
+    const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number): Album => {
         const newAlbumId = Math.max(...albums.map(a => a.id), 0) + 1;
         const newPhotos = queue
             .filter(f => f.status === 'success')
@@ -154,12 +154,26 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 id: Date.now() + i, src: URL.createObjectURL(f.file), alt: f.file.name, width: 800, height: 1200, comments: []
             }));
         
+        // Determine cover photo - use selected index, or default to first photo
+        let coverPhotoSrc = '';
+        if (coverPhotoIndex !== undefined && coverPhotoIndex >= 0) {
+            const successfulFiles = queue.filter(f => f.status === 'success');
+            const coverFile = queue[coverPhotoIndex];
+            if (coverFile && coverFile.status === 'success') {
+                coverPhotoSrc = URL.createObjectURL(coverFile.file);
+            }
+        }
+        // Fallback to first photo if no cover selected or invalid index
+        if (!coverPhotoSrc) {
+            coverPhotoSrc = newPhotos[0]?.src || '';
+        }
+        
         const newAlbum: Album = {
             id: newAlbumId,
             title: projectDetails.title || "Untitled Project",
             clientId: parseInt(projectDetails.clientId || '1'),
             shootDate: projectDetails.shootDate,
-            coverPhotoSrc: newPhotos[0]?.src || '',
+            coverPhotoSrc: coverPhotoSrc,
             photoCount: newPhotos.length,
             isLocked: false,
             photos: newPhotos,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Album, Client } from '../../types';
-import { ArrowLeftIcon, PlusIcon } from '../icons';
+import { ArrowLeftIcon, PlusIcon, CameraIcon } from '../icons';
+import CoverPhotoChanger from './CoverPhotoChanger';
 
 interface ProjectDetailsPageProps {
   project: Album;
@@ -15,6 +16,7 @@ interface ProjectDetailsPageProps {
 const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, clients, onBack, onUpdateProject, onDeleteProject, onViewGallery, onAddPhotos }) => {
   const [details, setDetails] = useState(project);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isCoverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
   
   useEffect(() => {
     setDetails(project);
@@ -28,6 +30,12 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
   const handleSaveChanges = () => {
     onUpdateProject(details);
     alert('Changes saved!');
+  };
+
+  const handleUpdateCover = (newCoverSrc: string) => {
+    const updatedDetails = { ...details, coverPhotoSrc: newCoverSrc };
+    setDetails(updatedDetails);
+    onUpdateProject(updatedDetails);
   };
 
   const handleDeleteConfirm = () => {
@@ -50,26 +58,53 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-white p-6 border border-gray-200 rounded-lg">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">Project Metadata</h2>
-                <form className="space-y-6">
-                    <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-700">Project Title</label>
-                        <input type="text" id="title" name="title" value={details.title} onChange={handleChange} className={inputClasses} />
+            <div className="lg:col-span-2 space-y-6">
+                {/* Cover Photo Section */}
+                <div className="bg-white p-6 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold text-gray-800">Cover Photo</h2>
+                        <button
+                            onClick={() => setCoverPhotoModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition-colors"
+                        >
+                            <CameraIcon className="w-4 h-4" />
+                            Change Cover
+                        </button>
                     </div>
-                     <div>
-                        <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">Client</label>
-                        <select id="clientId" name="clientId" value={details.clientId} onChange={handleChange} className={inputClasses}>
-                            {clients.map(client => (
-                                <option key={client.id} value={client.id}>{client.name}</option>
-                            ))}
-                        </select>
+                    <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+                        <img
+                            src={details.coverPhotoSrc}
+                            alt={`${details.title} cover`}
+                            className="w-full h-full object-cover"
+                        />
                     </div>
-                     <div>
-                        <label htmlFor="shootDate" className="block text-sm font-medium text-gray-700">Shoot Date</label>
-                        <input type="date" id="shootDate" name="shootDate" value={details.shootDate || ''} onChange={handleChange} className={inputClasses} />
-                    </div>
-                </form>
+                    <p className="mt-3 text-sm text-gray-500">
+                        This image represents your project in galleries and project listings.
+                    </p>
+                </div>
+
+                {/* Project Metadata Section */}
+                <div className="bg-white p-6 border border-gray-200 rounded-lg">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-6">Project Metadata</h2>
+                    <form className="space-y-6">
+                        <div>
+                            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Project Title</label>
+                            <input type="text" id="title" name="title" value={details.title} onChange={handleChange} className={inputClasses} />
+                        </div>
+                        <div>
+                            <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">Client</label>
+                            <select id="clientId" name="clientId" value={details.clientId} onChange={handleChange} className={inputClasses}>
+                                {clients.map(client => (
+                                    <option key={client.id} value={client.id}>{client.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="shootDate" className="block text-sm font-medium text-gray-700">Shoot Date</label>
+                            <input type="date" id="shootDate" name="shootDate" value={details.shootDate || ''} onChange={handleChange} className={inputClasses} />
+                        </div>
+                    </form>
+                </div>
             </div>
             <div className="lg:col-span-1 space-y-6">
                  <div className="bg-white p-6 border border-gray-200 rounded-lg">
@@ -97,6 +132,14 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                     </div>
                 </div>
             </div>
+        )}
+
+        {isCoverPhotoModalOpen && (
+            <CoverPhotoChanger
+                project={details}
+                onUpdateCover={handleUpdateCover}
+                onClose={() => setCoverPhotoModalOpen(false)}
+            />
         )}
     </div>
   );

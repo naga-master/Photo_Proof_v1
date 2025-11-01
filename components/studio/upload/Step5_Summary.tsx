@@ -1,13 +1,16 @@
 
 
-import React, { useMemo, useRef } from 'react';
+
+
+import React, { useMemo, useRef, useState } from 'react';
 import { useUpload } from './UploadContext';
 import { CheckCircleIcon, XCircleIcon } from '../../icons';
+import CoverPhotoSelector from './CoverPhotoSelector';
 import type { ProjectDetails, UploadFile, Album } from '../../../types';
 
 interface Step5_SummaryProps {
   onExit: () => void;
-  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
+  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number) => Album;
   // Fix: Updated onViewGallery prop to accept an Album object.
   onViewGallery: (album: Album) => void;
   showToast: (message: string) => void;
@@ -17,8 +20,7 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
   const { state, retryFailedUploads } = useUpload();
   const { uploadQueue, projectDetails } = state;
   const createdAlbumRef = useRef<Album | null>(null);
-
-  const { successCount, failedCount } = useMemo(() => {
+  const [selectedCoverIndex, setSelectedCoverIndex] = useState<number | null>(null);  const { successCount, failedCount } = useMemo(() => {
     return {
       successCount: uploadQueue.filter(f => f.status === 'success').length,
       failedCount: uploadQueue.filter(f => f.status === 'failed').length,
@@ -29,7 +31,12 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
 
   const getOrCreateAlbum = () => {
     if (!createdAlbumRef.current) {
-      createdAlbumRef.current = onProjectCreated(projectDetails, uploadQueue);
+      // Use selected cover index, or default to first successful upload if none selected
+      const coverIndex = selectedCoverIndex !== null 
+        ? selectedCoverIndex 
+        : uploadQueue.findIndex(f => f.status === 'success');
+      
+      createdAlbumRef.current = onProjectCreated(projectDetails, uploadQueue, coverIndex >= 0 ? coverIndex : undefined);
     }
     return createdAlbumRef.current;
   };
@@ -77,6 +84,15 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
               </ul>
               <button onClick={retryFailedUploads} className="mt-2 text-sm font-semibold text-blue-600 hover:underline">Retry Failed Uploads</button>
           </div>
+      )}
+
+      {/* Cover Photo Selector */}
+      {successCount > 0 && (
+        <CoverPhotoSelector
+          uploadQueue={uploadQueue}
+          selectedCoverIndex={selectedCoverIndex}
+          onSelectCover={setSelectedCoverIndex}
+        />
       )}
 
       <div className="mt-8 border-t pt-6">
