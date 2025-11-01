@@ -68,6 +68,7 @@ export interface Client {
   phone?: string;
   address?: string;
   avatarUrl?: string;
+  profilePicture?: string;
   whatsappOptIn?: boolean;
   emailOptIn?: boolean;
   projects: number[];
@@ -200,6 +201,7 @@ export interface ProjectDetails {
         lastName?: string;
         email?: string;
         phone?: string;
+        profilePicture?: string;
     };
     shootDate?: string;
     tags?: string;

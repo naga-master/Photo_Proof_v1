@@ -1,9 +1,9 @@
 
-
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useUpload } from './UploadContext';
 import type { ProjectDetails, Client, LayoutId, ServicePackage } from '../../../types';
 import { layoutTemplates } from '../../../data/layouts';
+import { XCircleIcon } from '../../icons';
 
 interface Step1ProjectSetupProps {
     clients: Client[];
@@ -13,6 +13,7 @@ interface Step1ProjectSetupProps {
 const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, packages }) => {
     const { state, dispatch } = useUpload();
     const { projectDetails } = state;
+    const [profilePicPreview, setProfilePicPreview] = useState<string>('');
 
     const isCreatingNewClient = projectDetails.clientId === 'new';
     
@@ -33,6 +34,40 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
                 }
             }
         });
+    };
+
+    const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                dispatch({
+                    type: 'SET_PROJECT_DETAILS',
+                    payload: { 
+                        newClientDetails: {
+                            ...projectDetails.newClientDetails,
+                            profilePicture: result
+                        }
+                    }
+                });
+                setProfilePicPreview(result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeProfilePicture = () => {
+        dispatch({
+            type: 'SET_PROJECT_DETAILS',
+            payload: { 
+                newClientDetails: {
+                    ...projectDetails.newClientDetails,
+                    profilePicture: ''
+                }
+            }
+        });
+        setProfilePicPreview('');
     };
 
     const groupedPackages = useMemo(() => {
@@ -70,6 +105,42 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
                 {isCreatingNewClient && (
                     <div className="p-4 bg-gray-50 rounded-md border border-gray-200 space-y-4 animate-fade-in">
                         <h4 className="font-medium text-gray-600">New Client Information</h4>
+                        <div>
+                            <label className="text-xs text-gray-500 mb-2 block">Profile Picture (Optional)</label>
+                            <div className="flex items-center gap-4">
+                                {profilePicPreview || projectDetails.newClientDetails?.profilePicture ? (
+                                    <div className="relative">
+                                        <img 
+                                            src={profilePicPreview || projectDetails.newClientDetails?.profilePicture} 
+                                            alt="Profile preview" 
+                                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-300" 
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeProfilePicture}
+                                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                                        >
+                                            <XCircleIcon className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+                                        <span className="text-gray-400 text-xs">No photo</span>
+                                    </div>
+                                )}
+                                <label className="cursor-pointer">
+                                    <span className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 inline-block">
+                                        Choose File
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleProfilePicChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs text-gray-500">First Name</label>

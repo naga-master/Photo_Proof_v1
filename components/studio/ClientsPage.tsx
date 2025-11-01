@@ -42,11 +42,32 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
         address: '',
         whatsappOptIn: false,
         emailOptIn: true,
+        profilePicture: '',
     });
+
+    const [previewUrl, setPreviewUrl] = useState<string>('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setClientData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                setClientData(prev => ({ ...prev, profilePicture: result }));
+                setPreviewUrl(result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeProfilePicture = () => {
+        setClientData(prev => ({ ...prev, profilePicture: '' }));
+        setPreviewUrl('');
     };
 
     const handleToggle = (name: 'whatsappOptIn' | 'emailOptIn') => {
@@ -59,8 +80,9 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
         onClose();
         // Reset form
         setClientData({
-            name: '', email: '', phone: '', address: '', whatsappOptIn: false, emailOptIn: true,
+            name: '', email: '', phone: '', address: '', whatsappOptIn: false, emailOptIn: true, profilePicture: '',
         });
+        setPreviewUrl('');
     };
 
     if (!isOpen) return null;
@@ -75,6 +97,38 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
                         <h2 className="text-xl font-semibold text-gray-800">Create New Client</h2>
                     </div>
                     <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture (Optional)</label>
+                            <div className="flex items-center gap-4">
+                                {previewUrl ? (
+                                    <div className="relative">
+                                        <img src={previewUrl} alt="Profile preview" className="w-20 h-20 rounded-full object-cover border-2 border-gray-300" />
+                                        <button
+                                            type="button"
+                                            onClick={removeProfilePicture}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                        >
+                                            <XCircleIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+                                        <span className="text-gray-400 text-xs">No photo</span>
+                                    </div>
+                                )}
+                                <label className="cursor-pointer">
+                                    <span className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 inline-block">
+                                        Choose File
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Full Name</label>
                             <input type="text" name="name" value={clientData.name} onChange={handleChange} className={inputClasses} required />
@@ -162,7 +216,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <img className="h-10 w-10 rounded-full object-cover" src={client.avatarUrl} alt={client.name} />
+                          <img className="h-10 w-10 rounded-full object-cover" src={client.profilePicture || client.avatarUrl} alt={client.name} />
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{client.name}</div>

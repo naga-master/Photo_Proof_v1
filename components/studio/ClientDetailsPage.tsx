@@ -16,9 +16,12 @@ interface ClientDetailsPageProps {
 
 const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, invoices, packages, onBack, onUpdateClient, onCreateProject, onCreateInvoice, onPreviewInvoice }) => {
     const [details, setDetails] = useState(client);
+    const [isEditingProfilePic, setIsEditingProfilePic] = useState(false);
+    const [profilePicPreview, setProfilePicPreview] = useState<string>(client.profilePicture || client.avatarUrl || '');
 
     useEffect(() => {
         setDetails(client);
+        setProfilePicPreview(client.profilePicture || client.avatarUrl || '');
     }, [client]);
 
     const clientProjects = useMemo(() => albums.filter(a => a.clientId === client.id), [albums, client.id]);
@@ -27,6 +30,26 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setDetails(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                setDetails(prev => ({ ...prev, profilePicture: result }));
+                setProfilePicPreview(result);
+                setIsEditingProfilePic(false);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeProfilePicture = () => {
+        setDetails(prev => ({ ...prev, profilePicture: '' }));
+        setProfilePicPreview(client.avatarUrl || '');
+        setIsEditingProfilePic(false);
     };
 
     const handleSaveChanges = () => {
@@ -62,7 +85,28 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-6 border border-gray-200 rounded-lg">
                         <div className="flex flex-col items-center text-center">
-                            <img src={details.avatarUrl} alt={details.name} className="w-24 h-24 rounded-full mb-4" />
+                            <div className="relative group">
+                                <img src={profilePicPreview} alt={details.name} className="w-24 h-24 rounded-full mb-4 object-cover" />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                    <label className="cursor-pointer text-white text-xs font-medium">
+                                        <span>Change Photo</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleProfilePicChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                            {details.profilePicture && (
+                                <button 
+                                    onClick={removeProfilePicture}
+                                    className="text-xs text-red-600 hover:text-red-800 mb-2"
+                                >
+                                    Remove custom photo
+                                </button>
+                            )}
                             <h2 className="text-xl font-semibold">{details.name}</h2>
                             <p className="text-sm text-gray-500">{details.email}</p>
                         </div>
