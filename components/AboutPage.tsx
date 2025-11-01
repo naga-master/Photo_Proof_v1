@@ -1,6 +1,21 @@
 import React from 'react';
 
-const AboutPage: React.FC = () => {
+interface AboutPageProps {
+    studioPhoto: string | null;
+    studioDescription: string;
+}
+
+const AboutPage: React.FC<AboutPageProps> = ({ studioPhoto, studioDescription }) => {
+    // Default content if studio hasn't set their own
+    const defaultImage = 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?ixlib=rb-4.0.3&auto=format&fit=crop&w=2080&q=80';
+    const defaultDescription = `We are NAPSTER's Photo Lab, a boutique photography studio dedicated to capturing life's fleeting moments with artistry and authenticity. Our passion lies in creating timeless images that tell your unique story.
+
+With over a decade of experience, we specialize in weddings, portraits, and lifestyle photography. Every session is crafted with care, attention to detail, and a deep respect for the emotions that make each moment special.
+
+We believe photography is more than just images—it's about preserving memories, celebrating love, and honoring the beauty of everyday life. Let us help you tell your story.`;
+
+    const displayImage = studioPhoto || defaultImage;
+    const displayDescription = studioDescription || defaultDescription;
   return (
     <div className="bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -10,26 +25,23 @@ const AboutPage: React.FC = () => {
             <p className="mt-4 text-xl text-gray-500">Capturing life's fleeting moments.</p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <img 
-                src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=1480&auto=format&fit=crop"
-                alt="NAPSTER's Photo Lab"
-                className="rounded-lg shadow-xl"
+          <div className="mt-16 grid md:grid-cols-2 gap-12 items-start">
+            {/* Image */}
+            <div className="relative h-[500px] rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={displayImage}
+                alt="Studio"
+                className="w-full h-full object-cover"
               />
             </div>
-            <div className="prose prose-lg text-gray-600">
-              <p>
-                We are NAPSTER's Photo Lab, a professional photography studio with a passion for storytelling.
-                Our journey began with a shared love for capturing the authentic, unscripted moments that make life beautiful.
-              </p>
-              <p>
-                For us, photography is more than just taking pictures; it's about preserving memories, emotions, and the essence of a moment in time. 
-                We specialize in wedding and portrait photography, where we get the privilege of being part of some of the most important days in people's lives.
-              </p>
-              <p>
-                Our style is a blend of documentary and fine art. We aim to be unobtrusive observers, capturing the day as it naturally unfolds, while also creating timeless, artistic portraits that you'll cherish for generations.
-              </p>
+
+            {/* Content */}
+            <div className="prose prose-lg max-w-none">
+              {displayDescription.split('\n\n').map((paragraph, index) => (
+                <p key={index} className="text-gray-700 leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
             </div>
           </div>
         </div>

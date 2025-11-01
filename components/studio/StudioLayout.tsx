@@ -38,6 +38,9 @@ interface StudioLayoutProps {
     typography: string;
     defaultLayoutId: LayoutId;
     defaultTemplateId: InvoiceTemplateId;
+    studioPhoto: string | null;
+    studioDescription: string;
+    studioDisplayImage: string | null;
   };
   onUpdateBranding: {
     setLogo: (logo: string | null) => void;
@@ -45,6 +48,9 @@ interface StudioLayoutProps {
     setTypography: (font: string) => void;
     setDefaultLayoutId: (layoutId: LayoutId) => void;
     setDefaultTemplateId: (templateId: InvoiceTemplateId) => void;
+    setStudioPhoto: (photo: string | null) => void;
+    setStudioDescription: (description: string) => void;
+    setStudioDisplayImage: (image: string | null) => void;
   };
   communicationSettings: CommunicationSettings;
   onUpdateCommunicationSettings: (settings: CommunicationSettings) => void;
@@ -204,7 +210,12 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             // Fix: Spread branding props into InvoiceEditor to provide required props.
             case 'invoiceEditor': return <InvoiceEditor {...props} {...props.branding} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} onInvoiceSaved={() => setView('invoices')} />;
             case 'analytics': return <AnalyticsPage />;
-            case 'settings': return <SettingsPage settings={communicationSettings} onUpdateSettings={onUpdateCommunicationSettings} />;
+            case 'settings': return <SettingsPage 
+                settings={communicationSettings} 
+                onUpdateSettings={onUpdateCommunicationSettings}
+                branding={props.branding}
+                onUpdateBranding={props.onUpdateBranding}
+            />;
             case 'layouts': return <LayoutsPage defaultLayoutId={props.branding.defaultLayoutId} onSetDefaultLayout={props.onUpdateBranding.setDefaultLayoutId} {...props.branding} onSetLogo={props.onUpdateBranding.setLogo} onSetBrandColor={props.onUpdateBranding.setBrandColor} onSetTypography={props.onUpdateBranding.setTypography} />;
             case 'services': return <ServicesPage packages={props.packages} onUpdatePackages={props.onUpdatePackages} />;
             case 'tools': return <StudioToolsPage />;
@@ -244,7 +255,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 isOpen={!!viewingInvoice}
                 onClose={() => setViewingInvoice(null)}
                 invoice={viewingInvoice}
-                logo={props.branding.logo}
+                logo={props.branding.studioDisplayImage || props.branding.logo}
                 brandColor={props.branding.brandColor}
                 client={viewingInvoice ? props.clients.find(c => c.id === viewingInvoice.clientId) : undefined}
                 onShare={(type, invoice) => {

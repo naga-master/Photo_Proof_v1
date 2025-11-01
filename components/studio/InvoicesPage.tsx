@@ -15,6 +15,7 @@ interface InvoicesPageProps {
     onSetDefaultTemplate: (templateId: InvoiceTemplateId) => void;
     logo: string | null;
     brandColor: string;
+    studioDisplayImage?: string | null;
     onInvoiceSaved?: () => void;
 }
 
@@ -27,7 +28,9 @@ const getNextInvoiceNumber = (invoices: Invoice[]) => {
 };
 
 const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
-    const { clients, albums, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor, onInvoiceSaved } = props;
+    const { clients, albums, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor, studioDisplayImage, onInvoiceSaved } = props;
+
+    const displayLogo = studioDisplayImage || logo;
 
     const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
 
@@ -251,7 +254,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
                 <div className="bg-white rounded-lg shadow-2xl scale-95 origin-top">
                     <InvoiceRenderer
                         invoice={currentInvoice}
-                        logo={logo}
+                        logo={displayLogo}
                         brandColor={brandColor}
                     />
                 </div>

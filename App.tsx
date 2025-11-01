@@ -67,6 +67,9 @@ const App: React.FC = () => {
     const [brandColor, setBrandColor] = useState('#1e293b'); // slate-800
     const [typography, setTypography] = useState('System Default (Inter & Cormorant)');
     const [defaultTemplateId, setDefaultTemplateId] = useState<InvoiceTemplateId>('modern');
+    const [studioPhoto, setStudioPhoto] = useState<string | null>(null);
+    const [studioDescription, setStudioDescription] = useState<string>('');
+    const [studioDisplayImage, setStudioDisplayImage] = useState<string | null>(null);
     
     // Communication Settings
     const [communicationSettings, setCommunicationSettings] = useState<CommunicationSettings>({
@@ -539,6 +542,9 @@ const App: React.FC = () => {
                         typography,
                         defaultLayoutId,
                         defaultTemplateId,
+                        studioPhoto,
+                        studioDescription,
+                        studioDisplayImage,
                     }}
                     onUpdateBranding={{
                         setLogo,
@@ -546,6 +552,9 @@ const App: React.FC = () => {
                         setTypography,
                         setDefaultLayoutId,
                         setDefaultTemplateId,
+                        setStudioPhoto,
+                        setStudioDescription,
+                        setStudioDisplayImage,
                     }}
                     communicationSettings={communicationSettings}
                     onUpdateCommunicationSettings={setCommunicationSettings}
@@ -557,7 +566,10 @@ const App: React.FC = () => {
                 component = <StorePage onSelectProduct={handleSelectProduct} />;
                 break;
             case 'about':
-                component = <AboutPage />;
+                component = <AboutPage 
+                    studioPhoto={studioPhoto}
+                    studioDescription={studioDescription}
+                />;
                 break;
             case 'productDetail':
                  if (!currentProduct) {
