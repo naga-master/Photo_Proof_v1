@@ -35,7 +35,7 @@ const PackageEditorModal: React.FC<PackageEditorModalProps> = ({ isOpen, onClose
 
     if (!isOpen) return null;
 
-    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm";
+    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm";
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>

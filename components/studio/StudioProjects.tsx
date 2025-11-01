@@ -80,13 +80,13 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
             placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:text-sm"
+            className="flex-grow bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm"
           />
           <div className="flex gap-4">
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:text-sm"
+              className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm"
             >
                 <option value="all">All Statuses</option>
                 <option value="published">Published</option>
@@ -96,7 +96,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
              <select 
                value={sortBy}
                onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
-               className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:text-sm"
+               className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm"
              >
                 <option value="date">Sort by Date</option>
                 <option value="name">Sort by Name</option>
@@ -149,24 +149,16 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{album.photoCount}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{commentCount}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); onGenerateInvoice(album); }} 
-                            className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
-                            title="Generate Invoice"
-                          >
-                            <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Invoice
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); onManageProject(album); }} 
-                            className="text-indigo-600 hover:text-indigo-900 font-medium"
-                          >
-                            Manage
-                          </button>
-                        </div>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onGenerateInvoice(album); }} 
+                          className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                          title="Generate Invoice"
+                        >
+                          <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Invoice
+                        </button>
                       </td>
                     </tr>
                   );

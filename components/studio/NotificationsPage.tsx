@@ -51,7 +51,7 @@ const NotificationsPage: React.FC = () => {
     const renderNotificationList = (list: Notification[], title: string) => (
       list.length > 0 && (
         <div key={title}>
-          <h3 className="px-6 py-2 text-sm font-semibold text-slate-500 bg-slate-50 sticky top-[136px]">{title}</h3>
+          <h3 className="px-6 py-2 text-sm font-semibold text-slate-500 bg-slate-50">{title}</h3>
           <ul>
             {list.map(notification => (
               <li key={notification.id} onClick={() => handleMarkAsRead(notification.id)} className="flex items-start gap-4 p-4 hover:bg-slate-50 cursor-pointer border-b border-slate-100">
@@ -88,7 +88,7 @@ const NotificationsPage: React.FC = () => {
             </header>
 
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b flex justify-between items-center sticky top-20 bg-white/80 backdrop-blur-sm z-10">
+                <div className="p-4 border-b flex justify-between items-center bg-white z-10">
                     <div className="flex items-center gap-2">
                         <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                             All

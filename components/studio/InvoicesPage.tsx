@@ -125,7 +125,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
         return albums.filter(a => a.clientId === currentInvoice.clientId);
     }, [currentInvoice?.clientId, albums]);
 
-    const inputClasses = "block w-full bg-white text-slate-900 border-slate-300 rounded-md shadow-sm sm:text-sm focus:ring-slate-500 focus:border-slate-500";
+    const inputClasses = "block w-full bg-white text-slate-900 border-slate-300 rounded-md shadow-sm sm:text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 transition-colors";
     
     if (!currentInvoice) {
         return <div className="p-8">Loading...</div>;

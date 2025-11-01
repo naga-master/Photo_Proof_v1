@@ -39,7 +39,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
         return packages.find(p => p.id === packageId)?.name || 'Unknown Package';
     };
 
-    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm";
+    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm";
 
     return (
         <div className="p-8 animate-fade-in">

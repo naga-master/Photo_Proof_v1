@@ -81,7 +81,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, setIsOpen, onNa
             placeholder="Search commands..."
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full px-4 py-3 text-lg bg-transparent border-0 focus:ring-0"
+            className="w-full px-4 py-3 text-lg bg-transparent border-0 focus:ring-0 focus:outline-none"
             autoFocus
           />
         </div>
