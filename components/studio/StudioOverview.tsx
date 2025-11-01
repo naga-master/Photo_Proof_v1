@@ -11,7 +11,7 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     const totalProjects = albums.length;
     const totalImages = albums.reduce((sum, album) => sum + album.photoCount, 0);
     const allComments: (Comment & { photo: Photo, album: Album })[] = albums.flatMap(album =>
-        album.photos.flatMap(photo =>
+        (album.photos || []).flatMap(photo =>
             (photo.comments || []).map(comment => ({ ...comment, photo, album }))
         )
     );

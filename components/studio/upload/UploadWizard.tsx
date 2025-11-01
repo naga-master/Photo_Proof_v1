@@ -116,8 +116,8 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-hidden p-8 flex items-center justify-center relative">
-          <AnimatePresence initial={false} custom={direction}>
+        <main className="flex-1 overflow-y-auto p-8 bg-slate-50">
+          <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                   key={step}
                   custom={direction}
@@ -129,7 +129,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
                       x: { type: "spring", stiffness: 300, damping: 30 },
                       opacity: { duration: 0.2 }
                   }}
-                  className="absolute w-full h-full flex items-center justify-center"
+                  className="w-full min-h-full flex items-center justify-center py-8"
               >
                   {renderStep()}
               </motion.div>
