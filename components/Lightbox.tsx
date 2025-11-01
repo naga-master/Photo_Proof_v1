@@ -71,26 +71,67 @@ const CommentThread: React.FC<{
     setReplyingTo: (id: number | null) => void;
     photoId: number;
     onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
-}> = ({ comment, replyingTo, setReplyingTo, photoId, onAddComment }) => {
+    isReply?: boolean;
+    allComments?: Comment[];
+}> = ({ comment, replyingTo, setReplyingTo, photoId, onAddComment, isReply = false, allComments = [] }) => {
 
     const isReplying = replyingTo === comment.id;
+    
+    // Find the original message this is replying to
+    const replyToId = (comment as any).replyToId;
+    let originalMessage: Comment | null = null;
+    
+    if (replyToId && allComments.length > 0) {
+        // Search in parent comments
+        originalMessage = allComments.find(c => c.id === replyToId) || null;
+        
+        // If not found, search in replies
+        if (!originalMessage) {
+            for (const parentComment of allComments) {
+                if (parentComment.replies) {
+                    originalMessage = parentComment.replies.find(r => r.id === replyToId) || null;
+                    if (originalMessage) break;
+                }
+            }
+        }
+    }
 
     return (
         <div className="flex flex-col">
-            <div className={`flex flex-col ${comment.author === 'Studio' ? 'items-start' : 'items-end'}`}>
-                <div className={`rounded-lg px-3 py-2 max-w-xs ${comment.author === 'Studio' ? 'bg-gray-200 text-gray-800' : 'bg-blue-500 text-white'}`}>
-                    <p className="text-sm">{comment.text}</p>
-                    <p className={`text-xs mt-1 ${comment.author === 'Studio' ? 'text-gray-500' : 'text-blue-100'} text-right`}>{comment.author}, {comment.timestamp}</p>
+            <div className="flex items-start gap-2 hover:bg-gray-50 rounded-lg p-1.5 -ml-1.5 transition-colors">
+                {/* Avatar placeholder */}
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${comment.author === 'Studio' ? 'bg-purple-500' : 'bg-blue-500'}`}>
+                    {comment.author.charAt(0)}
                 </div>
-            </div>
-             <div className="text-right mr-1">
-                 <button onClick={() => setReplyingTo(comment.id)} className="text-xs font-semibold text-blue-600 hover:underline">
+                
+                {/* Message content */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                        <span className="font-semibold text-gray-900 text-sm">{comment.author}</span>
+                        <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                    </div>
+                    
+                    {/* WhatsApp-style quoted message - shows original message in grey box */}
+                    {isReply && originalMessage && (
+                        <div className="mt-1 mb-2 border-l-4 border-green-500 bg-gray-100 rounded px-2 py-1.5">
+                            <div className="flex items-center gap-1 mb-0.5">
+                                <span className="text-xs font-semibold text-green-600">{originalMessage.author}</span>
+                            </div>
+                            <p className="text-xs text-gray-600 line-clamp-2">{originalMessage.text}</p>
+                        </div>
+                    )}
+                    
+                    <p className="text-sm text-gray-800 mt-0.5 break-words">{comment.text}</p>
+                    
+                    <button onClick={() => setReplyingTo(comment.id)} className="text-xs font-medium text-blue-600 hover:underline mt-1">
                         Reply
                     </button>
+                </div>
             </div>
 
-            {comment.replies && comment.replies.length > 0 && (
-                <div className="pl-6 border-l-2 border-gray-200 ml-2 mt-2 space-y-3">
+            {/* Show replies in a flat thread under parent */}
+            {!isReply && comment.replies && comment.replies.length > 0 && (
+                <div className="pl-10 mt-2 space-y-2 border-l-2 border-gray-200 ml-4">
                     {comment.replies.map(reply => (
                         <CommentThread 
                             key={reply.id} 
@@ -99,12 +140,16 @@ const CommentThread: React.FC<{
                             setReplyingTo={setReplyingTo}
                             photoId={photoId}
                             onAddComment={onAddComment}
+                            isReply={true}
+                            allComments={[comment, ...(comment.replies || [])]}
                         />
                     ))}
                 </div>
             )}
-             {isReplying && (
-                <div className="mt-2">
+            
+            {/* Reply form */}
+            {isReplying && (
+                <div className={`mt-2 ${isReply ? 'ml-0' : 'pl-10 ml-4'}`}>
                     <CommentForm
                         photoId={photoId}
                         parentId={comment.id}
@@ -141,6 +186,7 @@ const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: number, co
                         setReplyingTo={setReplyingTo}
                         photoId={photo.id}
                         onAddComment={onAddComment}
+                        allComments={photo.comments}
                      />
                 ))}
                 <div ref={commentsEndRef} />

@@ -159,21 +159,41 @@ const App: React.FC = () => {
             const newPhotos = photosSource.map(photo => {
                 if (photo.id !== photoId) return photo;
 
-                const newComment: {id: number, author: 'Client' | 'Studio', text: string, timestamp: string, replies?: any[]} = {
+                const newComment: {id: number, author: 'Client' | 'Studio', text: string, timestamp: string, replyToId?: number, replies?: any[]} = {
                     id: Date.now(),
                     author: userRole === 'studio' ? 'Studio' : 'Client',
                     text: commentText,
-                    timestamp: 'Just now'
+                    timestamp: 'Just now',
+                    replyToId: parentId // Store which message this is replying to
                 };
                 
                 if (parentId) {
+                    // Find the top-level parent comment
+                    const findTopLevelParent = (comments: any[], targetId: number): number | null => {
+                        for (const comment of comments) {
+                            if (comment.id === targetId) {
+                                // This is a top-level comment
+                                return comment.id;
+                            }
+                            if (comment.replies) {
+                                for (const reply of comment.replies) {
+                                    if (reply.id === targetId) {
+                                        // Found in replies, return the parent comment id
+                                        return comment.id;
+                                    }
+                                }
+                            }
+                        }
+                        return null;
+                    };
+                    
+                    const topLevelParentId = findTopLevelParent(photo.comments, parentId) || parentId;
+                    
+                    // Add reply to the top-level parent only
                     const addReply = (comments: any[]): any[] => {
                        return comments.map(c => {
-                           if (c.id === parentId) {
+                           if (c.id === topLevelParentId) {
                                return { ...c, replies: [...(c.replies || []), newComment] };
-                           }
-                           if(c.replies) {
-                               return { ...c, replies: addReply(c.replies) };
                            }
                            return c;
                        });
@@ -199,6 +219,15 @@ const App: React.FC = () => {
         const updatedAlbum = newAlbums.find(a => a.id === currentAlbum.id);
         if (updatedAlbum) {
             setCurrentAlbum(updatedAlbum);
+            
+            // Update galleryContent with the new photos
+            if (galleryContent) {
+                const updatedPhotos = updatedAlbum.photos || updatedAlbum.folders?.flatMap(f => f.photos) || [];
+                const currentPhotos = galleryContent.photos.map(photo => 
+                    updatedPhotos.find(p => p.id === photo.id) || photo
+                );
+                setGalleryContent({ ...galleryContent, photos: currentPhotos });
+            }
         }
     };
     
