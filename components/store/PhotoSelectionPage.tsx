@@ -12,7 +12,7 @@ interface PhotoSelectionPageProps {
 }
 
 const PhotoSelectionPage: React.FC<PhotoSelectionPageProps> = ({ albums, onPhotosSelect, onBack, productName }) => {
-  const allPhotos = albums.flatMap(album => album.photos);
+  const allPhotos = albums.flatMap(album => album.photos || album.folders?.flatMap(f => f.photos) || []);
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
 
   const togglePhotoSelection = (photo: Photo) => {

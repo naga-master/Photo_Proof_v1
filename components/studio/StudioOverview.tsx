@@ -10,11 +10,12 @@ interface StudioOverviewProps {
 const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     const totalProjects = albums.length;
     const totalImages = albums.reduce((sum, album) => sum + album.photoCount, 0);
-    const allComments: (Comment & { photo: Photo, album: Album })[] = albums.flatMap(album =>
-        album.photos.flatMap(photo =>
+    const allComments: (Comment & { photo: Photo, album: Album })[] = albums.flatMap(album => {
+        const photos = album.photos || album.folders?.flatMap(f => f.photos) || [];
+        return photos.flatMap(photo =>
             (photo.comments || []).map(comment => ({ ...comment, photo, album }))
-        )
-    );
+        );
+    });
     const recentComments = allComments.slice(-5).reverse();
 
     const stats = [

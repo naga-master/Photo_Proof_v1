@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Album, Client, Invoice, LayoutId, ServicePackage, InvoiceTemplateId, DashboardView, ProjectDetails, UploadFile, CommunicationSettings } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
@@ -172,7 +173,6 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'services': return <ServicesPage packages={props.packages} onUpdatePackages={props.onUpdatePackages} />;
             case 'tools': return <StudioToolsPage />;
             case 'notifications': return <NotificationsPage />;
-            case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
             case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => setView('upload')} />;
             case 'clientDetails': return managingClient && <ClientDetailsPage client={managingClient} albums={props.albums} invoices={props.invoices} packages={props.packages} onBack={() => handleSetView('clients')} onUpdateClient={handleUpdateClient} onCreateProject={handleCreateProjectForClient} onCreateInvoice={handleCreateInvoiceForProject} onPreviewInvoice={setViewingInvoice} />;
             default: return <StudioOverview albums={props.albums} setView={handleSetView} />;
@@ -202,6 +202,33 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                     {renderView()}
                 </main>
             </div>
+            
+            <AnimatePresence>
+                {view === 'upload' && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm"
+                    >
+                        <div className={`h-full transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+                            <div className="p-4 sm:p-6 lg:p-8 h-full">
+                                <UploadWizard
+                                    clients={props.clients}
+                                    packages={props.packages}
+                                    defaultLayoutId={props.branding.defaultLayoutId}
+                                    initialClientId={uploadInitialClientId}
+                                    onExit={() => { handleSetView('projects'); setUploadInitialClientId(undefined); }}
+                                    onProjectCreated={handleProjectCreated}
+                                    onViewGallery={onNavigateToGallery}
+                                    showToast={(msg: string) => toast.success(msg)}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <CommandPalette isOpen={isCommandPaletteOpen} setIsOpen={setCommandPaletteOpen} onNavigate={handleSetView} />
             <InvoicePreviewModal
                 isOpen={!!viewingInvoice}

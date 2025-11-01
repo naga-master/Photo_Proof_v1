@@ -9,9 +9,7 @@ import Step2_FolderMapping from './Step2_FolderMapping';
 import Step3_UploadRules from './Step3_UploadRules';
 import Step4_UploadManager from './Step4_UploadManager';
 import Step5_Summary from './Step5_Summary';
-import UploadSidebar from './UploadSidebar';
 import { ArrowLeftIcon } from '../../icons';
-import OfflineBanner from './OfflineBanner';
 import type { ProjectDetails, UploadFile, Album, Client, LayoutId, ServicePackage } from '../../../types';
 
 interface UploadWizardProps {
@@ -57,6 +55,11 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
     prevStep();
   };
   
+  const handleExit = () => {
+      resetUpload();
+      onExit();
+  };
+
   const renderStep = () => {
     switch (step) {
       case 0: return <Step0_SelectMode />;
@@ -75,30 +78,29 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
   };
 
   const isUploadingOrDone = step >= 4;
-  const canContinue = step < 4 && (step > 0 || mode);
+  const canContinue = step < 4 && (step > 0 || (step === 0 && mode));
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 animate-fade-in">
-      <OfflineBanner />
-      <header className="flex-shrink-0 bg-white border-b border-slate-200">
+    <div className="relative flex flex-col h-full bg-slate-100 rounded-xl shadow-2xl overflow-hidden">
+      <header className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-slate-200 z-10">
         <div className="p-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <button onClick={onExit} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-              <ArrowLeftIcon className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-800">
-                {state.projectDetails.clientId ? 'Create New Project' : mode === 'new' ? 'Create New Project' : mode === 'existing' ? 'Add to Existing Project' : 'Upload Photos'}
-              </h1>
-              {mode && <p className="text-sm text-slate-500">Step {step} of {steps.length -1}: {steps[step]}</p>}
-            </div>
+            {(step > 0 && !isUploadingOrDone) && (
+                <button onClick={handlePrev} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                    <ArrowLeftIcon className="w-5 h-5" />
+                </button>
+            )}
+            <h1 className="text-lg font-semibold text-slate-800">
+              Upload Photos
+            </h1>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={resetUpload} className="text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</button>
-            {step > 1 && !isUploadingOrDone && <button onClick={handlePrev} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">Back</button>}
+             {step < 5 && (
+                <button onClick={handleExit} className="text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</button>
+            )}
             {canContinue && (
                 <button onClick={handleNext} className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-md hover:bg-slate-700">
-                    {step === 3 ? 'Start Upload' : 'Save & Continue'}
+                    {step === 3 ? 'Start Upload' : 'Continue'}
                 </button>
             )}
              {step === 5 && (
@@ -108,35 +110,27 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             )}
           </div>
         </div>
-        {(mode || state.projectDetails.clientId) && (
-          <div className="w-full bg-slate-200 h-1">
-            <div className="bg-slate-800 h-1 transition-all duration-300" style={{ width: `${(step / (steps.length - 1)) * 100}%` }}></div>
-          </div>
-        )}
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-hidden p-8 flex items-center justify-center relative">
-          <AnimatePresence initial={false} custom={direction}>
-              <motion.div
-                  key={step}
-                  custom={direction}
-                  variants={stepVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                      x: { type: "spring", stiffness: 300, damping: 30 },
-                      opacity: { duration: 0.2 }
-                  }}
-                  className="absolute w-full h-full flex items-center justify-center"
-              >
-                  {renderStep()}
-              </motion.div>
-          </AnimatePresence>
-        </main>
-        {(mode || state.projectDetails.clientId) && step >= 2 && <UploadSidebar />}
-      </div>
+      <main className="flex-1 flex overflow-hidden items-center justify-center relative">
+        <AnimatePresence initial={false} custom={direction}>
+            <motion.div
+                key={step}
+                custom={direction}
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                    x: { type: "spring", stiffness: 300, damping: 30 },
+                    opacity: { duration: 0.2 }
+                }}
+                className="absolute w-full h-full flex items-center justify-center"
+            >
+                {renderStep()}
+            </motion.div>
+        </AnimatePresence>
+      </main>
     </div>
   );
 };

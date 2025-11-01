@@ -61,7 +61,8 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, setVie
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {albums.map((album) => {
-                const commentCount = album.photos.reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
+                const photosForComments = album.photos ?? album.folders?.flatMap(f => f.photos) ?? [];
+                const commentCount = photosForComments.reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
                 return (
                   <tr key={album.id} onClick={() => onManageProject(album)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -71,6 +71,25 @@ const App: React.FC = () => {
       whatsapp: { phoneNumberId: '', businessAccountId: '', accessToken: '' }
     });
 
+    useEffect(() => {
+        if (page === 'gallery' && currentAlbum && galleryContent) {
+            let newPhotos: Photo[] | undefined;
+            
+            if (currentAlbum.folders && currentAlbum.folders.length > 0) {
+                const currentFolder = currentAlbum.folders.find(f => f.name === galleryContent.title);
+                if (currentFolder) {
+                    newPhotos = currentFolder.photos;
+                }
+            } else {
+                newPhotos = currentAlbum.photos;
+            }
+
+            if (newPhotos && newPhotos !== galleryContent.photos) {
+                setGalleryContent(prev => prev ? { ...prev, photos: newPhotos! } : null);
+            }
+        }
+    }, [currentAlbum, page, galleryContent]);
+
     // Handlers
     const handleLogin = (role: UserRole) => {
         setUserRole(role);

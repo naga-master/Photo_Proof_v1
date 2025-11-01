@@ -35,9 +35,10 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
         });
     };
 
+    // Fix: The Array.prototype.reduce method was called without an initial value, causing an incorrect type inference for the accumulator.
+    // This led to a runtime error when trying to map over the result. By providing an empty object as the initial value,
+    // we ensure the accumulator is correctly typed as an object, resolving the issue.
     const groupedPackages = useMemo(() => {
-        // Fix: By typing the initial value of `reduce`, TypeScript correctly infers the
-        // accumulator's type. This prevents `pkgs` from being `unknown` when iterating.
         return packages.reduce((acc, pkg) => {
             (acc[pkg.category] = acc[pkg.category] || []).push(pkg);
             return acc;
