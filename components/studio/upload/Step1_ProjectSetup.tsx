@@ -44,8 +44,8 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
         }, {} as Record<string, ServicePackage[]>);
     }, [packages]);
 
-    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm";
-    const newClientInputClasses = "mt-1 block w-full bg-gray-50/50 text-gray-800 border-gray-300 rounded-md shadow-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm placeholder-gray-400";
+    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
+    const newClientInputClasses = "mt-1 block w-full bg-gray-50/50 text-gray-800 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm placeholder-gray-400";
 
     
     return (

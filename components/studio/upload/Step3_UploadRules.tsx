@@ -52,7 +52,7 @@ const Step3_UploadRules: React.FC = () => {
                     <div className="mt-4 space-y-4">
                         <div className="relative flex items-start">
                             <div className="flex items-center h-5">
-                                <input id="aiTagging" name="aiTagging" type="checkbox" checked={uploadRules.aiTagging} onChange={(e) => handleRuleChange('aiTagging', e.target.checked)} className="focus:ring-2 focus:ring-gray-200 h-4 w-4 text-gray-600 border-gray-300 rounded transition-colors" />
+                                <input id="aiTagging" name="aiTagging" type="checkbox" checked={uploadRules.aiTagging} onChange={(e) => handleRuleChange('aiTagging', e.target.checked)} className="focus-visible:ring-2 focus-visible:ring-gray-200 outline-none h-4 w-4 text-gray-600 border-gray-300 rounded transition-colors" />
                             </div>
                             <div className="ml-3 text-sm">
                                 <label htmlFor="aiTagging" className="font-medium text-gray-700">Apply AI Tagging</label>
@@ -61,7 +61,7 @@ const Step3_UploadRules: React.FC = () => {
                         </div>
                          <div className="relative flex items-start">
                             <div className="flex items-center h-5">
-                                <input id="aiCulling" name="aiCulling" type="checkbox" checked={uploadRules.aiCulling} onChange={(e) => handleRuleChange('aiCulling', e.target.checked)} className="focus:ring-2 focus:ring-gray-200 h-4 w-4 text-gray-600 border-gray-300 rounded transition-colors" />
+                                <input id="aiCulling" name="aiCulling" type="checkbox" checked={uploadRules.aiCulling} onChange={(e) => handleRuleChange('aiCulling', e.target.checked)} className="focus-visible:ring-2 focus-visible:ring-gray-200 outline-none h-4 w-4 text-gray-600 border-gray-300 rounded transition-colors" />
                             </div>
                             <div className="ml-3 text-sm">
                                 <label htmlFor="aiCulling" className="font-medium text-gray-700">Enable Smart Culling</label>

@@ -123,7 +123,7 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
                                 name="brandColor" 
                                 value={brandColor} 
                                 onChange={(e) => onSetBrandColor(e.target.value)}
-                                className="block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors"
+                                className="block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors"
                             />
                         </div>
                     </div>
@@ -134,7 +134,7 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
                             name="typography"
                             value={typography}
                             onChange={(e) => onSetTypography(e.target.value)}
-                            className="mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors">
+                            className="mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors">
                             <option>System Default (Inter & Cormorant)</option>
                             <option>Playfair Display & Montserrat</option>
                             <option>Lora & Lato</option>
@@ -154,7 +154,7 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
                         <select
                             value={defaultLayoutId}
                             onChange={(e) => onSetDefaultLayout(e.target.value as LayoutId)}
-                            className="block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm"
+                            className="block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
                         >
                             {layoutTemplates.map(template => (
                                 <option key={template.id} value={template.id}>{template.name}</option>

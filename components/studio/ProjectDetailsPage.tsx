@@ -44,7 +44,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
   }
 
   const clientName = clients.find(c => c.id === details.clientId)?.name || 'Unknown Client';
-  const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-colors sm:text-sm";
+  const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
 
   return (
     <div className="p-8 animate-fade-in">

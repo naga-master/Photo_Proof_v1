@@ -202,7 +202,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'clients': return <ClientsPage clients={props.clients} onManageClient={handleManageClient} onCreateClient={handleCreateClient} />;
             case 'invoices': return <InvoicesListPage {...props} onNewInvoice={() => { setInvoiceInitialData(null); setView('invoiceEditor'); }} onPreviewInvoice={setViewingInvoice} />;
             // Fix: Spread branding props into InvoiceEditor to provide required props.
-            case 'invoiceEditor': return <InvoiceEditor {...props} {...props.branding} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} />;
+            case 'invoiceEditor': return <InvoiceEditor {...props} {...props.branding} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} onInvoiceSaved={() => setView('invoices')} />;
             case 'analytics': return <AnalyticsPage />;
             case 'settings': return <SettingsPage settings={communicationSettings} onUpdateSettings={onUpdateCommunicationSettings} />;
             case 'layouts': return <LayoutsPage defaultLayoutId={props.branding.defaultLayoutId} onSetDefaultLayout={props.onUpdateBranding.setDefaultLayoutId} {...props.branding} onSetLogo={props.onUpdateBranding.setLogo} onSetBrandColor={props.onUpdateBranding.setBrandColor} onSetTypography={props.onUpdateBranding.setTypography} />;

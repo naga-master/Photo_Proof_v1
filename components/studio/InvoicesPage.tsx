@@ -15,6 +15,7 @@ interface InvoicesPageProps {
     onSetDefaultTemplate: (templateId: InvoiceTemplateId) => void;
     logo: string | null;
     brandColor: string;
+    onInvoiceSaved?: () => void;
 }
 
 const getNextInvoiceNumber = (invoices: Invoice[]) => {
@@ -26,7 +27,7 @@ const getNextInvoiceNumber = (invoices: Invoice[]) => {
 };
 
 const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
-    const { clients, albums, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor } = props;
+    const { clients, albums, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor, onInvoiceSaved } = props;
 
     const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
 
@@ -125,7 +126,16 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
         return albums.filter(a => a.clientId === currentInvoice.clientId);
     }, [currentInvoice?.clientId, albums]);
 
-    const inputClasses = "block w-full bg-white text-slate-900 border-slate-300 rounded-md shadow-sm sm:text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 transition-colors";
+    const handleSaveInvoice = () => {
+        if (currentInvoice) {
+            onSaveInvoice(currentInvoice);
+            if (onInvoiceSaved) {
+                onInvoiceSaved();
+            }
+        }
+    };
+
+    const inputClasses = "block w-full bg-white text-slate-900 border-slate-300 rounded-md shadow-sm sm:text-sm focus-visible:border-slate-500 focus-visible:ring-2 focus-visible:ring-slate-200 outline-none transition-colors";
     
     if (!currentInvoice) {
         return <div className="p-8">Loading...</div>;
@@ -139,7 +149,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
                         <h1 className="text-3xl font-bold text-slate-900">Create Invoice</h1>
                         <p className="mt-1 text-slate-600">Fill in the details to generate a new invoice.</p>
                     </div>
-                    <button onClick={() => onSaveInvoice(currentInvoice)} className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-md hover:bg-slate-700">
+                    <button onClick={handleSaveInvoice} className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-md hover:bg-slate-700">
                         Save Invoice
                     </button>
                 </header>

@@ -56,7 +56,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full bg-slate-800/50 border border-slate-600 rounded-md shadow-sm py-2.5 px-3 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-colors sm:text-sm"
+              className="mt-1 block w-full bg-slate-800/50 border border-slate-600 rounded-md shadow-sm py-2.5 px-3 text-white focus-visible:border-sky-500 focus-visible:ring-2 focus-visible:ring-sky-200 outline-none transition-colors sm:text-sm"
               required
             />
           </div>
@@ -69,7 +69,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full bg-slate-800/50 border border-slate-600 rounded-md shadow-sm py-2.5 px-3 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-colors sm:text-sm"
+              className="mt-1 block w-full bg-slate-800/50 border border-slate-600 rounded-md shadow-sm py-2.5 px-3 text-white focus-visible:border-sky-500 focus-visible:ring-2 focus-visible:ring-sky-200 outline-none transition-colors sm:text-sm"
               required
             />
           </div>
@@ -77,7 +77,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-slate-900 bg-white hover:bg-slate-200 focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white transition-colors"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-slate-900 bg-white hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 focus-visible:ring-white outline-none transition-colors"
             >
               Login
             </button>
