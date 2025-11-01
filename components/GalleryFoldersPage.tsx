@@ -12,11 +12,7 @@ const GalleryFoldersPage: React.FC<GalleryFoldersPageProps> = ({ album, onSelect
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <header className="text-center mb-12 relative">
-          <button onClick={onBackToAlbums} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-              <ArrowLeftIcon className="w-4 h-4" />
-              All Galleries
-          </button>
+        <header className="text-center mb-12">
           <h1 className="text-4xl font-serif tracking-wider text-gray-800">{album.title}</h1>
           <p className="mt-2 text-lg text-gray-500">Select a folder to view photos.</p>
         </header>

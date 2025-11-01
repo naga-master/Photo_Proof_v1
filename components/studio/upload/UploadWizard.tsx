@@ -23,6 +23,8 @@ interface UploadWizardProps {
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
   onViewGallery: (album: Album) => void;
   showToast: (message: string) => void;
+  existingProjectId?: number;
+  initialStep?: number;
 }
 
 const steps = ['Mode', 'Project Setup', 'Folder Mapping', 'Upload Rules', 'Upload', 'Summary'];
@@ -42,10 +44,17 @@ const stepVariants = {
   }),
 };
 
-const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients, packages }) => {
-  const { state, nextStep, prevStep, resetUpload } = useUpload();
+const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients, packages, initialStep = 0, existingProjectId }) => {
+  const { state, nextStep, prevStep, resetUpload, setStep } = useUpload();
   const { step, mode } = state;
   const [direction, setDirection] = useState(0);
+
+  // Set initial step if provided (e.g., when adding photos to existing project)
+  React.useEffect(() => {
+    if (initialStep && initialStep > 0) {
+      setStep(initialStep);
+    }
+  }, [initialStep, setStep]);
 
   const handleNext = () => {
     setDirection(1);

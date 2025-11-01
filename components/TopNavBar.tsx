@@ -26,28 +26,31 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ onNavigate, cartCount, userRole, 
         <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-slate-200">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
-                    {/* Back button for studio owners */}
-                    {showBackButton && onBack ? (
-                        <button
-                            onClick={onBack}
-                            className="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
-                        >
-                            <svg 
-                                className="w-5 h-5" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
+                    <div className="flex items-center gap-4">
+                        {/* Back button for studio owners and clients (when not on entry page) */}
+                        {showBackButton && onBack && (
+                            <button
+                                onClick={onBack}
+                                className="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
+                                title="Go back"
                             >
-                                <path 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    strokeWidth={2} 
-                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" 
-                                />
-                            </svg>
-                            <span className="font-medium">Back to Project Details</span>
-                        </button>
-                    ) : (
+                                <svg 
+                                    className="w-5 h-5" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        strokeWidth={2} 
+                                        d="M10 19l-7-7m0 0l7-7m-7 7h18" 
+                                    />
+                                </svg>
+                            </button>
+                        )}
+                        
+                        {/* Brand name - always visible */}
                         <div className="flex-shrink-0">
                             <span 
                                 onClick={() => onNavigate('albums')} 
@@ -56,7 +59,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ onNavigate, cartCount, userRole, 
                                 NAPSTER's Photo Lab
                             </span>
                         </div>
-                    )}
+                    </div>
                     <div className="hidden md:block">
                         <nav className="ml-10 flex items-baseline space-x-2">
                             {navLinks.map((link) => (

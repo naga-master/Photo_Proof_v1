@@ -1,0 +1,1 @@
+1. Once the images are uploaded at step 5, user has to select a cover photo(decide proper flow and way to view the photos or image names to select the cover) this should be optional, if user is not selected any cover photo select random cover photo and update information is project section. from project section also studio user can modify the cover photo by selecting it.

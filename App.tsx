@@ -54,6 +54,7 @@ const App: React.FC = () => {
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
     const [previousPage, setPreviousPage] = useState<Page | null>(null);
     const [studioReturnToProject, setStudioReturnToProject] = useState<Album | null>(null);
+    const [navigationStack, setNavigationStack] = useState<Page[]>([]);
 
     // Store state
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -76,18 +77,25 @@ const App: React.FC = () => {
     // Handlers
     const handleLogin = (role: UserRole) => {
         setUserRole(role);
-        if (role === 'studio') {
-            setPage('dashboard');
+        if (role === 'client') {
+            setPage('albums');
+            setNavigationStack(['albums']); // Set entry point for client
         } else {
-            setPage('cover');
+            setPage('dashboard');
+            setNavigationStack([]); // Studio doesn't use navigation stack
         }
-        toast.success(`Welcome! You are now logged in.`);
     };
 
     const handleLogout = () => {
-        setUserRole(null);
         setPage('login');
-        toast.info("You have been successfully logged out.");
+        setUserRole(null);
+        setCurrentAlbum(null);
+        setGalleryContent(null);
+        setFavorites([]);
+        setSelections([]);
+        setPreviousPage(null);
+        setStudioReturnToProject(null);
+        setNavigationStack([]);
     };
 
     const handleOpenGallery = (album?: Album) => {
@@ -96,9 +104,24 @@ const App: React.FC = () => {
 
         setCurrentAlbum(targetAlbum);
         if (targetAlbum.folders && targetAlbum.folders.length > 0) {
+            setNavigationStack([...navigationStack, 'galleryFolders']);
             setPage('galleryFolders');
         } else {
             setGalleryContent({ photos: targetAlbum.photos || [], title: targetAlbum.title });
+            setNavigationStack([...navigationStack, 'gallery']);
+            setPage('gallery');
+        }
+    };
+    
+    const handleOpenGalleryFromCover = () => {
+        if (!currentAlbum) return;
+        
+        if (currentAlbum.folders && currentAlbum.folders.length > 0) {
+            setNavigationStack([...navigationStack, 'galleryFolders']);
+            setPage('galleryFolders');
+        } else {
+            setGalleryContent({ photos: currentAlbum.photos || [], title: currentAlbum.title });
+            setNavigationStack([...navigationStack, 'gallery']);
             setPage('gallery');
         }
     };
@@ -109,16 +132,26 @@ const App: React.FC = () => {
             return;
         }
         setCurrentAlbum(album);
-        if (album.folders && album.folders.length > 0) {
-            setPage('galleryFolders');
+        
+        // For studio users from dashboard, add to navigation stack
+        if (userRole === 'studio' && previousPage === 'dashboard') {
+            setNavigationStack([...navigationStack, 'cover']);
+            setPage('cover');
         } else {
-            setGalleryContent({ photos: album.photos || [], title: album.title });
-            setPage('gallery');
+            // For clients and regular navigation, show cover page first
+            if (album.folders && album.folders.length > 0) {
+                setNavigationStack([...navigationStack, 'cover']);
+                setPage('cover');
+            } else {
+                setNavigationStack([...navigationStack, 'cover']);
+                setPage('cover');
+            }
         }
     };
     
     const handleSelectFolder = (folder: Folder) => {
         setGalleryContent({ photos: folder.photos, title: folder.name });
+        setNavigationStack([...navigationStack, 'gallery']);
         setPage('gallery');
     };
 
@@ -126,6 +159,78 @@ const App: React.FC = () => {
     const handleBackToFolders = () => {
         setPage('galleryFolders');
         setGalleryContent(null);
+    };
+    
+    const handleBack = () => {
+        // For studio users viewing from dashboard
+        if (userRole === 'studio' && previousPage === 'dashboard') {
+            // Go back one level in the stack
+            const newStack = [...navigationStack];
+            newStack.pop();
+            const prevPage = newStack[newStack.length - 1];
+            
+            // If we're backing out from the cover page (entry point), go to dashboard
+            if (page === 'cover' && navigationStack.length === 2) {
+                setPage('dashboard');
+                setPreviousPage(null);
+                setNavigationStack([]);
+                setCurrentAlbum(null);
+                setGalleryContent(null);
+                return;
+            }
+            
+            // Skip cover page when navigating back - go to the page before cover
+            if (prevPage === 'cover') {
+                // Pop cover from stack and get the page before it
+                newStack.pop();
+                const pageBeforeCover = newStack[newStack.length - 1];
+                
+                // If no page before cover (we're at entry point), go to dashboard
+                if (!pageBeforeCover || pageBeforeCover === 'albums') {
+                    setPage('dashboard');
+                    setPreviousPage(null);
+                    setNavigationStack([]);
+                    setCurrentAlbum(null);
+                    setGalleryContent(null);
+                    return;
+                }
+            }
+            
+            // Otherwise, navigate back in the stack
+            setNavigationStack(newStack);
+            setPage(prevPage === 'cover' ? newStack[newStack.length - 1] : prevPage);
+            
+            if (prevPage === 'galleryFolders' || prevPage === 'cover') {
+                setGalleryContent(null);
+            }
+            return;
+        }
+        
+        // For client users - go back one level in navigation stack, skipping cover page
+        if (navigationStack.length > 1) {
+            const newStack = [...navigationStack];
+            newStack.pop(); // Remove current page
+            let previousPage = newStack[newStack.length - 1];
+            
+            // Skip cover page - go to the page before it
+            if (previousPage === 'cover') {
+                newStack.pop(); // Remove cover
+                previousPage = newStack[newStack.length - 1];
+            }
+            
+            setNavigationStack(newStack);
+            setPage(previousPage);
+            
+            // Clear gallery content when going back from gallery to folders
+            if (previousPage === 'galleryFolders') {
+                setGalleryContent(null);
+            }
+            // Clear album when going back to albums list
+            if (previousPage === 'albums') {
+                setCurrentAlbum(null);
+                setGalleryContent(null);
+            }
+        }
     };
     
     const handleBackFromGallery = () => {
@@ -148,16 +253,24 @@ const App: React.FC = () => {
 
     const handleNavigate = (targetPage: 'albums' | 'store' | 'about' | 'cart') => {
         setPreviousPage(page);
+        if (userRole === 'client') {
+            setNavigationStack([...navigationStack, targetPage]);
+        }
         setPage(targetPage);
     };
     
     const handleNavigateToGallery = (album: Album) => {
         setPreviousPage(page);
         setCurrentAlbum(album);
-        setPage('gallery');
+        
         // Store the project for studio return navigation
         if (userRole === 'studio') {
             setStudioReturnToProject(album);
+            // Start fresh navigation stack for studio users
+            setNavigationStack(['albums', 'cover']);
+            setPage('cover');
+        } else {
+            setPage('gallery');
         }
     };
 
@@ -304,15 +417,24 @@ const App: React.FC = () => {
     const handleSelectProduct = (product: Product) => {
         setCurrentProduct(product);
         setPhotosForProduct([]);
+        if (userRole === 'client') {
+            setNavigationStack([...navigationStack, 'productDetail']);
+        }
         setPage('productDetail');
     };
 
     const handleSelectPhotoForProduct = () => {
+        if (userRole === 'client') {
+            setNavigationStack([...navigationStack, 'photoSelection']);
+        }
         setPage('photoSelection');
     };
     
     const handlePhotosSelected = (photos: Photo[]) => {
         setPhotosForProduct(photos);
+        if (userRole === 'client') {
+            setNavigationStack([...navigationStack, 'cartConfig']);
+        }
         if (photos.length === 1 && currentProduct) {
              setPage('cartConfig');
         } else {
@@ -321,6 +443,9 @@ const App: React.FC = () => {
     };
 
     const handleConfigureProduct = () => {
+        if (userRole === 'client') {
+            setNavigationStack([...navigationStack, 'cartConfig']);
+        }
         setPage('cartConfig');
     };
 
@@ -357,7 +482,11 @@ const App: React.FC = () => {
                 component = <LoginPage onLogin={handleLogin} clients={allClients} />;
                 break;
             case 'cover':
-                component = <CoverPage onOpenGallery={() => handleOpenGallery(allAlbums[0])} album={allAlbums[0]} />;
+                if (!currentAlbum) {
+                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                } else {
+                    component = <CoverPage onOpenGallery={handleOpenGalleryFromCover} album={currentAlbum} />;
+                }
                 break;
             case 'albums':
                 component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
@@ -499,6 +628,21 @@ const App: React.FC = () => {
         )
     };
 
+    const shouldShowBackButton = () => {
+        // For studio users - show back button when viewing from dashboard
+        if (userRole === 'studio' && previousPage === 'dashboard') {
+            return true;
+        }
+        
+        // For client users - show back button when NOT on entry page (albums)
+        // Only show if stack has more than 1 item AND current page is not 'albums'
+        if (userRole === 'client' && navigationStack.length > 1 && page !== 'albums') {
+            return true;
+        }
+        
+        return false;
+    };
+
     return (
         <div className="h-full">
             {page !== 'login' && page !== 'cover' && page !== 'dashboard' && (
@@ -507,8 +651,8 @@ const App: React.FC = () => {
                     cartCount={cart.length} 
                     userRole={userRole} 
                     onLogout={handleLogout}
-                    showBackButton={userRole === 'studio' && previousPage === 'dashboard'}
-                    onBack={handleBackFromGallery}
+                    showBackButton={shouldShowBackButton()}
+                    onBack={handleBack}
                 />
             )}
             <AnimatePresence mode="wait">

@@ -5,6 +5,7 @@ type UploadAction =
   | { type: 'SET_MODE'; payload: UploadMode }
   | { type: 'NEXT_STEP' }
   | { type: 'PREV_STEP' }
+  | { type: 'SET_STEP'; payload: number }
   | { type: 'RESET' }
   | { type: 'SET_PROJECT_DETAILS'; payload: Partial<ProjectDetails> }
   | { type: 'SET_FILES'; payload: DetectedFolder[] }
@@ -52,6 +53,8 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
       return { ...state, step: Math.min(state.step + 1, 5) as UploadState['step'] };
     case 'PREV_STEP':
       return { ...state, step: Math.max(state.step - 1, 0) as UploadState['step'] };
+    case 'SET_STEP':
+      return { ...state, step: Math.max(0, Math.min(action.payload, 5)) as UploadState['step'] };
     case 'RESET':
       return getInitialState();
     case 'SET_PROJECT_DETAILS':
@@ -183,6 +186,7 @@ export const useUpload = () => {
   const setMode = useCallback((mode: UploadMode) => dispatch({ type: 'SET_MODE', payload: mode }), [dispatch]);
   const nextStep = useCallback(() => dispatch({ type: 'NEXT_STEP' }), [dispatch]);
   const prevStep = useCallback(() => dispatch({ type: 'PREV_STEP' }), [dispatch]);
+  const setStep = useCallback((step: number) => dispatch({ type: 'SET_STEP', payload: step }), [dispatch]);
   const resetUpload = useCallback(() => dispatch({ type: 'RESET' }), [dispatch]);
   const setFiles = useCallback((folders: DetectedFolder[]) => dispatch({ type: 'SET_FILES', payload: folders }), [dispatch]);
   const updateFolderMap = useCallback((map: FolderMap[]) => dispatch({ type: 'UPDATE_FOLDER_MAP', payload: map }), [dispatch]);
@@ -193,5 +197,5 @@ export const useUpload = () => {
   const retryFile = useCallback((id: string) => dispatch({ type: 'RETRY_FILE', payload: id }), [dispatch]);
   const retryFailedUploads = useCallback(() => dispatch({ type: 'RETRY_FAILED' }), [dispatch]);
 
-  return { state, dispatch, setMode, nextStep, prevStep, resetUpload, setFiles, updateFolderMap, updateUploadRules, startUpload, pauseUpload, resumeUpload, retryFile, retryFailedUploads };
+  return { state, dispatch, setMode, nextStep, prevStep, setStep, resetUpload, setFiles, updateFolderMap, updateUploadRules, startUpload, pauseUpload, resumeUpload, retryFile, retryFailedUploads };
 };

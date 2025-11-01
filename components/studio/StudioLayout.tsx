@@ -65,6 +65,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
     
     const [uploadInitialClientId, setUploadInitialClientId] = useState<number | undefined>();
+    const [uploadExistingProjectId, setUploadExistingProjectId] = useState<number | undefined>();
+    const [uploadInitialStep, setUploadInitialStep] = useState<number>(0);
     const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
 
     useEffect(() => {
@@ -183,8 +185,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'services': return <ServicesPage packages={props.packages} onUpdatePackages={props.onUpdatePackages} />;
             case 'tools': return <StudioToolsPage />;
             case 'notifications': return <NotificationsPage />;
-            case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
-            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => setView('upload')} />;
+            case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} existingProjectId={uploadExistingProjectId} initialStep={uploadInitialStep} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); setUploadExistingProjectId(undefined); setUploadInitialStep(0); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
+            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} />;
             case 'clientDetails': return managingClient && <ClientDetailsPage client={managingClient} albums={props.albums} invoices={props.invoices} packages={props.packages} onBack={() => handleSetView('clients')} onUpdateClient={handleUpdateClient} onCreateProject={handleCreateProjectForClient} onCreateInvoice={handleCreateInvoiceForProject} onPreviewInvoice={setViewingInvoice} />;
             default: return <StudioOverview albums={props.albums} setView={handleSetView} />;
         }
