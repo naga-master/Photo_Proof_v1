@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CommunicationSettings, LayoutId, InvoiceTemplateId, StudioUser, StudioUserRole, StudioUserPermissions } from '../../types';
+import type { CommunicationSettings, LayoutId, InvoiceTemplateId, StudioUser, StudioUserRole, StudioUserPermissions, BillingConfiguration, TaxConfiguration, PaymentMethodConfig, PaymentMethod } from '../../types';
 import { PlusIcon, CheckIcon, XCircleIcon, EyeIcon } from '../icons';
 
 interface SettingsPageProps {
@@ -388,6 +388,84 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     const [isUserModalOpen, setUserModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<StudioUser | null>(null);
 
+    // Billing configuration state
+    const [billingConfig, setBillingConfig] = useState<BillingConfiguration>({
+        tax: {
+            enableGST: true,
+            gstPercentage: 18,
+            gstNumber: '',
+            enableAdditionalTax: false,
+            additionalTaxName: '',
+            additionalTaxPercentage: 0,
+        },
+        paymentMethods: [
+            {
+                method: 'cash',
+                enabled: true,
+                displayName: 'Cash Payment',
+                description: 'Accept cash payments on-site',
+                config: {},
+            },
+            {
+                method: 'bank_transfer',
+                enabled: true,
+                displayName: 'Bank Transfer',
+                description: 'Direct bank transfer/NEFT/RTGS',
+                config: {
+                    bankName: '',
+                    accountNumber: '',
+                    ifscCode: '',
+                    accountHolderName: '',
+                },
+            },
+            {
+                method: 'upi',
+                enabled: true,
+                displayName: 'UPI Payment',
+                description: 'Google Pay, PhonePe, Paytm, etc.',
+                config: {
+                    upiId: '',
+                    qrCodeUrl: '',
+                },
+            },
+            {
+                method: 'card',
+                enabled: false,
+                displayName: 'Card Payment',
+                description: 'Credit/Debit card via payment gateway',
+                config: {
+                    merchantId: '',
+                    apiKey: '',
+                    gatewayName: '',
+                },
+            },
+            {
+                method: 'cheque',
+                enabled: true,
+                displayName: 'Cheque Payment',
+                description: 'Accept payment by cheque',
+                config: {},
+            },
+            {
+                method: 'wallet',
+                enabled: false,
+                displayName: 'Digital Wallet',
+                description: 'Paytm, PhonePe wallet, etc.',
+                config: {
+                    walletProvider: '',
+                    walletNumber: '',
+                },
+            },
+        ],
+        currency: 'INR',
+        currencySymbol: '₹',
+        invoicePrefix: 'INV',
+        invoiceNumbering: 'auto',
+        paymentTermsDays: 15,
+        latePaymentFeePercentage: 2,
+        enablePartialPayments: true,
+    });
+
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setLocalSettings(prev => ({
@@ -458,12 +536,72 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
         }
     };
 
+    // Billing handlers
+    const handleTaxChange = (field: keyof TaxConfiguration, value: any) => {
+        setBillingConfig(prev => ({
+            ...prev,
+            tax: {
+                ...prev.tax,
+                [field]: value,
+            },
+        }));
+    };
+
+    const handlePaymentMethodToggle = (method: PaymentMethod) => {
+        setBillingConfig(prev => ({
+            ...prev,
+            paymentMethods: prev.paymentMethods.map(pm =>
+                pm.method === method ? { ...pm, enabled: !pm.enabled } : pm
+            ),
+        }));
+    };
+
+    const handlePaymentMethodConfigChange = (method: PaymentMethod, configField: string, value: any) => {
+        setBillingConfig(prev => ({
+            ...prev,
+            paymentMethods: prev.paymentMethods.map(pm =>
+                pm.method === method
+                    ? {
+                        ...pm,
+                        config: {
+                            ...pm.config,
+                            [configField]: value,
+                        },
+                    }
+                    : pm
+            ),
+        }));
+    };
+
+    const handleBillingGeneralChange = (field: keyof BillingConfiguration, value: any) => {
+        setBillingConfig(prev => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const handleQRCodeUpload = (method: PaymentMethod, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                handlePaymentMethodConfigChange(method, 'qrCodeUrl', reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSaveChanges = () => {
         onUpdateSettings(localSettings);
         onUpdateBranding.setStudioPhoto(localStudioPhoto);
         onUpdateBranding.setStudioDescription(localStudioDescription);
         onUpdateBranding.setStudioDisplayImage(localStudioDisplayImage);
         onUpdateBranding.setDefaultTemplateId(localDefaultTemplateId);
+        
+        // Save billing configuration (would integrate with backend in production)
+        console.log('Billing Configuration:', billingConfig);
+        localStorage.setItem('billingConfig', JSON.stringify(billingConfig));
+        
         alert('Settings saved successfully!');
     };
 
@@ -754,8 +892,409 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                 );
             case 'billing':
                 return (
-                    <div className="bg-white border border-dashed border-gray-300 rounded-lg h-64 flex items-center justify-center">
-                        <p className="text-gray-500">Billing settings coming soon.</p>
+                    <div className="space-y-6">
+                        {/* Tax Configuration Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tax Configuration</h2>
+                            
+                            {/* GST Settings */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Enable GST</label>
+                                        <p className="text-xs text-gray-500">Apply Goods and Services Tax to invoices</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleTaxChange('enableGST', !billingConfig.tax.enableGST)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                            billingConfig.tax.enableGST ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                billingConfig.tax.enableGST ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+
+                                {billingConfig.tax.enableGST && (
+                                    <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-blue-200">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">GST Percentage</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                value={billingConfig.tax.gstPercentage}
+                                                onChange={(e) => handleTaxChange('gstPercentage', parseFloat(e.target.value) || 0)}
+                                                className={inputClasses}
+                                                placeholder="18"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">GST Number</label>
+                                            <input
+                                                type="text"
+                                                value={billingConfig.tax.gstNumber || ''}
+                                                onChange={(e) => handleTaxChange('gstNumber', e.target.value)}
+                                                className={inputClasses}
+                                                placeholder="22AAAAA0000A1Z5"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Additional Tax */}
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Enable Additional Tax</label>
+                                        <p className="text-xs text-gray-500">Add service charge or other taxes</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleTaxChange('enableAdditionalTax', !billingConfig.tax.enableAdditionalTax)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                            billingConfig.tax.enableAdditionalTax ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                billingConfig.tax.enableAdditionalTax ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+
+                                {billingConfig.tax.enableAdditionalTax && (
+                                    <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-blue-200">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Tax Name</label>
+                                            <input
+                                                type="text"
+                                                value={billingConfig.tax.additionalTaxName || ''}
+                                                onChange={(e) => handleTaxChange('additionalTaxName', e.target.value)}
+                                                className={inputClasses}
+                                                placeholder="Service Charge"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Tax Percentage</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                value={billingConfig.tax.additionalTaxPercentage || 0}
+                                                onChange={(e) => handleTaxChange('additionalTaxPercentage', parseFloat(e.target.value) || 0)}
+                                                className={inputClasses}
+                                                placeholder="5"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Payment Methods Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h2>
+                            <p className="text-sm text-gray-600 mb-6">Configure how you accept payments from clients</p>
+                            
+                            <div className="space-y-6">
+                                {billingConfig.paymentMethods.map((pm) => (
+                                    <div key={pm.method} className="border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePaymentMethodToggle(pm.method)}
+                                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                            pm.enabled ? 'bg-green-600' : 'bg-gray-300'
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                                pm.enabled ? 'translate-x-6' : 'translate-x-1'
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                    <div>
+                                                        <h3 className="text-sm font-medium text-gray-900">{pm.displayName}</h3>
+                                                        <p className="text-xs text-gray-500">{pm.description}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Method-specific configuration */}
+                                                {pm.enabled && pm.method === 'bank_transfer' && (
+                                                    <div className="mt-4 grid grid-cols-2 gap-4 pl-14">
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Bank Name</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.bankName || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'bankName', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="State Bank of India"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Account Holder Name</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.accountHolderName || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'accountHolderName', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="Napster Photo Lab"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Account Number</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.accountNumber || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'accountNumber', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="1234567890"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">IFSC Code</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.ifscCode || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'ifscCode', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="SBIN0001234"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {pm.enabled && pm.method === 'upi' && (
+                                                    <div className="mt-4 grid grid-cols-2 gap-4 pl-14">
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">UPI ID</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.upiId || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'upiId', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="napsterphoto@okicici"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">QR Code</label>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleQRCodeUpload(pm.method, e)}
+                                                                className={inputClasses}
+                                                            />
+                                                            {pm.config?.qrCodeUrl && (
+                                                                <img src={pm.config.qrCodeUrl} alt="UPI QR Code" className="mt-2 w-32 h-32 border rounded" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {pm.enabled && pm.method === 'card' && (
+                                                    <div className="mt-4 grid grid-cols-3 gap-4 pl-14">
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Gateway Name</label>
+                                                            <select
+                                                                value={pm.config?.gatewayName || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'gatewayName', e.target.value)}
+                                                                className={inputClasses}
+                                                            >
+                                                                <option value="">Select Gateway</option>
+                                                                <option value="Razorpay">Razorpay</option>
+                                                                <option value="Stripe">Stripe</option>
+                                                                <option value="PayU">PayU</option>
+                                                                <option value="CCAvenue">CCAvenue</option>
+                                                                <option value="Instamojo">Instamojo</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Merchant ID</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.merchantId || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'merchantId', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="merchant_123456"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">API Key</label>
+                                                            <input
+                                                                type="password"
+                                                                value={pm.config?.apiKey || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'apiKey', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="•••••••••••••••"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {pm.enabled && pm.method === 'wallet' && (
+                                                    <div className="mt-4 grid grid-cols-2 gap-4 pl-14">
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Wallet Provider</label>
+                                                            <select
+                                                                value={pm.config?.walletProvider || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'walletProvider', e.target.value)}
+                                                                className={inputClasses}
+                                                            >
+                                                                <option value="">Select Provider</option>
+                                                                <option value="Paytm">Paytm</option>
+                                                                <option value="PhonePe">PhonePe</option>
+                                                                <option value="Amazon Pay">Amazon Pay</option>
+                                                                <option value="Mobikwik">Mobikwik</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700">Wallet Number/ID</label>
+                                                            <input
+                                                                type="text"
+                                                                value={pm.config?.walletNumber || ''}
+                                                                onChange={(e) => handlePaymentMethodConfigChange(pm.method, 'walletNumber', e.target.value)}
+                                                                className={inputClasses}
+                                                                placeholder="9876543210"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* General Billing Settings */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4">General Billing Settings</h2>
+                            
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Currency</label>
+                                    <select
+                                        value={billingConfig.currency}
+                                        onChange={(e) => {
+                                            const currency = e.target.value;
+                                            const symbols: { [key: string]: string } = {
+                                                'INR': '₹',
+                                                'USD': '$',
+                                                'EUR': '€',
+                                                'GBP': '£',
+                                            };
+                                            handleBillingGeneralChange('currency', currency);
+                                            handleBillingGeneralChange('currencySymbol', symbols[currency] || '₹');
+                                        }}
+                                        className={inputClasses}
+                                    >
+                                        <option value="INR">Indian Rupee (₹)</option>
+                                        <option value="USD">US Dollar ($)</option>
+                                        <option value="EUR">Euro (€)</option>
+                                        <option value="GBP">British Pound (£)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Invoice Prefix</label>
+                                    <input
+                                        type="text"
+                                        value={billingConfig.invoicePrefix}
+                                        onChange={(e) => handleBillingGeneralChange('invoicePrefix', e.target.value)}
+                                        className={inputClasses}
+                                        placeholder="INV"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">Example: {billingConfig.invoicePrefix}-2024-001</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Invoice Numbering</label>
+                                    <select
+                                        value={billingConfig.invoiceNumbering}
+                                        onChange={(e) => handleBillingGeneralChange('invoiceNumbering', e.target.value)}
+                                        className={inputClasses}
+                                    >
+                                        <option value="auto">Auto-increment</option>
+                                        <option value="manual">Manual Entry</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Payment Terms (Days)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={billingConfig.paymentTermsDays}
+                                        onChange={(e) => handleBillingGeneralChange('paymentTermsDays', parseInt(e.target.value) || 0)}
+                                        className={inputClasses}
+                                        placeholder="15"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">Default payment due period</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Late Payment Fee (%)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        value={billingConfig.latePaymentFeePercentage || 0}
+                                        onChange={(e) => handleBillingGeneralChange('latePaymentFeePercentage', parseFloat(e.target.value) || 0)}
+                                        className={inputClasses}
+                                        placeholder="2"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">Additional charge for overdue payments</p>
+                                </div>
+
+                                <div className="flex items-center justify-between col-span-2 pt-4 border-t border-gray-200">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Enable Partial Payments</label>
+                                        <p className="text-xs text-gray-500">Allow clients to pay invoices in installments</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleBillingGeneralChange('enablePartialPayments', !billingConfig.enablePartialPayments)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                            billingConfig.enablePartialPayments ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                billingConfig.enablePartialPayments ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Information Banner */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-blue-800">Billing Configuration</h3>
+                                    <div className="mt-2 text-sm text-blue-700">
+                                        <p>These settings will be applied to all new invoices. Payment methods enabled here will be displayed on invoices for client convenience. Make sure to save changes after updating any configuration.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
         }

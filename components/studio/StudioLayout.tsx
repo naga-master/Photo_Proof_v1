@@ -209,7 +209,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'invoices': return <InvoicesListPage {...props} onNewInvoice={() => { setInvoiceInitialData(null); setView('invoiceEditor'); }} onPreviewInvoice={setViewingInvoice} />;
             // Fix: Spread branding props into InvoiceEditor to provide required props.
             case 'invoiceEditor': return <InvoiceEditor {...props} {...props.branding} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} onInvoiceSaved={() => setView('invoices')} />;
-            case 'analytics': return <AnalyticsPage />;
+            case 'analytics': return <AnalyticsPage albums={props.albums} clients={props.clients} invoices={props.invoices} packages={props.packages} />;
             case 'settings': return <SettingsPage 
                 settings={communicationSettings} 
                 onUpdateSettings={onUpdateCommunicationSettings}

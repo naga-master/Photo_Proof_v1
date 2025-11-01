@@ -341,3 +341,125 @@ export interface StudioUser {
   lastLogin?: string;
   createdAt: string;
 }
+
+// Analytics Types
+export interface RevenueMetrics {
+  totalRevenue: number;
+  monthlyRevenue: number;
+  averageOrderValue: number;
+  revenueGrowth: number; // percentage
+  projectedRevenue: number;
+}
+
+export interface ClientMetrics {
+  totalClients: number;
+  activeClients: number;
+  newClientsThisMonth: number;
+  clientRetentionRate: number; // percentage
+  averageClientValue: number;
+}
+
+export interface ProjectMetrics {
+  totalProjects: number;
+  completedProjects: number;
+  ongoingProjects: number;
+  averageProjectValue: number;
+  projectsThisMonth: number;
+  completionRate: number; // percentage
+}
+
+export interface InvoiceMetrics {
+  totalInvoices: number;
+  paidInvoices: number;
+  pendingInvoices: number;
+  overdueInvoices: number;
+  totalPaid: number;
+  totalPending: number;
+  totalOverdue: number;
+  averagePaymentTime: number; // days
+}
+
+export interface PackagePerformance {
+  packageId: string;
+  packageName: string;
+  bookings: number;
+  revenue: number;
+  popularity: number; // percentage
+}
+
+export interface MonthlyData {
+  month: string;
+  revenue: number;
+  projects: number;
+  clients: number;
+}
+
+export interface TopClient {
+  id: number;
+  name: string;
+  email: string;
+  totalSpent: number;
+  projectCount: number;
+  avatarUrl?: string;
+}
+
+export interface AnalyticsData {
+  revenue: RevenueMetrics;
+  clients: ClientMetrics;
+  projects: ProjectMetrics;
+  invoices: InvoiceMetrics;
+  packagePerformance: PackagePerformance[];
+  monthlyTrends: MonthlyData[];
+  topClients: TopClient[];
+}
+
+// Billing & Payment Configuration Types
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'upi' | 'card' | 'cheque' | 'wallet';
+
+export interface TaxConfiguration {
+  enableGST: boolean;
+  gstPercentage: number;
+  gstNumber?: string;
+  enableAdditionalTax: boolean;
+  additionalTaxName?: string;
+  additionalTaxPercentage?: number;
+}
+
+export interface PaymentMethodConfig {
+  method: PaymentMethod;
+  enabled: boolean;
+  displayName: string;
+  description: string;
+  config?: {
+    // For Bank Transfer
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    accountHolderName?: string;
+    
+    // For UPI
+    upiId?: string;
+    qrCodeUrl?: string;
+    
+    // For Card (Payment Gateway)
+    merchantId?: string;
+    apiKey?: string;
+    gatewayName?: string;
+    
+    // For Wallet
+    walletProvider?: string;
+    walletNumber?: string;
+  };
+}
+
+export interface BillingConfiguration {
+  tax: TaxConfiguration;
+  paymentMethods: PaymentMethodConfig[];
+  currency: string;
+  currencySymbol: string;
+  invoicePrefix: string;
+  invoiceNumbering: 'auto' | 'manual';
+  paymentTermsDays: number;
+  latePaymentFeePercentage?: number;
+  enablePartialPayments: boolean;
+}
