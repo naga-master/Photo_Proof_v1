@@ -6,7 +6,7 @@ interface CompareModalProps {
   isOpen: boolean;
   onClose: () => void;
   compareList: Photo[];
-  onRemoveFromCompare: (photoId: number) => void;
+  onRemoveFromCompare: (photoId: string) => void;
   onNavigateToStore: () => void;
 }
 

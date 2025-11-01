@@ -16,7 +16,7 @@ export interface Comment {
 }
 
 export interface Photo {
-  id: number;
+  id: string;
   src: string;
   alt: string;
   width: number;
@@ -44,35 +44,39 @@ export interface Folder {
 }
 
 export interface Album {
-  id: number;
+  id: string;
   title: string;
-  clientId: number;
+  clientId: string;
   shootDate?: string;
-  coverPhotoSrc: string;
+  coverPhotoSrc?: string;
   photoCount: number;
   isLocked: boolean;
   photos?: Photo[];
   folders?: Folder[];
-  layout: LayoutId;
+  layout?: LayoutId;
   paymentStatus?: 'Paid' | 'Unpaid' | 'Due';
   price?: number;
   packageId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Client {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  username: string;
+  username?: string;
   password?: string;
   phone?: string;
   address?: string;
-  avatarUrl?: string;
-  profilePicture?: string;
+  avatarUrl?: string | null;
+  profilePicture?: string | null;
   whatsappOptIn?: boolean;
   emailOptIn?: boolean;
-  projects: number[];
-  lastActivity: string;
+  projects?: string[];
+  lastActivity?: string;
+  status?: string;
 }
 
 export type UserRole = 'client' | 'studio' | null;
@@ -137,6 +141,8 @@ export interface Product {
   sizes: ProductSizeOption[];
   types?: ProductTypeOption[];
   mockupImages: string[];
+  productType?: string;
+  basePrice?: number;
 }
 
 export interface CartItem {
@@ -173,8 +179,8 @@ export interface Invoice {
     invoiceNumber: string;
     invoiceDate: string;
     dueDate: string;
-    clientId?: number;
-    projectId?: number;
+    clientId?: string;
+    projectId?: string;
     clientName: string;
     clientAddress: string;
     items: InvoiceItem[];
@@ -184,6 +190,8 @@ export interface Invoice {
     total: number;
     status: InvoiceStatus;
     template: InvoiceTemplateId;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface InvoiceTemplate {
@@ -248,14 +256,21 @@ export interface UploadState {
     isUploading: boolean;
 }
 
+export interface ServicePackageFeatureItem {
+    name: string;
+    included: boolean;
+    details?: string | null;
+}
+
 export interface ServicePackage {
     id: string;
     name: string;
     category: string;
     description: string;
     price: number;
-    isPredefined: boolean;
-    features: string[];
+    isPredefined?: boolean;
+    features: ServicePackageFeatureItem[];
+    deliverables?: string[];
 }
 
 export interface EmailSettings {

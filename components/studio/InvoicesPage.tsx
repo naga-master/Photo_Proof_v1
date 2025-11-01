@@ -1,8 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Invoice, InvoiceItem, Client, Album, InvoiceTemplateId } from '../../types';
 import { PlusIcon, XCircleIcon, StarIcon } from '../icons';
-import { invoiceTemplates } from '../../data/invoiceTemplates';
 import InvoiceRenderer from './invoices/InvoiceRenderer';
+
+// TODO: Fetch invoice templates from /api/invoices/templates
+const invoiceTemplates = [
+    { 
+        id: 'modern', 
+        name: 'Modern', 
+        description: 'Clean and contemporary design',
+        imageUrl: '/invoice-modern.png',
+        isPremium: false
+    },
+    { 
+        id: 'classic', 
+        name: 'Classic', 
+        description: 'Traditional business invoice',
+        imageUrl: '/invoice-classic.png',
+        isPremium: false
+    },
+    { 
+        id: 'minimal', 
+        name: 'Minimal', 
+        description: 'Simple and elegant',
+        imageUrl: '/invoice-minimal.png',
+        isPremium: false
+    }
+];
 
 interface InvoicesPageProps {
     clients: Client[];
@@ -112,7 +136,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
     };
     
     const handleClientSelect = (clientId: string) => {
-        const client = clients.find(c => c.id === parseInt(clientId));
+        const client = clients.find(c => c.id === clientId);
         if (client) {
              handleInvoiceChange('clientId', client.id);
              handleInvoiceChange('clientName', client.name);
@@ -169,7 +193,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Project (Optional)</label>
-                                <select value={currentInvoice.projectId || ''} onChange={e => handleInvoiceChange('projectId', parseInt(e.target.value))} className={`mt-1 ${inputClasses}`} disabled={!currentInvoice.clientId}>
+                                <select value={currentInvoice.projectId || ''} onChange={e => handleInvoiceChange('projectId', e.target.value || undefined)} className={`mt-1 ${inputClasses}`} disabled={!currentInvoice.clientId}>
                                     <option value="">Select a project</option>
                                     {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                                 </select>

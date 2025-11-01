@@ -9,6 +9,13 @@ export default defineConfig(({ mode }) => {
         port: 3001, // Changed to 3001 to avoid conflict with main app on 5173
         host: '0.0.0.0',
         open: true, // Automatically open browser
+        proxy: {
+          '/api': {
+            target: 'http://localhost:8000',
+            changeOrigin: true,
+            secure: false,
+          },
+        },
       },
       plugins: [react()],
       define: {

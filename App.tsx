@@ -21,9 +21,15 @@ import ShoppingCartPage from './components/store/ShoppingCartPage';
 import CheckoutPage from './components/store/CheckoutPage';
 import OrderConfirmationPage from './components/store/OrderConfirmationPage';
 
-import { albums as initialAlbums } from './data/albums';
-import { clients as initialClients } from './data/clients';
-import { initialPackages } from './data/services';
+// Import API services
+import { projectService } from './services/projectService';
+import { clientService } from './services/clientService';
+import { servicePackageService } from './services/servicePackageService';
+import { invoiceService } from './services/invoiceService';
+import type { Project as BackendProject } from './services/projectService';
+import type { Client as BackendClient } from './services/clientService';
+import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
+import type { Invoice as BackendInvoice } from './services/invoiceService';
 
 type Page = 'login' | 'cover' | 'albums' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
 
@@ -40,21 +46,129 @@ const pageTransition: Transition = {
     duration: 0.5
 };
 
+const FALLBACK_COVER_IMAGE = '/placeholder-image.jpg';
+
+const normalizePaymentStatus = (status?: string | null): Album['paymentStatus'] => {
+    if (!status) return undefined;
+    switch (status.toLowerCase()) {
+        case 'paid':
+            return 'Paid';
+        case 'unpaid':
+            return 'Unpaid';
+        case 'due':
+        case 'overdue':
+            return 'Due';
+        default:
+            return undefined;
+    }
+};
+
+const normalizeInvoiceStatus = (status: string): Invoice['status'] => {
+    switch (status.toLowerCase()) {
+        case 'paid':
+            return 'Paid';
+        case 'draft':
+            return 'Draft';
+        case 'overdue':
+            return 'Overdue';
+        case 'unpaid':
+        case 'sent':
+        default:
+            return 'Unpaid';
+    }
+};
+
+const mapProjectToAlbum = (project: BackendProject): Album => ({
+    id: String(project.id),
+    title: project.title ?? 'Untitled Project',
+    clientId: project.client_id ? String(project.client_id) : '',
+    shootDate: project.shoot_date ?? project.created_at,
+    coverPhotoSrc: project.cover_photo_src ?? FALLBACK_COVER_IMAGE,
+    photoCount: project.photo_count ?? 0,
+    isLocked: project.is_locked ?? false,
+    layout: project.layout as LayoutId | undefined,
+    paymentStatus: normalizePaymentStatus(project.payment_status),
+    price: project.price ? Number(project.price) : undefined,
+    packageId: project.package_id ?? undefined,
+    status: project.status,
+    createdAt: project.created_at,
+    updatedAt: project.updated_at,
+    photos: [],
+    folders: project.has_folders ? [] : undefined,
+});
+
+const mapClientResponse = (client: BackendClient): Client => ({
+    id: String(client.id),
+    name: client.name,
+    email: client.email,
+    username: client.username ?? client.email,
+    phone: client.phone ?? undefined,
+    address: client.address ?? undefined,
+    avatarUrl: (client as any).avatar_url ?? null,
+    profilePicture: (client as any).profile_picture ?? null,
+    whatsappOptIn: (client as any).whatsapp_opt_in ?? false,
+    emailOptIn: (client as any).email_opt_in ?? true,
+    projects: [],
+    lastActivity: client.updated_at ?? client.created_at,
+    status: (client as any).status ?? (client.is_active ? 'active' : 'inactive'),
+});
+
+const mapServicePackageResponse = (pkg: BackendServicePackage): ServicePackage => ({
+    id: pkg.id,
+    name: pkg.name,
+    category: pkg.category,
+    description: pkg.description,
+    price: Number(pkg.price),
+    isPredefined: (pkg as any).is_predefined ?? false,
+    features: (pkg.features || []).map((feature) => ({
+        name: feature.name,
+        included: feature.included,
+        details: feature.details ?? null,
+    })),
+    deliverables: pkg.deliverables ?? [],
+});
+
+const mapInvoiceResponse = (invoice: BackendInvoice): Invoice => ({
+    id: invoice.id,
+    invoiceNumber: invoice.invoice_number,
+    invoiceDate: invoice.invoice_date,
+    dueDate: invoice.due_date,
+    clientId: invoice.client_id ? String(invoice.client_id) : undefined,
+    projectId: invoice.project_id ? String(invoice.project_id) : undefined,
+    clientName: invoice.client_name,
+    clientAddress: invoice.client_address,
+    items: (invoice.items || []).map((item, index) => ({
+        id: item.id ?? `${invoice.id}-item-${index}`,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: Number(item.unit_price),
+    })),
+    notes: invoice.notes ?? undefined,
+    subtotal: Number(invoice.subtotal),
+    tax: Number(invoice.tax),
+    total: Number(invoice.total),
+    status: normalizeInvoiceStatus(invoice.status),
+    template: (invoice.template as InvoiceTemplateId) ?? 'modern',
+    createdAt: invoice.created_at,
+    updatedAt: invoice.updated_at,
+});
+
 const App: React.FC = () => {
     // State
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
     const [galleryContent, setGalleryContent] = useState<{photos: Photo[], title: string} | null>(null);
-    const [favorites, setFavorites] = useState<number[]>([]);
-    const [selections, setSelections] = useState<number[]>([]);
-    const [allAlbums, setAllAlbums] = useState<Album[]>(initialAlbums);
-    const [allClients, setAllClients] = useState<Client[]>(initialClients);
-    const [allPackages, setAllPackages] = useState<ServicePackage[]>(initialPackages);
+    const [favorites, setFavorites] = useState<string[]>([]);
+    const [selections, setSelections] = useState<string[]>([]);
+    const [allAlbums, setAllAlbums] = useState<Album[]>([]);
+    const [allClients, setAllClients] = useState<Client[]>([]);
+    const [allPackages, setAllPackages] = useState<ServicePackage[]>([]);
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
     const [previousPage, setPreviousPage] = useState<Page | null>(null);
     const [studioReturnToProject, setStudioReturnToProject] = useState<Album | null>(null);
     const [navigationStack, setNavigationStack] = useState<Page[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
 
     // Store state
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -76,6 +190,74 @@ const App: React.FC = () => {
       email: { fromAddress: '', fromName: '', apiKey: '' },
       whatsapp: { phoneNumberId: '', businessAccountId: '', accessToken: '' }
     });
+
+    // Load initial data from API
+    useEffect(() => {
+        const loadInitialData = async () => {
+            setIsLoadingData(true);
+            try {
+                // Load projects (albums) - only if authenticated
+                const token = localStorage.getItem('auth_token');
+                if (token) {
+                    console.log('[App] Loading initial data from API...');
+                    
+                    // Load projects from API
+                    const projectsResponse = await projectService.getProjects();
+                    const projects = projectsResponse.projects || [];
+                    const albums: Album[] = projects.map(mapProjectToAlbum);
+                    setAllAlbums(albums);
+                    console.log(`[App] Loaded ${albums.length} projects/albums from API`);
+
+                    // Load clients from API
+                    try {
+                        const clients = await clientService.getClients();
+                        const mappedClients: Client[] = clients.map(mapClientResponse);
+                        setAllClients(mappedClients);
+                        console.log(`[App] Loaded ${mappedClients.length} clients from API`);
+                    } catch (clientError) {
+                        console.error('[App] Error loading clients:', clientError);
+                        setAllClients([]);
+                    }
+
+                    // Load service packages from API
+                    try {
+                        const packagesResponse = await servicePackageService.getServicePackages();
+                        const packages = packagesResponse.packages || [];
+                        const mappedPackages = packages.map(mapServicePackageResponse);
+                        setAllPackages(mappedPackages);
+                        console.log(`[App] Loaded ${mappedPackages.length} service packages from API`);
+                    } catch (packageError) {
+                        console.error('[App] Error loading packages:', packageError);
+                        setAllPackages([]);
+                    }
+
+                    // Load invoices from API
+                    try {
+                        const invoices = await invoiceService.getInvoices();
+                        const mappedInvoices = invoices.map(mapInvoiceResponse);
+                        setAllInvoices(mappedInvoices);
+                        console.log(`[App] Loaded ${mappedInvoices.length} invoices from API`);
+                    } catch (invoiceError) {
+                        console.error('[App] Error loading invoices:', invoiceError);
+                        setAllInvoices([]);
+                    }
+                } else {
+                    console.log('[App] No auth token, skipping data load');
+                }
+            } catch (error) {
+                console.error('[App] Error loading initial data:', error);
+                toast.error('Failed to load data from server');
+                // Set empty arrays so app doesn't crash
+                setAllAlbums([]);
+                setAllClients([]);
+                setAllPackages([]);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+
+        loadInitialData();
+    }, []); // Load once on mount
 
     // Handlers
     const handleLogin = (role: UserRole) => {
@@ -277,19 +459,19 @@ const App: React.FC = () => {
         }
     };
 
-    const toggleFavorite = (photoId: number) => {
+    const toggleFavorite = (photoId: string) => {
         setFavorites(prev =>
             prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
         );
     };
 
-    const toggleSelection = (photoId: number) => {
+    const toggleSelection = (photoId: string) => {
         setSelections(prev =>
             prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
         );
     };
 
-    const addComment = (photoId: number, commentText: string, parentId?: number) => {
+    const addComment = (photoId: string, commentText: string, parentId?: number) => {
         if (!currentAlbum) return;
         
         const newAlbums = allAlbums.map(album => {
@@ -375,11 +557,11 @@ const App: React.FC = () => {
     
     // Project Management
     const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]): Album => {
-        const newAlbumId = Math.max(...allAlbums.map(a => a.id)) + 1;
+        const newAlbumId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
         const newPhotos: Photo[] = queue
             .filter(f => f.status === 'success')
             .map((f, i) => ({
-                id: Date.now() + i,
+                id: `${Date.now()}_${i}`,
                 src: URL.createObjectURL(f.file),
                 alt: f.file.name,
                 width: 800,
@@ -390,7 +572,7 @@ const App: React.FC = () => {
         const newAlbum: Album = {
             id: newAlbumId,
             title: projectDetails.title || "Untitled Project",
-            clientId: parseInt(projectDetails.clientId || '1'),
+            clientId: projectDetails.clientId || '',
             shootDate: projectDetails.shootDate,
             coverPhotoSrc: newPhotos[0]?.src || '',
             photoCount: newPhotos.length,
@@ -482,7 +664,7 @@ const App: React.FC = () => {
         let component;
         switch (page) {
             case 'login':
-                component = <LoginPage onLogin={handleLogin} clients={allClients} />;
+                component = <LoginPage onLogin={handleLogin} />;
                 break;
             case 'cover':
                 if (!currentAlbum) {
@@ -623,7 +805,7 @@ const App: React.FC = () => {
                 component = <OrderConfirmationPage onContinue={() => setPage('store')} />;
                 break;
             default:
-                component = <LoginPage onLogin={handleLogin} clients={allClients} />;
+                component = <LoginPage onLogin={handleLogin} />;
         }
         return (
             <motion.div

@@ -1,32 +1,37 @@
 import React, { useState } from 'react';
-import type { UserRole, Client } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import type { UserRole } from '../types';
 
 interface LoginPageProps {
   onLogin: (role: UserRole) => void;
-  clients: Client[];
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const studioCreds = { user: 'studio@admin.com', pass: 'password123' };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === studioCreds.user && password === studioCreds.pass) {
-      onLogin('studio');
-      return;
-    }
-    
-    const client = clients.find(c => c.username === username && c.password === password);
-    if (client) {
-      onLogin('client');
-      return;
-    }
+    setError('');
+    setIsLoading(true);
 
-    setError('Invalid username or password.');
+    try {
+      // Try studio login first
+      const isStudioLogin = username === 'studio@admin.com';
+      await login({ username, password }, isStudioLogin);
+      
+      // On success, determine role and call onLogin
+      const role: UserRole = isStudioLogin ? 'studio' : 'client';
+      onLogin(role);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err?.message || 'Invalid username or password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -77,17 +82,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, clients }) => {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-slate-900 bg-white hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 focus-visible:ring-white outline-none transition-colors"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-slate-900 bg-white hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 focus-visible:ring-white outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Login
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </div>
         </form>
         
         <div className="mt-8 pt-6 border-t border-slate-700 text-xs text-slate-400 text-center">
             <p className="font-bold mb-2 uppercase tracking-wider">Demo Credentials</p>
-            <p><strong className="font-medium text-slate-300">Studio:</strong> {studioCreds.user} / {studioCreds.pass}</p>
-            <p><strong className="font-medium text-slate-300">Client:</strong> {clients[0]?.username || 'client@email.com'} / {clients[0]?.password || 'clientpass'}</p>
+            <p><strong className="font-medium text-slate-300">Studio:</strong> studio@admin.com / password123</p>
+            <p><strong className="font-medium text-slate-300">Client:</strong> emily.james@email.com / wedding2024</p>
         </div>
       </div>
     </div>

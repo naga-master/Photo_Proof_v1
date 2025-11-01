@@ -10,11 +10,11 @@ interface GalleryPageProps {
   photos: Photo[];
   title: string;
   onBack: () => void;
-  favorites: number[];
-  selections: number[];
-  toggleFavorite: (photoId: number) => void;
-  toggleSelection: (photoId: number) => void;
-  onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
+  favorites: string[];
+  selections: string[];
+  toggleFavorite: (photoId: string) => void;
+  toggleSelection: (photoId: string) => void;
+  onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
   onNavigateToStore: () => void;
   isStudioPreview?: boolean;
   userRole?: UserRole;

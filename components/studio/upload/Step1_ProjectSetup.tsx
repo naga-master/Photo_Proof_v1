@@ -1,9 +1,9 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useUpload } from './UploadContext';
 import type { ProjectDetails, Client, LayoutId, ServicePackage } from '../../../types';
-import { layoutTemplates } from '../../../data/layouts';
 import { XCircleIcon } from '../../icons';
+import { layoutTemplates } from '../../../data/layoutTemplates';
 
 interface Step1ProjectSetupProps {
     clients: Client[];

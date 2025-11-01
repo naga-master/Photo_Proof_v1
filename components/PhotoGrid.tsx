@@ -7,10 +7,10 @@ import PhotoItem from './PhotoItem';
 interface PhotoGridProps {
   photos: Photo[];
   onImageClick: (index: number) => void;
-  favorites?: number[];
-  selections?: number[];
-  toggleFavorite?: (photoId: number) => void;
-  toggleSelection?: (photoId: number) => void;
+  favorites?: string[];
+  selections?: string[];
+  toggleFavorite?: (photoId: string) => void;
+  toggleSelection?: (photoId: string) => void;
   onDownload?: (photoSrc: string, photoAlt: string) => void;
   compareList?: Photo[];
   isCompareMode?: boolean;

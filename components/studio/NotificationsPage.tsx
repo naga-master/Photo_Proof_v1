@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { mockNotifications as initialNotifications } from '../../data/notifications';
 import type { Notification, NotificationType } from '../../types';
 import { BellIcon, ChatBubbleIcon, HeartIcon, InvoicesIcon, ShoppingCartIcon } from '../icons';
+
+// TODO: Fetch notifications from /api/notifications
+const initialNotifications: Notification[] = [];
 
 const notificationIcons: Record<NotificationType, React.ReactNode> = {
     comment: <ChatBubbleIcon className="w-6 h-6 text-sky-500" />,

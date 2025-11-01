@@ -8,7 +8,7 @@ interface ProjectDetailsPageProps {
   clients: Client[];
   onBack: () => void;
   onUpdateProject: (album: Album) => void;
-  onDeleteProject: (albumId: number) => void;
+  onDeleteProject: (albumId: string) => void;
   onViewGallery: (album: Album) => void;
   onAddPhotos: () => void;
   onGenerateInvoice: (album: Album) => void;
@@ -25,7 +25,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setDetails(prev => ({ ...prev, [name]: name === 'clientId' ? parseInt(value) : value }));
+    setDetails(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSaveChanges = () => {

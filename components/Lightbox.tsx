@@ -8,20 +8,20 @@ interface LightboxProps {
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;
-  onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
+  onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
   isSlideshowActive: boolean;
   setSlideshowActive: (isActive: boolean) => void;
-  favorites: number[];
-  selections: number[];
-  toggleFavorite: (photoId: number) => void;
-  toggleSelection: (photoId: number) => void;
+  favorites: string[];
+  selections: string[];
+  toggleFavorite: (photoId: string) => void;
+  toggleSelection: (photoId: string) => void;
   onDownload: (photoSrc: string, photoAlt: string) => void;
 }
 
 const CommentForm: React.FC<{
-    photoId: number;
+    photoId: string;
     parentId?: number;
-    onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
+    onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
     onCancel?: () => void;
     isReply?: boolean;
 }> = ({ photoId, parentId, onAddComment, onCancel, isReply = false }) => {
@@ -69,8 +69,8 @@ const CommentThread: React.FC<{
     comment: Comment;
     replyingTo: number | null;
     setReplyingTo: (id: number | null) => void;
-    photoId: number;
-    onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
+    photoId: string;
+    onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
     isReply?: boolean;
     allComments?: Comment[];
     messageRefs?: React.MutableRefObject<{ [key: number]: HTMLDivElement | null }>;
@@ -177,7 +177,7 @@ const CommentThread: React.FC<{
     );
 };
 
-const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: number, commentText: string, parentId?: number) => void; }> = ({ photo, onAddComment }) => {
+const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, commentText: string, parentId?: number) => void; }> = ({ photo, onAddComment }) => {
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
     const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});

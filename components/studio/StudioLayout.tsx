@@ -70,8 +70,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
     
-    const [uploadInitialClientId, setUploadInitialClientId] = useState<number | undefined>();
-    const [uploadExistingProjectId, setUploadExistingProjectId] = useState<number | undefined>();
+    const [uploadInitialClientId, setUploadInitialClientId] = useState<string | undefined>();
+    const [uploadExistingProjectId, setUploadExistingProjectId] = useState<string | undefined>();
     const [uploadInitialStep, setUploadInitialStep] = useState<number>(0);
     const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
 
@@ -111,7 +111,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setManagingProject(updatedAlbum);
     };
 
-    const handleDeleteProject = (albumId: number) => {
+    const handleDeleteProject = (albumId: string) => {
         if(window.confirm('Are you sure you want to delete this project? This cannot be undone.')) {
             onUpdateAlbums(albums.filter(a => a.id !== albumId));
             setManagingProject(null);
@@ -126,7 +126,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     
     const handleCreateClient = (newClientData: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => {
         const newClient: Client = {
-            id: Math.max(...clients.map(c => c.id)) + 1,
+            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
             ...newClientData,
             username: newClientData.email,
             password: 'password',
@@ -142,7 +142,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setManagingClient(updatedClient);
     };
 
-    const handleCreateProjectForClient = (clientId: number) => {
+    const handleCreateProjectForClient = (clientId: string) => {
         setUploadInitialClientId(clientId);
         setView('upload');
     };
@@ -163,11 +163,11 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     };
 
     const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number): Album => {
-        const newAlbumId = Math.max(...albums.map(a => a.id), 0) + 1;
+        const newAlbumId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
         const newPhotos = queue
             .filter(f => f.status === 'success')
             .map((f, i) => ({
-                id: Date.now() + i, src: URL.createObjectURL(f.file), alt: f.file.name, width: 800, height: 1200, comments: []
+                id: `${Date.now()}_${i}`, src: URL.createObjectURL(f.file), alt: f.file.name, width: 800, height: 1200, comments: []
             }));
         
         // Determine cover photo - use selected index, or default to first photo
@@ -187,7 +187,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         const newAlbum: Album = {
             id: newAlbumId,
             title: projectDetails.title || "Untitled Project",
-            clientId: parseInt(projectDetails.clientId || '1'),
+            clientId: projectDetails.clientId || '',
             shootDate: projectDetails.shootDate,
             coverPhotoSrc: coverPhotoSrc,
             photoCount: newPhotos.length,

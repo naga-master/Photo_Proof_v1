@@ -8,8 +8,8 @@ interface PhotoItemProps {
   onClick: () => void;
   isFavorite: boolean;
   isSelection: boolean;
-  toggleFavorite: (photoId: number) => void;
-  toggleSelection: (photoId: number) => void;
+  toggleFavorite: (photoId: string) => void;
+  toggleSelection: (photoId: string) => void;
   onDownload: (photoSrc: string, photoAlt: string) => void;
   isInCompareList: boolean;
   isCompareMode: boolean;
