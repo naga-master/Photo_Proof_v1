@@ -19,7 +19,6 @@ import CommandPalette from './CommandPalette';
 import InvoiceEditor from './InvoicesPage';
 import InvoicesListPage from './invoices/InvoicesPage';
 import InvoicePreviewModal from './invoices/InvoicePreviewModal';
-import InvoiceGeneratorModal from './InvoiceGeneratorModal';
 import { MenuIcon } from '../icons';
 
 interface StudioLayoutProps {
@@ -69,7 +68,6 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [uploadExistingProjectId, setUploadExistingProjectId] = useState<number | undefined>();
     const [uploadInitialStep, setUploadInitialStep] = useState<number>(0);
     const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
-    const [generatingInvoiceFor, setGeneratingInvoiceFor] = useState<Album | null>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -149,37 +147,13 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     };
 
     const handleGenerateInvoice = (album: Album) => {
-        setGeneratingInvoiceFor(album);
-    };
-
-    const handleShareInvoice = (communicationType: 'whatsapp' | 'email', invoice: Invoice) => {
-        const client = props.clients.find(c => c.id === generatingInvoiceFor?.clientId);
+        const client = props.clients.find(c => c.id === album.clientId);
         if (!client) {
-            toast.error('Client not found');
+            toast.error('Client not found for this project');
             return;
         }
-
-        if (communicationType === 'whatsapp') {
-            if (!client.whatsappOptIn || !client.phone) {
-                toast.error('WhatsApp is not configured for this client. Please update client communication preferences.');
-                return;
-            }
-            // Future: Backend API call to send WhatsApp message
-            toast.success(`Invoice shared via WhatsApp to ${client.name}`);
-            console.log('WhatsApp API call would go here', { client, invoice });
-        } else if (communicationType === 'email') {
-            if (!client.emailOptIn || !client.email) {
-                toast.error('Email is not configured for this client. Please update client communication preferences.');
-                return;
-            }
-            // Future: Backend API call to send email
-            toast.success(`Invoice sent via email to ${client.email}`);
-            console.log('Email API call would go here', { client, invoice });
-        }
-
-        // Save invoice
-        onSaveInvoice(invoice);
-        setGeneratingInvoiceFor(null);
+        setInvoiceInitialData({client, project: album});
+        setView('invoiceEditor');
     };
 
     const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number): Album => {
@@ -272,21 +246,12 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 invoice={viewingInvoice}
                 logo={props.branding.logo}
                 brandColor={props.branding.brandColor}
+                client={viewingInvoice ? props.clients.find(c => c.id === viewingInvoice.clientId) : undefined}
+                onShare={(type, invoice) => {
+                    console.log(`Share invoice via ${type}:`, invoice);
+                    toast.success(`Invoice shared via ${type === 'whatsapp' ? 'WhatsApp' : 'Email'}`);
+                }}
             />
-            {generatingInvoiceFor && (
-                <InvoiceGeneratorModal
-                    project={generatingInvoiceFor}
-                    client={props.clients.find(c => c.id === generatingInvoiceFor.clientId)!}
-                    packages={props.packages}
-                    onClose={() => setGeneratingInvoiceFor(null)}
-                    onSaveInvoice={(invoice) => {
-                        props.onSaveInvoice(invoice);
-                        setGeneratingInvoiceFor(null);
-                        toast.success('Invoice generated successfully!');
-                    }}
-                    onShare={handleShareInvoice}
-                />
-            )}
         </div>
     );
 };
