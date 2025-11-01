@@ -19,6 +19,7 @@ import CommandPalette from './CommandPalette';
 import InvoiceEditor from './InvoicesPage';
 import InvoicesListPage from './invoices/InvoicesPage';
 import InvoicePreviewModal from './invoices/InvoicePreviewModal';
+import InvoiceGeneratorModal from './InvoiceGeneratorModal';
 import { MenuIcon } from '../icons';
 
 interface StudioLayoutProps {
@@ -68,6 +69,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [uploadExistingProjectId, setUploadExistingProjectId] = useState<number | undefined>();
     const [uploadInitialStep, setUploadInitialStep] = useState<number>(0);
     const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
+    const [generatingInvoiceFor, setGeneratingInvoiceFor] = useState<Album | null>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -146,6 +148,40 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setView('invoiceEditor');
     };
 
+    const handleGenerateInvoice = (album: Album) => {
+        setGeneratingInvoiceFor(album);
+    };
+
+    const handleShareInvoice = (communicationType: 'whatsapp' | 'email', invoice: Invoice) => {
+        const client = props.clients.find(c => c.id === generatingInvoiceFor?.clientId);
+        if (!client) {
+            toast.error('Client not found');
+            return;
+        }
+
+        if (communicationType === 'whatsapp') {
+            if (!client.whatsappOptIn || !client.phone) {
+                toast.error('WhatsApp is not configured for this client. Please update client communication preferences.');
+                return;
+            }
+            // Future: Backend API call to send WhatsApp message
+            toast.success(`Invoice shared via WhatsApp to ${client.name}`);
+            console.log('WhatsApp API call would go here', { client, invoice });
+        } else if (communicationType === 'email') {
+            if (!client.emailOptIn || !client.email) {
+                toast.error('Email is not configured for this client. Please update client communication preferences.');
+                return;
+            }
+            // Future: Backend API call to send email
+            toast.success(`Invoice sent via email to ${client.email}`);
+            console.log('Email API call would go here', { client, invoice });
+        }
+
+        // Save invoice
+        onSaveInvoice(invoice);
+        setGeneratingInvoiceFor(null);
+    };
+
     const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number): Album => {
         const newAlbumId = Math.max(...albums.map(a => a.id), 0) + 1;
         const newPhotos = queue
@@ -188,7 +224,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const renderView = () => {
         switch (view) {
             case 'overview': return <StudioOverview albums={props.albums} setView={handleSetView} />;
-            case 'projects': return <StudioProjects albums={props.albums} clients={props.clients} setView={handleSetView} onManageProject={handleManageProject} />;
+            case 'projects': return <StudioProjects albums={props.albums} clients={props.clients} packages={props.packages} setView={handleSetView} onManageProject={handleManageProject} onGenerateInvoice={handleGenerateInvoice} />;
             case 'clients': return <ClientsPage clients={props.clients} onManageClient={handleManageClient} onCreateClient={handleCreateClient} />;
             case 'invoices': return <InvoicesListPage {...props} onNewInvoice={() => { setInvoiceInitialData(null); setView('invoiceEditor'); }} onPreviewInvoice={setViewingInvoice} />;
             // Fix: Spread branding props into InvoiceEditor to provide required props.
@@ -200,7 +236,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'tools': return <StudioToolsPage />;
             case 'notifications': return <NotificationsPage />;
             case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} existingProjectId={uploadExistingProjectId} initialStep={uploadInitialStep} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); setUploadExistingProjectId(undefined); setUploadInitialStep(0); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
-            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} />;
+            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} onGenerateInvoice={handleGenerateInvoice} />;
             case 'clientDetails': return managingClient && <ClientDetailsPage client={managingClient} albums={props.albums} invoices={props.invoices} packages={props.packages} onBack={() => handleSetView('clients')} onUpdateClient={handleUpdateClient} onCreateProject={handleCreateProjectForClient} onCreateInvoice={handleCreateInvoiceForProject} onPreviewInvoice={setViewingInvoice} />;
             default: return <StudioOverview albums={props.albums} setView={handleSetView} />;
         }
@@ -237,6 +273,20 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 logo={props.branding.logo}
                 brandColor={props.branding.brandColor}
             />
+            {generatingInvoiceFor && (
+                <InvoiceGeneratorModal
+                    project={generatingInvoiceFor}
+                    client={props.clients.find(c => c.id === generatingInvoiceFor.clientId)!}
+                    packages={props.packages}
+                    onClose={() => setGeneratingInvoiceFor(null)}
+                    onSaveInvoice={(invoice) => {
+                        props.onSaveInvoice(invoice);
+                        setGeneratingInvoiceFor(null);
+                        toast.success('Invoice generated successfully!');
+                    }}
+                    onShare={handleShareInvoice}
+                />
+            )}
         </div>
     );
 };

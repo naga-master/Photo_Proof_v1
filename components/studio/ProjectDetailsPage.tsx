@@ -11,9 +11,10 @@ interface ProjectDetailsPageProps {
   onDeleteProject: (albumId: number) => void;
   onViewGallery: (album: Album) => void;
   onAddPhotos: () => void;
+  onGenerateInvoice: (album: Album) => void;
 }
 
-const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, clients, onBack, onUpdateProject, onDeleteProject, onViewGallery, onAddPhotos }) => {
+const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, clients, onBack, onUpdateProject, onDeleteProject, onViewGallery, onAddPhotos, onGenerateInvoice }) => {
   const [details, setDetails] = useState(project);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isCoverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
@@ -110,6 +111,15 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                  <div className="bg-white p-6 border border-gray-200 rounded-lg">
                     <h3 className="font-semibold text-gray-800 mb-4">Actions</h3>
                     <div className="space-y-3">
+                        <button 
+                            onClick={() => onGenerateInvoice(project)} 
+                            className="w-full text-center py-2.5 bg-green-600 text-white rounded-md font-semibold hover:bg-green-700 flex items-center justify-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Generate Invoice
+                        </button>
                         <button onClick={onAddPhotos} className="w-full text-center py-2.5 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">Add Photos</button>
                         <button onClick={() => onViewGallery(project)} className="w-full text-center py-2.5 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">View Gallery</button>
                     </div>
