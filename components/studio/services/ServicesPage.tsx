@@ -1,6 +1,6 @@
 
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { ServicePackage } from '../../../types';
 import { PlusIcon, CheckIcon } from '../../icons';
 
@@ -22,6 +22,36 @@ const PackageEditorModal: React.FC<PackageEditorModalProps> = ({ isOpen, onClose
         isPredefined: existingPackage?.isPredefined || false,
     });
     const [featuresText, setFeaturesText] = useState(pkg.features.join('\n'));
+
+    // Update state when existingPackage changes or modal opens
+    useEffect(() => {
+        if (isOpen) {
+            if (existingPackage) {
+                setPkg({
+                    id: existingPackage.id,
+                    name: existingPackage.name,
+                    category: existingPackage.category,
+                    description: existingPackage.description,
+                    price: existingPackage.price,
+                    features: existingPackage.features,
+                    isPredefined: existingPackage.isPredefined,
+                });
+                setFeaturesText(existingPackage.features.join('\n'));
+            } else {
+                // Reset to empty for new package
+                setPkg({
+                    id: `custom-${Date.now()}`,
+                    name: '',
+                    category: '',
+                    description: '',
+                    price: 0,
+                    features: [],
+                    isPredefined: false,
+                });
+                setFeaturesText('');
+            }
+        }
+    }, [isOpen, existingPackage]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
