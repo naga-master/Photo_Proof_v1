@@ -10,6 +10,9 @@ interface CoverPhotoChangerProps {
 
 const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdateCover, onClose }) => {
   const [selectedPhotoSrc, setSelectedPhotoSrc] = useState<string>(project.coverPhotoSrc);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const ITEMS_PER_PAGE = 30; // 5x6 grid
 
   const handleSave = () => {
     onUpdateCover(selectedPhotoSrc);
@@ -17,6 +20,47 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
   };
 
   const photos = project.photos || [];
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(photos.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentPagePhotos = photos.slice(startIndex, endIndex);
+
+  // Generate page numbers to display (show 5 at a time)
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, currentPage + 2);
+      
+      if (startPage > 1) {
+        pages.push(1);
+        if (startPage > 2) pages.push('...');
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -42,41 +86,102 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
               <p>No photos available in this project.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-              {photos.map((photo) => {
-                const isSelected = selectedPhotoSrc === photo.src;
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 mb-6">
+                {currentPagePhotos.map((photo) => {
+                  const isSelected = selectedPhotoSrc === photo.src;
 
-                return (
+                  return (
+                    <button
+                      key={photo.id}
+                      onClick={() => setSelectedPhotoSrc(photo.src)}
+                      className={`relative aspect-square rounded-lg overflow-hidden group hover:ring-2 hover:ring-blue-400 transition-all ${
+                        isSelected ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
+                      }`}
+                      title={photo.alt}
+                    >
+                      <img
+                        src={photo.src}
+                        alt={photo.alt}
+                        className="w-full h-full object-cover"
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                          <CheckCircleIcon className="w-10 h-10 text-blue-600 drop-shadow-lg" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls - Only show if more than 1 page */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4 border-t border-gray-200">
+                  {/* Previous Button */}
                   <button
-                    key={photo.id}
-                    onClick={() => setSelectedPhotoSrc(photo.src)}
-                    className={`relative aspect-square rounded-lg overflow-hidden group hover:ring-2 hover:ring-blue-400 transition-all ${
-                      isSelected ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
-                    }`}
-                    title={photo.alt}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
                   >
-                    <img
-                      src={photo.src}
-                      alt={photo.alt}
-                      className="w-full h-full object-cover"
-                    />
-                    {isSelected && (
-                      <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                        <CheckCircleIcon className="w-10 h-10 text-blue-600 drop-shadow-lg" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
-                );
-              })}
-            </div>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers().map((page, index) => {
+                      if (page === '...') {
+                        return (
+                          <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const pageNum = page as number;
+                      const isCurrentPage = pageNum === currentPage;
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`min-w-[40px] h-10 px-3 rounded-md font-medium transition-colors ${
+                            isCurrentPage
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            {photos.length} {photos.length === 1 ? 'photo' : 'photos'} available
+            Showing {startIndex + 1}-{Math.min(endIndex, photos.length)} of {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
           </p>
           <div className="flex gap-3">
             <button
