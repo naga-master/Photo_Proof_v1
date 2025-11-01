@@ -180,7 +180,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 font-sans">
+        <div className="h-full flex bg-slate-100 font-sans">
             <StudioSidebar
                 view={view}
                 setView={handleSetView}

@@ -434,6 +434,7 @@ const App: React.FC = () => {
                 exit="out"
                 variants={pageVariants}
                 transition={pageTransition}
+                className="h-full"
             >
                 {component}
             </motion.div>
@@ -441,7 +442,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <>
+        <div className="h-full">
             {page !== 'login' && page !== 'cover' && page !== 'dashboard' && <TopNavBar onNavigate={handleNavigate} cartCount={cart.length} userRole={userRole} onLogout={handleLogout} />}
             <AnimatePresence mode="wait">
                 {renderPage()}
@@ -457,8 +458,9 @@ const App: React.FC = () => {
                 draggable
                 pauseOnHover
                 theme="dark"
+                aria-label="Notifications"
             />
-        </>
+        </div>
     );
 };
 
