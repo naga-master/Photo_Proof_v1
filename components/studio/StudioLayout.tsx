@@ -48,6 +48,8 @@ interface StudioLayoutProps {
   };
   communicationSettings: CommunicationSettings;
   onUpdateCommunicationSettings: (settings: CommunicationSettings) => void;
+  returnToProject?: Album | null;
+  onReturnToDashboard: () => void;
 }
 
 const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
@@ -75,6 +77,15 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+    
+    // Handle returning to project details after gallery view
+    useEffect(() => {
+        if (props.returnToProject) {
+            setManagingProject(props.returnToProject);
+            setView('projectDetails');
+            props.onReturnToDashboard(); // Clear the return flag
+        }
+    }, [props.returnToProject]);
 
     const handleSetView = (newView: DashboardView) => {
         setManagingClient(null);

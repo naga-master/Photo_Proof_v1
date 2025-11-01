@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import type { Album, Photo } from '../types';
+import type { Album, Photo, UserRole } from '../types';
 import Lightbox from './Lightbox';
 import CompareModal from './store/CompareModal';
 import LayoutRenderer from './layouts/LayoutRenderer';
@@ -17,10 +17,11 @@ interface GalleryPageProps {
   onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
   onNavigateToStore: () => void;
   isStudioPreview?: boolean;
+  userRole?: UserRole;
 }
 
 const GalleryPage: React.FC<GalleryPageProps> = (props) => {
-  const { photos, favorites, selections, title } = props;
+  const { photos, favorites, selections, title, userRole } = props;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isSlideshowActive, setSlideshowActive] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'favorites' | 'selections'>('all');

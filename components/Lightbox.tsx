@@ -73,7 +73,9 @@ const CommentThread: React.FC<{
     onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
     isReply?: boolean;
     allComments?: Comment[];
-}> = ({ comment, replyingTo, setReplyingTo, photoId, onAddComment, isReply = false, allComments = [] }) => {
+    messageRefs?: React.MutableRefObject<{ [key: number]: HTMLDivElement | null }>;
+    scrollToMessage?: (messageId: number) => void;
+}> = ({ comment, replyingTo, setReplyingTo, photoId, onAddComment, isReply = false, allComments = [], messageRefs, scrollToMessage }) => {
 
     const isReplying = replyingTo === comment.id;
     
@@ -97,7 +99,14 @@ const CommentThread: React.FC<{
     }
 
     return (
-        <div className="flex flex-col">
+        <div 
+            className="flex flex-col transition-colors duration-300"
+            ref={(el) => {
+                if (messageRefs && messageRefs.current) {
+                    messageRefs.current[comment.id] = el;
+                }
+            }}
+        >
             <div className="flex items-start gap-2 hover:bg-gray-50 rounded-lg p-1.5 -ml-1.5 transition-colors">
                 {/* Avatar placeholder */}
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${comment.author === 'Studio' ? 'bg-purple-500' : 'bg-blue-500'}`}>
@@ -111,9 +120,12 @@ const CommentThread: React.FC<{
                         <span className="text-xs text-gray-500">{comment.timestamp}</span>
                     </div>
                     
-                    {/* WhatsApp-style quoted message - shows original message in grey box */}
+                    {/* WhatsApp-style quoted message - clickable to scroll to original */}
                     {isReply && originalMessage && (
-                        <div className="mt-1 mb-2 border-l-4 border-green-500 bg-gray-100 rounded px-2 py-1.5">
+                        <div 
+                            onClick={() => scrollToMessage && scrollToMessage(originalMessage!.id)}
+                            className="mt-1 mb-2 border-l-4 border-green-500 bg-gray-100 rounded px-2 py-1.5 cursor-pointer hover:bg-gray-200 transition-colors"
+                        >
                             <div className="flex items-center gap-1 mb-0.5">
                                 <span className="text-xs font-semibold text-green-600">{originalMessage.author}</span>
                             </div>
@@ -142,6 +154,8 @@ const CommentThread: React.FC<{
                             onAddComment={onAddComment}
                             isReply={true}
                             allComments={[comment, ...(comment.replies || [])]}
+                            messageRefs={messageRefs}
+                            scrollToMessage={scrollToMessage}
                         />
                     ))}
                 </div>
@@ -166,10 +180,23 @@ const CommentThread: React.FC<{
 const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: number, commentText: string, parentId?: number) => void; }> = ({ photo, onAddComment }) => {
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
+    const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
     useEffect(() => {
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [photo.comments]);
+
+    const scrollToMessage = (messageId: number) => {
+        const messageElement = messageRefs.current[messageId];
+        if (messageElement) {
+            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a highlight effect
+            messageElement.classList.add('bg-yellow-100');
+            setTimeout(() => {
+                messageElement.classList.remove('bg-yellow-100');
+            }, 1500);
+        }
+    };
 
     return (
         <div className="w-full h-full bg-white flex flex-col">
@@ -187,6 +214,8 @@ const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: number, co
                         photoId={photo.id}
                         onAddComment={onAddComment}
                         allComments={photo.comments}
+                        messageRefs={messageRefs}
+                        scrollToMessage={scrollToMessage}
                      />
                 ))}
                 <div ref={commentsEndRef} />

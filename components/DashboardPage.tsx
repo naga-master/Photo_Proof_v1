@@ -29,6 +29,8 @@ interface DashboardPageProps {
   };
   communicationSettings: CommunicationSettings;
   onUpdateCommunicationSettings: (settings: CommunicationSettings) => void;
+  returnToProject?: Album | null;
+  onReturnToDashboard: () => void;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = (props) => {

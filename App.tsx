@@ -52,6 +52,8 @@ const App: React.FC = () => {
     const [allClients, setAllClients] = useState<Client[]>(initialClients);
     const [allPackages, setAllPackages] = useState<ServicePackage[]>(initialPackages);
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
+    const [previousPage, setPreviousPage] = useState<Page | null>(null);
+    const [studioReturnToProject, setStudioReturnToProject] = useState<Album | null>(null);
 
     // Store state
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -125,14 +127,38 @@ const App: React.FC = () => {
         setPage('galleryFolders');
         setGalleryContent(null);
     };
+    
+    const handleBackFromGallery = () => {
+        // If studio owner navigated from dashboard, go back to dashboard
+        if (userRole === 'studio' && previousPage === 'dashboard') {
+            setPage('dashboard');
+            setPreviousPage(null);
+            // Don't clear studioReturnToProject - let the dashboard handle it
+        } else if (currentAlbum?.folders) {
+            handleBackToFolders();
+        } else {
+            handleBackToAlbums();
+        }
+    };
+    
+    const handleReturnToDashboard = () => {
+        setStudioReturnToProject(null);
+        setPage('dashboard');
+    };
 
     const handleNavigate = (targetPage: 'albums' | 'store' | 'about' | 'cart') => {
+        setPreviousPage(page);
         setPage(targetPage);
     };
     
     const handleNavigateToGallery = (album: Album) => {
+        setPreviousPage(page);
         setCurrentAlbum(album);
         setPage('gallery');
+        // Store the project for studio return navigation
+        if (userRole === 'studio') {
+            setStudioReturnToProject(album);
+        }
     };
 
     const toggleFavorite = (photoId: number) => {
@@ -355,13 +381,14 @@ const App: React.FC = () => {
                         album={currentAlbum}
                         photos={galleryContent.photos}
                         title={galleryContent.title}
-                        onBack={currentAlbum.folders ? handleBackToFolders : handleBackToAlbums}
+                        onBack={handleBackFromGallery}
                         favorites={favorites}
                         selections={selections}
                         toggleFavorite={toggleFavorite}
                         toggleSelection={toggleSelection}
                         onAddComment={addComment}
                         onNavigateToStore={() => setPage('store')}
+                        userRole={userRole}
                     />;
                 }
                 break;
@@ -393,6 +420,8 @@ const App: React.FC = () => {
                     }}
                     communicationSettings={communicationSettings}
                     onUpdateCommunicationSettings={setCommunicationSettings}
+                    returnToProject={studioReturnToProject}
+                    onReturnToDashboard={handleReturnToDashboard}
                  />;
                  break;
             case 'store':
@@ -472,7 +501,16 @@ const App: React.FC = () => {
 
     return (
         <div className="h-full">
-            {page !== 'login' && page !== 'cover' && page !== 'dashboard' && <TopNavBar onNavigate={handleNavigate} cartCount={cart.length} userRole={userRole} onLogout={handleLogout} />}
+            {page !== 'login' && page !== 'cover' && page !== 'dashboard' && (
+                <TopNavBar 
+                    onNavigate={handleNavigate} 
+                    cartCount={cart.length} 
+                    userRole={userRole} 
+                    onLogout={handleLogout}
+                    showBackButton={userRole === 'studio' && previousPage === 'dashboard'}
+                    onBack={handleBackFromGallery}
+                />
+            )}
             <AnimatePresence mode="wait">
                 {renderPage()}
             </AnimatePresence>
