@@ -30,13 +30,30 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from localStorage on mount
+  // Initialize auth state by validating with backend on mount
   useEffect(() => {
-    const storedUser = authService.getStoredUser();
-    if (storedUser && authService.isAuthenticated()) {
-      setUser(storedUser);
-    }
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      const storedUser = authService.getStoredUser();
+      const hasToken = authService.isAuthenticated();
+      
+      // Only validate with backend if we have both stored user and token
+      if (storedUser && hasToken) {
+        try {
+          // Validate the session with backend (checks httpOnly cookies)
+          const currentUser = await authService.getCurrentUser();
+          setUser(currentUser);
+        } catch (error: any) {
+          // Session invalid or expired, clear local data
+          console.log('Session validation failed:', error?.message || 'Unknown error');
+          await authService.logout();
+          setUser(null);
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
+    initializeAuth();
 
     // Listen for unauthorized events to clear auth
     const handleUnauthorized = () => {
