@@ -563,7 +563,7 @@ const App: React.FC = () => {
         setPreviousPage(page);
         setCurrentAlbum(album);
         
-        // Fetch photos from backend API
+        // Fetch photos from backend API and update album with cover photo
         try {
             console.log('[App] Fetching photos for project:', album.id);
             const response = await photoService.getProjectPhotos(album.id);
@@ -580,6 +580,21 @@ const App: React.FC = () => {
             }));
             
             setGalleryContent({ photos, title: album.title });
+            
+            // Update album cover photo if we have photos
+            if (photos.length > 0 && (!album.coverPhotoSrc || album.coverPhotoSrc.startsWith('blob:'))) {
+                const updatedAlbum = {
+                    ...album,
+                    coverPhotoSrc: photos[0].src // Use first photo as cover
+                };
+                setCurrentAlbum(updatedAlbum);
+                
+                // Also update in albums array
+                const updatedAlbums = allAlbums.map(a => 
+                    a.id === album.id ? updatedAlbum : a
+                );
+                setAllAlbums(updatedAlbums);
+            }
         } catch (error) {
             console.error('[App] Failed to fetch photos:', error);
             // Fallback to album photos if API fails
@@ -841,6 +856,7 @@ const App: React.FC = () => {
                         toggleSelection={toggleSelection}
                         onAddComment={addComment}
                         onNavigateToStore={() => setPage('store')}
+                        isStudioPreview={userRole === 'studio'}
                         userRole={userRole}
                     />;
                 }
