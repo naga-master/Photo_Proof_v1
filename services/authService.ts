@@ -19,6 +19,7 @@ export interface RegisterData {
 
 export interface AuthResponse {
   token: string;  // Backend returns 'token' not 'access_token'
+  refresh_token?: string;  // Optional refresh token
   user: User;
   client_id?: number | null;
 }
@@ -85,10 +86,19 @@ class AuthService {
   /**
    * Logout user
    */
-  logout(): void {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    localStorage.removeItem('user_role');
+  async logout(): Promise<void> {
+    try {
+      // Call backend logout to clear httpOnly cookies
+      await apiClient.post('/api/auth/logout');
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      // Always clear local storage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('client_id');
+    }
   }
 
   /**
@@ -114,15 +124,19 @@ class AuthService {
   }
 
   /**
-   * Store authentication data in localStorage
+   * Store authentication data
+   * Note: With httpOnly cookies, tokens are stored securely in cookies by the backend.
+   * localStorage is used as fallback for backwards compatibility and client-side checks.
    */
   private storeAuthData(response: AuthResponse): void {
+    // Store token in localStorage for backwards compatibility and header-based auth
     localStorage.setItem('auth_token', response.token);
     localStorage.setItem('user_data', JSON.stringify(response.user));
     localStorage.setItem('user_role', response.user.role);
     if (response.client_id) {
       localStorage.setItem('client_id', String(response.client_id));
     }
+    // Note: refresh_token is stored in httpOnly cookie by backend, not in localStorage
   }
 }
 
