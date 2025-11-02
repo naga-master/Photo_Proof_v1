@@ -21,6 +21,31 @@ export interface PresignedUrlResponse {
   method: string;
 }
 
+export interface BatchPresignedUrlRequest {
+  project_id: string;
+  folder_id?: string;
+  files: Array<{
+    filename: string;
+    content_type: string;
+    file_size: number;
+  }>;
+}
+
+export interface BatchPresignedUrlResponse {
+  tokens: PresignedUrlResponse[];
+  session_id: string; // UUID string
+  total_files: number;
+}
+
+export interface BatchUploadVerificationResponse {
+  session_id: string; // UUID string
+  total_files: number;
+  completed: number;
+  failed: number;
+  pending: number;
+  status: string;
+}
+
 export interface UploadProgressCallback {
   (progress: number): void;
 }
@@ -175,6 +200,50 @@ class UploadService {
     return apiClient.patch(`/v2/upload/session/${sessionId}`, {
       uploaded_count: uploadedCount,
     });
+  }
+
+  /**
+   * Get batch presigned URLs for multiple files
+   * This reduces API calls by getting all presigned URLs in one request
+   */
+  async getBatchPresignedUrls(request: BatchPresignedUrlRequest): Promise<BatchPresignedUrlResponse> {
+    console.log('[UploadService] Getting batch presigned URLs:', request);
+    return apiClient.post<BatchPresignedUrlResponse>('/v2/upload/batch/presigned', request);
+  }
+
+  /**
+   * Verify batch upload status
+   */
+  async verifyBatchUpload(sessionId: string): Promise<BatchUploadVerificationResponse> {
+    console.log('[UploadService] Verifying batch upload:', sessionId);
+    return apiClient.get<BatchUploadVerificationResponse>(`/v2/upload/batch/verify/${sessionId}`);
+  }
+
+  /**
+   * Upload multiple files with batch presigned URLs
+   * This is more efficient than calling getPresignedUrl for each file
+   */
+  async uploadBatch(
+    files: Array<{
+      file: File;
+      token: string;
+      onProgress?: UploadProgressCallback;
+    }>
+  ): Promise<PhotoResponse[]> {
+    console.log('[UploadService] Starting batch upload for', files.length, 'files');
+
+    const uploadPromises = files.map(({ file, token, onProgress }) => 
+      this.uploadFile(file, token, onProgress)
+    );
+
+    try {
+      const results = await Promise.all(uploadPromises);
+      console.log('[UploadService] Batch upload complete:', results.length, 'files');
+      return results;
+    } catch (error) {
+      console.error('[UploadService] Batch upload failed:', error);
+      throw error;
+    }
   }
 }
 

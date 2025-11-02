@@ -1,6 +1,7 @@
 import React, { createContext, useReducer, useContext, useEffect, useCallback, useRef } from 'react';
 import type { DetectedFolder, FolderMap, UploadFile, UploadRules, UploadMode, ProjectDetails, LayoutId, UploadState } from '../../../types';
 import { uploadService } from '../../../services/uploadService';
+import { uploadQueueManager } from '../../../services/uploadQueueManager';
 
 type UploadAction =
   | { type: 'SET_MODE'; payload: UploadMode }
@@ -136,8 +137,29 @@ export const useUpload = () => {
   const { state, dispatch } = context;
 
   // Real upload logic using backend API
+  // Track if we've already initialized uploads for this session
+  const uploadInitialized = React.useRef(false);
+  const uploadSessionId = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (!state.isUploading) return;
+    // Only initialize uploads once when isUploading becomes true
+    if (!state.isUploading) {
+      uploadInitialized.current = false;
+      uploadSessionId.current = null;
+      return;
+    }
+    
+    // Generate session ID if new session
+    if (!uploadSessionId.current) {
+      uploadSessionId.current = Date.now().toString();
+    }
+    
+    if (uploadInitialized.current) {
+      // Already initialized for this upload session
+      console.log('[UploadContext] Upload already initialized, skipping');
+      return;
+    }
+
     if (!state.backendProjectId) {
       console.error('[UploadContext] Cannot upload: No project ID available');
       return;
@@ -152,61 +174,68 @@ export const useUpload = () => {
         return;
     }
 
-    const activeUploads = state.uploadQueue.filter(f => f.status === 'uploading').length;
-    const maxConcurrent = 3;
-    const filesToStart = filesToUpload.slice(0, maxConcurrent - activeUploads);
+    // Mark as initialized to prevent re-running
+    uploadInitialized.current = true;
+    console.log('[UploadContext] ✅ INITIALIZING UPLOADS (ONE TIME)', filesToUpload.length, 'files, session:', uploadSessionId.current);
 
-    filesToStart.forEach(file => {
-        if (file.status !== 'uploading') {
-            const performRealUpload = async () => {
-                try {
-                    console.log(`[UploadContext] Starting upload for: ${file.file.name}`);
-                    
-                    // Get folder ID from folder mapping
-                    const folderMapping = state.folderMap.find(
-                        map => map.sourcePath === file.folderPath
-                    );
-                    const folderId = folderMapping?.targetId;
-
-                    // Upload file with real progress tracking using backend project ID
-                    const photoResponse = await uploadService.uploadWithProgress(
-                        file.file,
-                        state.backendProjectId!,
-                        folderId,
-                        (progress) => {
-                            dispatch({ 
-                                type: 'UPDATE_FILE_PROGRESS', 
-                                payload: { id: file.id, progress } 
-                            });
-                        }
-                    );
-
-                    console.log(`[UploadContext] Upload complete for: ${file.file.name}`, photoResponse);
-                    dispatch({ 
-                        type: 'FILE_UPLOAD_SUCCESS', 
-                        payload: { 
-                            fileId: file.id, 
-                            photoId: photoResponse.id 
-                        } 
-                    });
-                    
-                } catch (error: any) {
-                    console.error(`[UploadContext] Upload failed for: ${file.file.name}`, error);
-                    dispatch({ 
-                        type: 'FILE_UPLOAD_FAIL', 
-                        payload: { 
-                            id: file.id, 
-                            error: error.message || 'Upload failed' 
-                        }
-                    });
+    // Set up callbacks for the queue manager
+    uploadQueueManager.setCallbacks({
+        onProgress: (uploadId, progress) => {
+            dispatch({ 
+                type: 'UPDATE_FILE_PROGRESS', 
+                payload: { id: uploadId, progress } 
+            });
+        },
+        onSuccess: (uploadId, result) => {
+            console.log(`[UploadContext] Upload complete for file ID: ${uploadId}`, result);
+            dispatch({ 
+                type: 'FILE_UPLOAD_SUCCESS', 
+                payload: { 
+                    fileId: uploadId, 
+                    photoId: result.id 
+                } 
+            });
+        },
+        onError: (uploadId, error) => {
+            console.error(`[UploadContext] Upload failed for file ID: ${uploadId}`, error);
+            dispatch({ 
+                type: 'FILE_UPLOAD_FAIL', 
+                payload: { 
+                    id: uploadId, 
+                    error: error || 'Upload failed'
                 }
-            };
-            
-            performRealUpload();
+            });
+        },
+        onQueueUpdate: (queue) => {
+            const status = uploadQueueManager.getStatus();
+            console.log('[UploadContext] Queue status:', status);
         }
     });
 
-  }, [state.isUploading, state.uploadQueue, state.step, state.backendProjectId, state.folderMap, dispatch, context.state.isUploading]);
+    // Prepare queue items from files to upload
+    const queueItems = filesToUpload.map(file => {
+        const folderMapping = state.folderMap.find(
+            map => map.sourcePath === file.folderPath
+        );
+        
+        return {
+            id: file.id,
+            file: file.file,
+            projectId: state.backendProjectId!,
+            folderId: folderMapping?.targetId
+        };
+    });
+
+    // Add files to the queue (queue manager handles concurrency and batch operations)
+    if (queueItems.length > 0) {
+        console.log(`[UploadContext] 🚀 Adding ${queueItems.length} files to upload queue (session: ${uploadSessionId.current})`);
+        // Note: addToQueue is now async as it fetches presigned URLs in batch
+        uploadQueueManager.addToQueue(queueItems).catch(error => {
+            console.error('[UploadContext] Failed to add files to queue:', error);
+        });
+    }
+
+  }, [state.isUploading, state.backendProjectId, dispatch]);
   
   const setMode = useCallback((mode: UploadMode) => dispatch({ type: 'SET_MODE', payload: mode }), [dispatch]);
   const nextStep = useCallback(() => dispatch({ type: 'NEXT_STEP' }), [dispatch]);
@@ -217,10 +246,22 @@ export const useUpload = () => {
   const updateFolderMap = useCallback((map: FolderMap[]) => dispatch({ type: 'UPDATE_FOLDER_MAP', payload: map }), [dispatch]);
   const updateUploadRules = useCallback((rules: Partial<UploadRules>) => dispatch({ type: 'UPDATE_UPLOAD_RULES', payload: rules }), [dispatch]);
   const startUpload = useCallback(() => dispatch({ type: 'START_UPLOAD' }), [dispatch]);
-  const pauseUpload = useCallback(() => dispatch({ type: 'PAUSE_UPLOAD' }), [dispatch]);
-  const resumeUpload = useCallback(() => dispatch({ type: 'RESUME_UPLOAD' }), [dispatch]);
-  const retryFile = useCallback((id: string) => dispatch({ type: 'RETRY_FILE', payload: id }), [dispatch]);
-  const retryFailedUploads = useCallback(() => dispatch({ type: 'RETRY_FAILED' }), [dispatch]);
+  const pauseUpload = useCallback(() => {
+    uploadQueueManager.pauseAll();
+    dispatch({ type: 'PAUSE_UPLOAD' });
+  }, [dispatch]);
+  const resumeUpload = useCallback(() => {
+    uploadQueueManager.resumeAll();
+    dispatch({ type: 'RESUME_UPLOAD' });
+  }, [dispatch]);
+  const retryFile = useCallback((id: string) => {
+    uploadQueueManager.retryUpload(id);
+    dispatch({ type: 'RETRY_FILE', payload: id });
+  }, [dispatch]);
+  const retryFailedUploads = useCallback(() => {
+    uploadQueueManager.retryAllFailed();
+    dispatch({ type: 'RETRY_FAILED' });
+  }, [dispatch]);
 
   return { state, dispatch, setMode, nextStep, prevStep, setStep, resetUpload, setFiles, updateFolderMap, updateUploadRules, startUpload, pauseUpload, resumeUpload, retryFile, retryFailedUploads };
 };
