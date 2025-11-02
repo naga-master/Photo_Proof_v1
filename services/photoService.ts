@@ -47,9 +47,9 @@ class PhotoService {
    */
   async getProjectPhotos(projectId: string, categoryId?: string): Promise<PhotoListResponse> {
     const params: Record<string, string> = {};
-    if (categoryId) params.category_id = categoryId;
+    if (categoryId) params.folder_id = categoryId; // Backend uses folder_id, not category_id
     
-    return apiClient.get<PhotoListResponse>(`/v2/photos/project/${projectId}`, params);
+    return apiClient.get<PhotoListResponse>(`/v2/photos/projects/${projectId}/photos`, params);
   }
 
   /**

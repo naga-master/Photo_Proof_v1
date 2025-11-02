@@ -27,6 +27,7 @@ import { projectService } from './services/projectService';
 import { clientService } from './services/clientService';
 import { servicePackageService } from './services/servicePackageService';
 import { invoiceService } from './services/invoiceService';
+import { photoService } from './services/photoService';
 import type { Project as BackendProject } from './services/projectService';
 import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
@@ -558,9 +559,33 @@ const App: React.FC = () => {
         setPage(targetPage);
     };
     
-    const handleNavigateToGallery = (album: Album) => {
+    const handleNavigateToGallery = async (album: Album) => {
         setPreviousPage(page);
         setCurrentAlbum(album);
+        
+        // Fetch photos from backend API
+        try {
+            console.log('[App] Fetching photos for project:', album.id);
+            const response = await photoService.getProjectPhotos(album.id);
+            console.log('[App] Fetched photos:', response);
+            
+            // Map backend photos to frontend Photo type
+            const photos = response.photos.map((photo: any) => ({
+                id: String(photo.id),
+                src: `http://localhost:8000${photo.src}`, // Prepend backend URL
+                alt: photo.original_filename || photo.alt,
+                width: photo.width || 800,
+                height: photo.height || 1200,
+                comments: []
+            }));
+            
+            setGalleryContent({ photos, title: album.title });
+        } catch (error) {
+            console.error('[App] Failed to fetch photos:', error);
+            // Fallback to album photos if API fails
+            setGalleryContent({ photos: album.photos || [], title: album.title });
+            toast.error('Failed to load photos from server');
+        }
         
         // Store the project for studio return navigation
         if (userRole === 'studio') {

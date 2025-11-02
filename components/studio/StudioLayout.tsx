@@ -173,12 +173,17 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setView('invoiceEditor');
     };
 
-    const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number): Album => {
-        const newAlbumId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
+    const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number, backendProjectId?: string): Album => {
+        // Create new photos from the upload queue
         const newPhotos = queue
             .filter(f => f.status === 'success')
             .map((f, i) => ({
-                id: `${Date.now()}_${i}`, src: URL.createObjectURL(f.file), alt: f.file.name, width: 800, height: 1200, comments: []
+                id: `${Date.now()}_${i}`,
+                src: URL.createObjectURL(f.file),
+                alt: f.file.name,
+                width: 800,
+                height: 1200,
+                comments: []
             }));
         
         // Determine cover photo - use selected index, or default to first photo
@@ -191,10 +196,59 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             }
         }
         // Fallback to first photo if no cover selected or invalid index
-        if (!coverPhotoSrc) {
-            coverPhotoSrc = newPhotos[0]?.src || '';
+        if (!coverPhotoSrc && newPhotos.length > 0) {
+            coverPhotoSrc = newPhotos[0].src;
         }
         
+        // If backendProjectId exists, check if we're updating an existing album
+        if (backendProjectId) {
+            const existingAlbum = albums.find(a => a.id === backendProjectId);
+            
+            if (existingAlbum) {
+                // UPDATE existing album with new photos
+                console.log('[StudioLayout] Adding photos to existing project:', backendProjectId);
+                
+                const updatedAlbum: Album = {
+                    ...existingAlbum,
+                    photos: [...(existingAlbum.photos || []), ...newPhotos],
+                    photoCount: (existingAlbum.photoCount || 0) + newPhotos.length,
+                    coverPhotoSrc: coverPhotoSrc || existingAlbum.coverPhotoSrc,
+                };
+                
+                // Update albums array
+                const updatedAlbums = albums.map(a => 
+                    a.id === backendProjectId ? updatedAlbum : a
+                );
+                onUpdateAlbums(updatedAlbums);
+                
+                console.log('[StudioLayout] Updated existing album:', updatedAlbum);
+                return updatedAlbum;
+            } else {
+                // CREATE new album but use the backendProjectId as the ID
+                // This happens when a NEW project is created (backendProjectId exists but album doesn't)
+                console.log('[StudioLayout] Creating new album with backend ID:', backendProjectId);
+                
+                const newAlbum: Album = {
+                    id: backendProjectId, // Use backend ID instead of generating new one
+                    title: projectDetails.title || "Untitled Project",
+                    clientId: projectDetails.clientId || '',
+                    shootDate: projectDetails.shootDate,
+                    coverPhotoSrc: coverPhotoSrc,
+                    photoCount: newPhotos.length,
+                    isLocked: false,
+                    photos: newPhotos,
+                    layout: projectDetails.layout || props.branding.defaultLayoutId,
+                };
+
+                onUpdateAlbums([...albums, newAlbum]);
+                console.log('[StudioLayout] Created new album:', newAlbum);
+                return newAlbum;
+            }
+        }
+        
+        // No backendProjectId - shouldn't happen, but fallback to old behavior
+        console.warn('[StudioLayout] No backendProjectId provided, creating album with random ID');
+        const newAlbumId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
         const newAlbum: Album = {
             id: newAlbumId,
             title: projectDetails.title || "Untitled Project",

@@ -58,6 +58,16 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       setStep(initialStep);
     }
   }, [initialStep, setStep]);
+  
+  // Debug logging for backendProjectId
+  React.useEffect(() => {
+    console.log('[UploadWizard] State updated:', {
+      step,
+      mode,
+      backendProjectId: state.backendProjectId,
+      existingProjectId,
+    });
+  }, [step, mode, state.backendProjectId, existingProjectId]);
 
   // Debug logging for sidebar visibility
   React.useEffect(() => {
@@ -116,7 +126,9 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       errors = validation.errors;
     } else if (step === 3) {
       // Before starting upload, create the backend project
+      console.log('[UploadWizard] Step 3 - Checking backendProjectId:', state.backendProjectId);
       if (!state.backendProjectId) {
+        console.log('[UploadWizard] No backendProjectId found, creating new project...');
         try {
           showToast('Creating project...');
           
@@ -164,6 +176,8 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
           console.error('[UploadWizard] Project creation failed:', error);
           return;
         }
+      } else {
+        console.log('[UploadWizard] Using existing project, backendProjectId:', state.backendProjectId);
       }
     }
 

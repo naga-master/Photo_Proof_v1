@@ -11,7 +11,7 @@ import { projectService } from '../../../services/projectService';
 
 interface Step5_SummaryProps {
   onExit: () => void;
-  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number) => Album;
+  onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number, backendProjectId?: string) => Album;
   // Fix: Updated onViewGallery prop to accept an Album object.
   onViewGallery: (album: Album) => void;
   showToast: (message: string) => void;
@@ -69,7 +69,7 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
         ? selectedCoverIndex 
         : uploadQueue.findIndex(f => f.status === 'success');
       
-      createdAlbumRef.current = onProjectCreated(projectDetails, uploadQueue, coverIndex >= 0 ? coverIndex : undefined);
+      createdAlbumRef.current = onProjectCreated(projectDetails, uploadQueue, coverIndex >= 0 ? coverIndex : undefined, backendProjectId);
     }
     return createdAlbumRef.current;
   };
