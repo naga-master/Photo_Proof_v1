@@ -23,25 +23,43 @@ type UploadAction =
   | { type: 'RETRY_FILE'; payload: string }
   | { type: 'RETRY_FAILED' };
 
-const getInitialState = (initialClientId?: number, defaultLayoutId?: LayoutId): UploadState => ({
-  step: 0,
-  mode: null,
-  projectDetails: {
-    clientId: initialClientId ? String(initialClientId) : '',
-    layout: defaultLayoutId || 'layout1',
-    packageId: '',
-  },
-  detectedFolders: [],
-  folderMap: [],
-  uploadRules: {
-    imageSize: 'high',
-    compression: 90,
-    aiTagging: true,
-    aiCulling: false,
-  },
-  uploadQueue: [],
-  isUploading: false,
-});
+const getInitialState = (
+  initialClientId?: number, 
+  defaultLayoutId?: LayoutId, 
+  existingProjectId?: string
+): UploadState => {
+  const baseState: UploadState = {
+    step: 0,
+    mode: null,
+    projectDetails: {
+      clientId: initialClientId ? String(initialClientId) : '',
+      layout: defaultLayoutId || 'layout1',
+      packageId: '',
+    },
+    detectedFolders: [],
+    folderMap: [],
+    uploadRules: {
+      imageSize: 'high',
+      compression: 90,
+      aiTagging: true,
+      aiCulling: false,
+    },
+    uploadQueue: [],
+    isUploading: false,
+  };
+
+  // If adding to existing project, pre-populate mode and project ID
+  if (existingProjectId) {
+    console.log('[UploadContext] ✅ Initializing with existing project ID:', existingProjectId);
+    return {
+      ...baseState,
+      mode: 'existing',  // Set mode to existing
+      backendProjectId: existingProjectId,  // Set the backend project ID
+    };
+  }
+
+  return baseState;
+};
 
 const UploadContext = createContext<{
   state: UploadState;
@@ -59,6 +77,8 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
     case 'SET_STEP':
       return { ...state, step: Math.max(0, Math.min(action.payload, 5)) as UploadState['step'] };
     case 'RESET':
+      // Clear queue manager when resetting upload context
+      uploadQueueManager.clearAll();
       return getInitialState();
     case 'SET_PROJECT_DETAILS':
         return { ...state, projectDetails: { ...state.projectDetails, ...action.payload } };
@@ -72,6 +92,7 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
                 file,
                 status: 'queued',
                 progress: 0,
+                folderPath: folder.path,  // ✅ FIX: Add folderPath for folder mapping
             } as UploadFile))
         );
         const newMap = newFolders.map(folder => ({
@@ -124,8 +145,13 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
   }
 };
 
-export const UploadProvider: React.FC<{ children: React.ReactNode, initialClientId?: number, defaultLayoutId?: LayoutId }> = ({ children, initialClientId, defaultLayoutId }) => {
-  const [state, dispatch] = useReducer(uploadReducer, getInitialState(initialClientId, defaultLayoutId));
+export const UploadProvider: React.FC<{ 
+  children: React.ReactNode; 
+  initialClientId?: number; 
+  defaultLayoutId?: LayoutId;
+  existingProjectId?: string;
+}> = ({ children, initialClientId, defaultLayoutId, existingProjectId }) => {
+  const [state, dispatch] = useReducer(uploadReducer, getInitialState(initialClientId, defaultLayoutId, existingProjectId));
   return <UploadContext.Provider value={{ state, dispatch }}>{children}</UploadContext.Provider>;
 };
 
@@ -149,16 +175,25 @@ export const useUpload = () => {
       return;
     }
     
-    // Generate session ID if new session
+    // Check if already initialized BEFORE generating session ID
+    if (uploadInitialized.current) {
+      // Already initialized for this upload session
+      console.log('[UploadContext] Upload already initialized, skipping (session:', uploadSessionId.current, ')');
+      return;
+    }
+    
+    // Mark as initialized IMMEDIATELY to prevent duplicate runs
+    uploadInitialized.current = true;
+    
+    // Generate session ID for logging
     if (!uploadSessionId.current) {
       uploadSessionId.current = Date.now().toString();
     }
     
-    if (uploadInitialized.current) {
-      // Already initialized for this upload session
-      console.log('[UploadContext] Upload already initialized, skipping');
-      return;
-    }
+    // CRITICAL: Clear queue manager from previous upload sessions
+    // The queue manager is a singleton and persists across component re-renders
+    console.log('[UploadContext] Clearing queue manager for new upload session');
+    uploadQueueManager.clearAll();
 
     if (!state.backendProjectId) {
       console.error('[UploadContext] Cannot upload: No project ID available');
@@ -174,8 +209,6 @@ export const useUpload = () => {
         return;
     }
 
-    // Mark as initialized to prevent re-running
-    uploadInitialized.current = true;
     console.log('[UploadContext] ✅ INITIALIZING UPLOADS (ONE TIME)', filesToUpload.length, 'files, session:', uploadSessionId.current);
 
     // Set up callbacks for the queue manager

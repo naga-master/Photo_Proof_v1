@@ -25,7 +25,7 @@ interface UploadWizardProps {
   onProjectCreated: (projectDetails: Partial<ProjectDetails>, queue: UploadFile[]) => Album;
   onViewGallery: (album: Album) => void;
   showToast: (message: string) => void;
-  existingProjectId?: number;
+  existingProjectId?: string;  // Changed from number to string
   initialStep?: number;
 }
 
@@ -58,6 +58,19 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       setStep(initialStep);
     }
   }, [initialStep, setStep]);
+
+  // Debug logging for sidebar visibility
+  React.useEffect(() => {
+    const sidebarVisible = (mode || state.projectDetails.clientId) && step >= 2;
+    console.log('[UploadWizard] Sidebar visibility check:', {
+      mode,
+      clientId: state.projectDetails.clientId,
+      step,
+      existingProjectId,
+      backendProjectId: state.backendProjectId,
+      sidebarVisible,
+    });
+  }, [mode, state.projectDetails.clientId, step, existingProjectId, state.backendProjectId]);
 
   const handleNext = async () => {
     // Validate before proceeding
@@ -277,7 +290,11 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
 };
 
 const UploadWizard: React.FC<UploadWizardProps> = (props) => (
-  <UploadProvider initialClientId={props.initialClientId} defaultLayoutId={props.defaultLayoutId}>
+  <UploadProvider 
+    initialClientId={props.initialClientId} 
+    defaultLayoutId={props.defaultLayoutId}
+    existingProjectId={props.existingProjectId}
+  >
     <UploadWizardContent {...props} />
   </UploadProvider>
 );

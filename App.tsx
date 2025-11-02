@@ -937,17 +937,28 @@ const App: React.FC = () => {
     };
 
     const shouldShowBackButton = () => {
+        console.log('[App] shouldShowBackButton check:', {
+            userRole,
+            previousPage,
+            page,
+            navigationStackLength: navigationStack.length,
+            navigationStack
+        });
+        
         // For studio users - show back button when viewing from dashboard
         if (userRole === 'studio' && previousPage === 'dashboard') {
+            console.log('[App] ✅ Show back button: Studio user from dashboard');
             return true;
         }
         
         // For client users - show back button when NOT on entry page (albums)
         // Only show if stack has more than 1 item AND current page is not 'albums'
         if (userRole === 'client' && navigationStack.length > 1 && page !== 'albums') {
+            console.log('[App] ✅ Show back button: Client with nav stack');
             return true;
         }
         
+        console.log('[App] ❌ Back button hidden');
         return false;
     };
 

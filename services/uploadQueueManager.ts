@@ -165,8 +165,13 @@ class UploadQueueManager {
     this.notifyQueueUpdate();
 
     try {
+      // Convert project_id to number - backend expects integer, not UUID string
+      const projectId = typeof batch[0].projectId === 'string' 
+        ? parseInt(batch[0].projectId, 10) 
+        : batch[0].projectId;
+      
       const batchRequest = {
-        project_id: batch[0].projectId,
+        project_id: projectId,
         folder_id: batch[0].folderId,
         files: batch.map(upload => ({
           filename: upload.file.name,

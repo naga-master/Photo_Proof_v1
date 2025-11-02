@@ -22,7 +22,7 @@ export interface PresignedUrlResponse {
 }
 
 export interface BatchPresignedUrlRequest {
-  project_id: string;
+  project_id: number; // Backend expects integer, not UUID string
   folder_id?: string;
   files: Array<{
     filename: string;
