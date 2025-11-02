@@ -25,6 +25,8 @@ export class ApiClient {
   private getAuthHeaders(): HeadersInit {
     // For backwards compatibility and non-cookie scenarios
     const token = localStorage.getItem('auth_token');
+    console.log('[API Client] Token in localStorage:', token ? `${token.substring(0, 20)}...` : 'NONE');
+    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -32,6 +34,9 @@ export class ApiClient {
     // Add Authorization header as fallback if token exists in localStorage
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('[API Client] Added Authorization header');
+    } else {
+      console.warn('[API Client] No token found in localStorage');
     }
     
     return headers;

@@ -33,30 +33,40 @@ function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state by validating with backend on mount
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('[AuthContext] Initializing authentication...');
       const storedUser = authService.getStoredUser();
       const hasToken = authService.isAuthenticated();
+      
+      console.log('[AuthContext] Stored user:', storedUser ? storedUser.email : 'NONE');
+      console.log('[AuthContext] Has token:', hasToken);
       
       // Only validate with backend if we have both stored user and token
       if (storedUser && hasToken) {
         try {
+          console.log('[AuthContext] Validating session with backend...');
           // Validate the session with backend (checks httpOnly cookies)
           const currentUser = await authService.getCurrentUser();
+          console.log('[AuthContext] ✅ Session valid, user:', currentUser.email);
           setUser(currentUser);
         } catch (error: any) {
           // Session invalid or expired, clear local data
-          console.log('Session validation failed:', error?.message || 'Unknown error');
+          console.error('[AuthContext] ❌ Session validation failed:', error?.message || error);
           await authService.logout();
           setUser(null);
         }
+      } else {
+        console.log('[AuthContext] ⏭️  Skipping validation (no stored user or token)');
       }
       
       setIsLoading(false);
+      console.log('[AuthContext] Initialization complete');
     };
 
     initializeAuth();
 
     // Listen for unauthorized events to clear auth
     const handleUnauthorized = () => {
+      console.log('[AuthContext] Unauthorized event received, clearing user');
       setUser(null);
     };
     window.addEventListener('unauthorized', handleUnauthorized);

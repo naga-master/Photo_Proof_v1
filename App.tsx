@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 // Fix: Import Transition type from framer-motion.
 import { motion, AnimatePresence, Transition } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
+import { useAuth } from './contexts/AuthContext';
 
 import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings, Folder } from './types';
 import CoverPage from './components/CoverPage';
@@ -154,6 +155,9 @@ const mapInvoiceResponse = (invoice: BackendInvoice): Invoice => ({
 });
 
 const App: React.FC = () => {
+    // Get authentication state from AuthContext
+    const { user, isAuthenticated, isLoading: authLoading, logout: authLogout } = useAuth();
+    
     // State
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
@@ -169,6 +173,40 @@ const App: React.FC = () => {
     const [studioReturnToProject, setStudioReturnToProject] = useState<Album | null>(null);
     const [navigationStack, setNavigationStack] = useState<Page[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
+
+    // Sync authentication state with AuthContext
+    useEffect(() => {
+        console.log('[App] Auth state changed:', { isAuthenticated, authLoading, user: user?.email });
+        
+        if (authLoading) {
+            console.log('[App] Auth still loading...');
+            return;
+        }
+        
+        if (isAuthenticated && user) {
+            console.log('[App] ✅ User authenticated:', user.email, 'Role:', user.role);
+            setUserRole(user.role as UserRole);
+            
+            // Navigate to appropriate page based on role (only if on login page)
+            if (page === 'login') {
+                if (user.role === 'client') {
+                    console.log('[App] Navigating client to albums');
+                    setPage('albums');
+                    setNavigationStack(['albums']);
+                } else {
+                    console.log('[App] Navigating studio user to dashboard');
+                    setPage('dashboard');
+                    setNavigationStack([]);
+                }
+            }
+        } else {
+            console.log('[App] ❌ User not authenticated, showing login');
+            if (page !== 'login') {
+                setPage('login');
+                setUserRole(null);
+            }
+        }
+    }, [isAuthenticated, authLoading, user]);
 
     // Store state
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -191,17 +229,17 @@ const App: React.FC = () => {
       whatsapp: { phoneNumberId: '', businessAccountId: '', accessToken: '' }
     });
 
-    // Load initial data from API
+    // Load initial data from API when user is authenticated
     useEffect(() => {
         const loadInitialData = async () => {
-            // Only load data if user is already authenticated on mount
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                console.log('[App] No auth token found, skipping initial data load');
+            // Only load data if user is authenticated
+            if (!isAuthenticated || authLoading) {
+                console.log('[App] Not authenticated or auth loading, skipping data load');
+                setIsLoadingData(false);
                 return;
             }
 
-            console.log('[App] Auth token found, loading initial data from API...');
+            console.log('[App] User authenticated, loading initial data from API...');
             setIsLoadingData(true);
             try {
                 // Load projects from API
@@ -248,11 +286,8 @@ const App: React.FC = () => {
                 console.error('[App] Error loading initial data:', error);
                 // Handle 401 errors gracefully - user will need to login
                 if (error?.status === 401) {
-                    console.log('[App] Authentication failed, clearing token');
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('user_data');
-                    setUserRole(null);
-                    setPage('login');
+                    console.log('[App] Authentication failed during data load');
+                    await authLogout();
                 } else {
                     toast.error('Failed to load data from server');
                 }
@@ -267,7 +302,7 @@ const App: React.FC = () => {
         };
 
         loadInitialData();
-    }, []); // Load once on mount
+    }, [isAuthenticated, authLoading]); // Load when authentication state changes
 
     // Function to load all data from API
     const loadDataFromAPI = async () => {
@@ -348,7 +383,9 @@ const App: React.FC = () => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        console.log('[App] Logout requested');
+        await authLogout();  // Use AuthContext logout
         setPage('login');
         setUserRole(null);
         setCurrentAlbum(null);
