@@ -246,7 +246,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                     <h1 className="text-lg font-semibold tracking-wider uppercase text-slate-800">NAPSTER's Photo Lab</h1>
                     <div className="w-7"></div>
                 </header>
-                <main className="flex-1">
+                <main className="flex-1 overflow-hidden">
                     {renderView()}
                 </main>
             </div>

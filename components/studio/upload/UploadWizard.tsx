@@ -87,7 +87,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
   const canContinue = step < 4 && (step > 0 || mode);
 
   return (
-    <div className="flex flex-col h-full bg-white animate-fade-in">
+    <div className="flex flex-col h-full bg-slate-50 animate-fade-in">
       <OfflineBanner />
       <header className="flex-shrink-0 bg-white border-b border-slate-200">
         <div className="p-4 flex justify-between items-center">
@@ -125,7 +125,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-8 bg-white">
+        <main className="flex-1 overflow-y-auto p-8 bg-slate-50">
           <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                   key={step}
@@ -138,7 +138,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
                       x: { type: "spring", stiffness: 300, damping: 30 },
                       opacity: { duration: 0.2 }
                   }}
-                  className="w-full min-h-full flex items-center justify-center py-8"
+                  className="w-full min-h-full flex justify-center items-start py-8"
               >
                   {renderStep()}
               </motion.div>
