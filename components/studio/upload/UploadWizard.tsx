@@ -13,6 +13,8 @@ import { ArrowLeftIcon } from '../../icons';
 import OfflineBanner from './OfflineBanner';
 import type { ProjectDetails, UploadFile, Album, Client, LayoutId, ServicePackage } from '../../../types';
 import { canProceedFromStep1, canProceedFromStep2, validateStep1, validateStep2, getValidationErrorMessage } from '../../../lib/validators';
+import { clientService } from '../../../services/clientService';
+import { projectService } from '../../../services/projectService';
 
 interface UploadWizardProps {
   clients: Client[];
@@ -45,7 +47,7 @@ const stepVariants = {
 };
 
 const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients, packages, initialStep = 0, existingProjectId }) => {
-  const { state, nextStep, prevStep, resetUpload, setStep } = useUpload();
+  const { state, nextStep, prevStep, resetUpload, setStep, dispatch } = useUpload();
   const { step, mode } = state;
   const [direction, setDirection] = useState(0);
   const [validationError, setValidationError] = useState<string>('');
@@ -57,7 +59,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
     }
   }, [initialStep, setStep]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validate before proceeding
     let isValid = true;
     let errors: Record<string, string> = {};
@@ -66,6 +68,32 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       const validation = validateStep1(state.projectDetails);
       isValid = validation.isValid;
       errors = validation.errors;
+
+      // If validation passes and we're creating a new client, create it first
+      if (isValid && state.projectDetails.clientId === 'new' && state.projectDetails.newClientDetails) {
+        try {
+          showToast('Creating client...');
+          const newClient = await clientService.createClient({
+            name: `${state.projectDetails.newClientDetails.firstName} ${state.projectDetails.newClientDetails.lastName}`,
+            email: state.projectDetails.newClientDetails.email,
+            phone: state.projectDetails.newClientDetails.phone,
+          });
+          
+          // Update project details with the new client ID
+          dispatch({
+            type: 'SET_PROJECT_DETAILS',
+            payload: { clientId: newClient.id }
+          });
+          
+          showToast('Client created successfully');
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Failed to create client';
+          setValidationError(errorMessage);
+          showToast(errorMessage);
+          console.error('[UploadWizard] Client creation failed:', error);
+          return;
+        }
+      }
     } else if (step === 2) {
       const validation = validateStep2({
         detectedFolders: state.detectedFolders,
@@ -73,6 +101,57 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       });
       isValid = validation.isValid;
       errors = validation.errors;
+    } else if (step === 3) {
+      // Before starting upload, create the backend project
+      if (!state.backendProjectId) {
+        try {
+          showToast('Creating project...');
+          
+          // Get client details - either from existing client or from newClientDetails
+          let clientName = '';
+          let clientEmail = '';
+          let clientPhone = '';
+          
+          if (state.projectDetails.clientId && state.projectDetails.clientId !== 'new') {
+            // Find existing client
+            const client = clients.find(c => c.id === state.projectDetails.clientId);
+            if (client) {
+              clientName = client.name;
+              clientEmail = client.email;
+              clientPhone = client.phone || '';
+            }
+          } else if (state.projectDetails.newClientDetails) {
+            // Use new client details
+            clientName = `${state.projectDetails.newClientDetails.firstName} ${state.projectDetails.newClientDetails.lastName}`;
+            clientEmail = state.projectDetails.newClientDetails.email;
+            clientPhone = state.projectDetails.newClientDetails.phone || '';
+          }
+          
+          const project = await projectService.createProject({
+            name: state.projectDetails.title || 'Untitled Project',
+            client_id: state.projectDetails.clientId !== 'new' ? String(state.projectDetails.clientId) : undefined,
+            client_name: clientName,
+            client_email: clientEmail,
+            client_phone: clientPhone,
+            shoot_date: state.projectDetails.shootDate,
+            project_type: 'photo_shoot',
+          });
+          
+          // Store the backend project ID
+          dispatch({
+            type: 'SET_BACKEND_PROJECT_ID',
+            payload: project.id
+          });
+          
+          showToast('Project created successfully');
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Failed to create project';
+          setValidationError(errorMessage);
+          showToast(errorMessage);
+          console.error('[UploadWizard] Project creation failed:', error);
+          return;
+        }
+      }
     }
 
     if (!isValid) {

@@ -7,6 +7,7 @@ import { useUpload } from './UploadContext';
 import { CheckCircleIcon, XCircleIcon } from '../../icons';
 import CoverPhotoSelector from './CoverPhotoSelector';
 import type { ProjectDetails, UploadFile, Album } from '../../../types';
+import { projectService } from '../../../services/projectService';
 
 interface Step5_SummaryProps {
   onExit: () => void;
@@ -18,9 +19,12 @@ interface Step5_SummaryProps {
 
 const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated, onViewGallery, showToast }) => {
   const { state, retryFailedUploads } = useUpload();
-  const { uploadQueue, projectDetails } = state;
+  const { uploadQueue, projectDetails, backendProjectId } = state;
   const createdAlbumRef = useRef<Album | null>(null);
-  const [selectedCoverIndex, setSelectedCoverIndex] = useState<number | null>(null);  const { successCount, failedCount } = useMemo(() => {
+  const [selectedCoverIndex, setSelectedCoverIndex] = useState<number | null>(null);
+  const [isSavingCoverPhoto, setIsSavingCoverPhoto] = useState(false);
+
+  const { successCount, failedCount } = useMemo(() => {
     return {
       successCount: uploadQueue.filter(f => f.status === 'success').length,
       failedCount: uploadQueue.filter(f => f.status === 'failed').length,
@@ -28,6 +32,35 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
   }, [uploadQueue]);
 
   const failedFiles = uploadQueue.filter(f => f.status === 'failed');
+
+  const setCoverPhotoOnBackend = async () => {
+    if (!backendProjectId) {
+      console.error('[Step5_Summary] No backend project ID available');
+      return;
+    }
+
+    // Get the photo ID from the selected cover index
+    const successfulFiles = uploadQueue.filter(f => f.status === 'success');
+    const coverIndex = selectedCoverIndex !== null ? selectedCoverIndex : 0;
+    const coverFile = successfulFiles[coverIndex];
+
+    if (!coverFile || !coverFile.photoId) {
+      console.warn('[Step5_Summary] No cover photo selected or no photo ID');
+      return;
+    }
+
+    try {
+      setIsSavingCoverPhoto(true);
+      await projectService.setCoverPhoto(backendProjectId, coverFile.photoId);
+      console.log('[Step5_Summary] Cover photo set successfully');
+      showToast('Cover photo updated');
+    } catch (error: any) {
+      console.error('[Step5_Summary] Failed to set cover photo:', error);
+      showToast(error?.message || 'Failed to set cover photo');
+    } finally {
+      setIsSavingCoverPhoto(false);
+    }
+  };
 
   const getOrCreateAlbum = () => {
     if (!createdAlbumRef.current) {
@@ -41,12 +74,14 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
     return createdAlbumRef.current;
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
+    await setCoverPhotoOnBackend();
     getOrCreateAlbum();
     onExit();
   };
 
-  const handleViewGallery = () => {
+  const handleViewGallery = async () => {
+    await setCoverPhotoOnBackend();
     const album = getOrCreateAlbum();
     if (album) {
         onViewGallery(album);

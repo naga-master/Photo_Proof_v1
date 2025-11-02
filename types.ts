@@ -242,6 +242,8 @@ export interface UploadFile {
     file: File;
     status: 'queued' | 'uploading' | 'success' | 'failed';
     progress: number;
+    photoId?: string;  // Backend photo ID after successful upload
+    folderPath?: string;
     error?: string;
 }
 
@@ -249,6 +251,7 @@ export interface UploadState {
     step: 0 | 1 | 2 | 3 | 4 | 5;
     mode: UploadMode;
     projectDetails: ProjectDetails;
+    backendProjectId?: string;  // Backend project ID created before uploads
     detectedFolders: DetectedFolder[];
     folderMap: FolderMap[];
     uploadRules: UploadRules;

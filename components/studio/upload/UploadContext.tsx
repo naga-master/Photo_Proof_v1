@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import type { UploadState, UploadMode, UploadFile, DetectedFolder, FolderMap, UploadRules, ProjectDetails, LayoutId } from '../../../types';
+import React, { createContext, useReducer, useContext, useEffect, useCallback, useRef } from 'react';
+import type { DetectedFolder, FolderMap, UploadFile, UploadRules, UploadMode, ProjectDetails, LayoutId, UploadState } from '../../../types';
+import { uploadService } from '../../../services/uploadService';
 
 type UploadAction =
   | { type: 'SET_MODE'; payload: UploadMode }
@@ -8,6 +9,7 @@ type UploadAction =
   | { type: 'SET_STEP'; payload: number }
   | { type: 'RESET' }
   | { type: 'SET_PROJECT_DETAILS'; payload: Partial<ProjectDetails> }
+  | { type: 'SET_BACKEND_PROJECT_ID'; payload: string }
   | { type: 'SET_FILES'; payload: DetectedFolder[] }
   | { type: 'UPDATE_FOLDER_MAP'; payload: FolderMap[] }
   | { type: 'UPDATE_UPLOAD_RULES'; payload: Partial<UploadRules> }
@@ -15,7 +17,7 @@ type UploadAction =
   | { type: 'PAUSE_UPLOAD' }
   | { type: 'RESUME_UPLOAD' }
   | { type: 'UPDATE_FILE_PROGRESS'; payload: { id: string; progress: number } }
-  | { type: 'FILE_UPLOAD_SUCCESS'; payload: string }
+  | { type: 'FILE_UPLOAD_SUCCESS'; payload: { fileId: string; photoId: string } }
   | { type: 'FILE_UPLOAD_FAIL'; payload: { id: string; error: string } }
   | { type: 'RETRY_FILE'; payload: string }
   | { type: 'RETRY_FAILED' };
@@ -59,6 +61,8 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
       return getInitialState();
     case 'SET_PROJECT_DETAILS':
         return { ...state, projectDetails: { ...state.projectDetails, ...action.payload } };
+    case 'SET_BACKEND_PROJECT_ID':
+        return { ...state, backendProjectId: action.payload };
     case 'SET_FILES':
         const newFolders = action.payload;
         const newQueue = newFolders.flatMap(folder => 
@@ -92,7 +96,11 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
     case 'FILE_UPLOAD_SUCCESS':
         return {
             ...state,
-            uploadQueue: state.uploadQueue.map(f => f.id === action.payload ? { ...f, progress: 100, status: 'success' } : f),
+            uploadQueue: state.uploadQueue.map(f => 
+                f.id === action.payload.fileId 
+                    ? { ...f, progress: 100, status: 'success', photoId: action.payload.photoId } 
+                    : f
+            ),
         };
     case 'FILE_UPLOAD_FAIL':
         return {
@@ -127,9 +135,13 @@ export const useUpload = () => {
   }
   const { state, dispatch } = context;
 
-  // Mock upload logic
+  // Real upload logic using backend API
   React.useEffect(() => {
     if (!state.isUploading) return;
+    if (!state.backendProjectId) {
+      console.error('[UploadContext] Cannot upload: No project ID available');
+      return;
+    }
 
     const filesToUpload = state.uploadQueue.filter(f => f.status === 'queued' || f.status === 'uploading');
     if (filesToUpload.length === 0) {
@@ -141,47 +153,60 @@ export const useUpload = () => {
     }
 
     const activeUploads = state.uploadQueue.filter(f => f.status === 'uploading').length;
-    const filesToStart = filesToUpload.slice(0, 3 - activeUploads);
+    const maxConcurrent = 3;
+    const filesToStart = filesToUpload.slice(0, maxConcurrent - activeUploads);
 
     filesToStart.forEach(file => {
         if (file.status !== 'uploading') {
-            const simulateUpload = () => {
-                let progress = file.progress;
-                dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
+            const performRealUpload = async () => {
+                try {
+                    console.log(`[UploadContext] Starting upload for: ${file.file.name}`);
+                    
+                    // Get folder ID from folder mapping
+                    const folderMapping = state.folderMap.find(
+                        map => map.sourcePath === file.folderPath
+                    );
+                    const folderId = folderMapping?.targetId;
 
-                const isSetToFail = Math.random() < 0.2; // 20% chance of failure
-                const failAtProgress = Math.random() * 80 + 10; // Fails between 10% and 90%
-                
-                const interval = setInterval(() => {
-                    if (!context.state.isUploading) {
-                        clearInterval(interval);
-                        return;
-                    }
-                    progress += Math.random() * 20;
+                    // Upload file with real progress tracking using backend project ID
+                    const photoResponse = await uploadService.uploadWithProgress(
+                        file.file,
+                        state.backendProjectId!,
+                        folderId,
+                        (progress) => {
+                            dispatch({ 
+                                type: 'UPDATE_FILE_PROGRESS', 
+                                payload: { id: file.id, progress } 
+                            });
+                        }
+                    );
 
-                    if (isSetToFail && progress >= failAtProgress) {
-                        progress = Math.min(progress, failAtProgress);
-                        clearInterval(interval);
-                        dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
-                        dispatch({ type: 'FILE_UPLOAD_FAIL', payload: { id: file.id, error: 'Network error' }});
-                        return;
-                    }
-
-                    if (progress >= 100) {
-                        progress = 100;
-                        clearInterval(interval);
-                        dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
-                        dispatch({ type: 'FILE_UPLOAD_SUCCESS', payload: file.id });
-                    } else {
-                      dispatch({ type: 'UPDATE_FILE_PROGRESS', payload: { id: file.id, progress } });
-                    }
-                }, 200);
+                    console.log(`[UploadContext] Upload complete for: ${file.file.name}`, photoResponse);
+                    dispatch({ 
+                        type: 'FILE_UPLOAD_SUCCESS', 
+                        payload: { 
+                            fileId: file.id, 
+                            photoId: photoResponse.id 
+                        } 
+                    });
+                    
+                } catch (error: any) {
+                    console.error(`[UploadContext] Upload failed for: ${file.file.name}`, error);
+                    dispatch({ 
+                        type: 'FILE_UPLOAD_FAIL', 
+                        payload: { 
+                            id: file.id, 
+                            error: error.message || 'Upload failed' 
+                        }
+                    });
+                }
             };
-            simulateUpload();
+            
+            performRealUpload();
         }
     });
 
-  }, [state.isUploading, state.uploadQueue, state.step, dispatch, context.state.isUploading]);
+  }, [state.isUploading, state.uploadQueue, state.step, state.backendProjectId, state.folderMap, dispatch, context.state.isUploading]);
   
   const setMode = useCallback((mode: UploadMode) => dispatch({ type: 'SET_MODE', payload: mode }), [dispatch]);
   const nextStep = useCallback(() => dispatch({ type: 'NEXT_STEP' }), [dispatch]);

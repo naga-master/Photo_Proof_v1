@@ -20,6 +20,7 @@ import InvoiceEditor from './InvoicesPage';
 import InvoicesListPage from './invoices/InvoicesPage';
 import InvoicePreviewModal from './invoices/InvoicePreviewModal';
 import { MenuIcon } from '../icons';
+import { projectService } from '../../services/projectService';
 
 interface StudioLayoutProps {
   albums: Album[];
@@ -111,11 +112,21 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setManagingProject(updatedAlbum);
     };
 
-    const handleDeleteProject = (albumId: string) => {
-        if(window.confirm('Are you sure you want to delete this project? This cannot be undone.')) {
+    const handleDeleteProject = async (albumId: string) => {
+        try {
+            // Call backend API to delete the project
+            await projectService.deleteProject(albumId);
+            
+            // Update local state after successful deletion
             onUpdateAlbums(albums.filter(a => a.id !== albumId));
             setManagingProject(null);
             setView('projects');
+            
+            toast.success('Project deleted successfully');
+        } catch (error: any) {
+            console.error('Error deleting project:', error);
+            const errorMessage = error?.message || 'Failed to delete project. Please try again.';
+            toast.error(errorMessage);
         }
     };
 

@@ -26,12 +26,17 @@ export interface Project {
 }
 
 export interface CreateProjectRequest {
-  title: string;
-  client_id: string;
+  name: string;  // Project name (was title)
+  description?: string;
+  client_id?: string;  // Optional - if provided, use existing client
+  client_name: string;  // Required for new clients
+  client_email: string;  // Required for new clients
+  client_phone?: string;
+  project_type?: string;
   shoot_date?: string;
-  layout?: string;
-  package_id?: string;
-  is_locked?: boolean;
+  layout?: string;  // Not part of backend schema but kept for frontend use
+  package_id?: string;  // Not part of backend schema but kept for frontend use
+  is_locked?: boolean;  // Not part of backend schema but kept for frontend use
 }
 
 export interface UpdateProjectRequest {
@@ -79,6 +84,15 @@ class ProjectService {
    */
   async updateProject(projectId: string, data: UpdateProjectRequest): Promise<Project> {
     return apiClient.patch<Project>(`/api/projects/${projectId}`, data);
+  }
+
+  /**
+   * Set project cover photo
+   */
+  async setCoverPhoto(projectId: string, photoId: string | null): Promise<Project> {
+    return apiClient.patch<Project>(`/api/projects/${projectId}`, {
+      cover_photo_id: photoId
+    });
   }
 
   /**

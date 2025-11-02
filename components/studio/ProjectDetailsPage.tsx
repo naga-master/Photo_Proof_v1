@@ -8,7 +8,7 @@ interface ProjectDetailsPageProps {
   clients: Client[];
   onBack: () => void;
   onUpdateProject: (album: Album) => void;
-  onDeleteProject: (albumId: string) => void;
+  onDeleteProject: (albumId: string) => Promise<void>;
   onViewGallery: (album: Album) => void;
   onAddPhotos: () => void;
   onGenerateInvoice: (album: Album) => void;
@@ -18,6 +18,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
   const [details, setDetails] = useState(project);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isCoverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   useEffect(() => {
     setDetails(project);
@@ -39,8 +40,17 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
     onUpdateProject(updatedDetails);
   };
 
-  const handleDeleteConfirm = () => {
-    onDeleteProject(project.id);
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onDeleteProject(project.id);
+      setDeleteModalOpen(false);
+    } catch (error) {
+      // Error is already handled in parent component
+      console.error('Delete failed:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const clientName = clients.find(c => c.id === details.clientId)?.name || 'Unknown Client';
@@ -132,13 +142,55 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
         </div>
 
         {isDeleteModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setDeleteModalOpen(false)}>
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6 text-center" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-xl font-bold text-gray-900">Are you sure?</h2>
-                    <p className="mt-2 text-gray-600">This will permanently delete the project and all its photos. This action cannot be undone.</p>
-                    <div className="mt-6 flex justify-center gap-4">
-                        <button onClick={() => setDeleteModalOpen(false)} className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
-                        <button onClick={handleDeleteConfirm} className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Delete Project</button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => !isDeleting && setDeleteModalOpen(false)}>
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6" onClick={e => e.stopPropagation()}>
+                    <div className="text-center">
+                        {/* Warning Icon */}
+                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        
+                        <h2 className="mt-4 text-xl font-bold text-gray-900">Delete Project?</h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                            Are you sure you want to delete <span className="font-semibold text-gray-900">"{project.title}"</span>?
+                        </p>
+                        <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-3">
+                            <p className="text-sm text-red-800 font-medium">
+                                ⚠️ This action cannot be undone
+                            </p>
+                            <p className="mt-1 text-xs text-red-700">
+                                All photos, comments, and project data will be permanently deleted.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 flex gap-3">
+                        <button 
+                            onClick={() => setDeleteModalOpen(false)} 
+                            disabled={isDeleting}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleDeleteConfirm} 
+                            disabled={isDeleting}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete Project'
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>
