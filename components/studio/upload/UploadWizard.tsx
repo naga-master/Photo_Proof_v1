@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadProvider, useUpload } from './UploadContext';
@@ -13,6 +12,7 @@ import UploadSidebar from './UploadSidebar';
 import { ArrowLeftIcon } from '../../icons';
 import OfflineBanner from './OfflineBanner';
 import type { ProjectDetails, UploadFile, Album, Client, LayoutId, ServicePackage } from '../../../types';
+import { canProceedFromStep1, canProceedFromStep2, validateStep1, validateStep2, getValidationErrorMessage } from '../../../lib/validators';
 
 interface UploadWizardProps {
   clients: Client[];
@@ -48,6 +48,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
   const { state, nextStep, prevStep, resetUpload, setStep } = useUpload();
   const { step, mode } = state;
   const [direction, setDirection] = useState(0);
+  const [validationError, setValidationError] = useState<string>('');
 
   // Set initial step if provided (e.g., when adding photos to existing project)
   React.useEffect(() => {
@@ -57,11 +58,38 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
   }, [initialStep, setStep]);
 
   const handleNext = () => {
+    // Validate before proceeding
+    let isValid = true;
+    let errors: Record<string, string> = {};
+
+    if (step === 1) {
+      const validation = validateStep1(state.projectDetails);
+      isValid = validation.isValid;
+      errors = validation.errors;
+    } else if (step === 2) {
+      const validation = validateStep2({
+        detectedFolders: state.detectedFolders,
+        folderMap: state.folderMap
+      });
+      isValid = validation.isValid;
+      errors = validation.errors;
+    }
+
+    if (!isValid) {
+      const errorMessage = getValidationErrorMessage(errors);
+      setValidationError(errorMessage);
+      showToast(errorMessage);
+      console.error('[UploadWizard] Validation failed:', errors);
+      return;
+    }
+
+    setValidationError('');
     setDirection(1);
     nextStep();
   };
 
   const handlePrev = () => {
+    setValidationError('');
     setDirection(-1);
     prevStep();
   };
@@ -84,7 +112,17 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
   };
 
   const isUploadingOrDone = step >= 4;
-  const canContinue = step < 4 && (step > 0 || mode);
+  
+  // Check if user can continue from current step
+  const canContinue = () => {
+    if (step >= 4) return false; // Can't continue from upload/summary steps
+    if (step === 0) return !!mode; // Step 0: Must select mode
+    if (step === 1) return canProceedFromStep1(state.projectDetails); // Step 1: Validate required fields
+    if (step === 2) return canProceedFromStep2({ detectedFolders: state.detectedFolders, folderMap: state.folderMap }); // Step 2: Validate folders
+    return true; // Step 3: No validation needed
+  };
+
+  const continueEnabled = canContinue();
 
   return (
     <div className="flex flex-col h-full bg-slate-50 animate-fade-in">
@@ -105,8 +143,17 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
           <div className="flex items-center gap-4">
             <button onClick={resetUpload} className="text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</button>
             {step > 1 && !isUploadingOrDone && <button onClick={handlePrev} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">Back</button>}
-            {canContinue && (
-                <button onClick={handleNext} className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-md hover:bg-slate-700">
+            {!isUploadingOrDone && (
+                <button 
+                  onClick={handleNext} 
+                  disabled={!continueEnabled}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+                    continueEnabled 
+                      ? 'bg-slate-800 hover:bg-slate-700' 
+                      : 'bg-slate-400 cursor-not-allowed'
+                  }`}
+                  title={!continueEnabled ? 'Please fill all required fields' : ''}
+                >
                     {step === 3 ? 'Start Upload' : 'Save & Continue'}
                 </button>
             )}
