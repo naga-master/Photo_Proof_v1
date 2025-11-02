@@ -16,12 +16,13 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
         )
     );
     const recentComments = allComments.slice(-5).reverse();
+    const totalComments = allComments.length;
 
     const stats = [
         { label: 'Total Projects', value: totalProjects },
         { label: 'Total Images', value: totalImages.toLocaleString() },
-        { label: 'Pending Selections', value: '1,204' },
-        { label: 'Unpaid Invoices', value: '3' },
+        { label: 'Total Comments', value: totalComments.toLocaleString() },
+        { label: 'Active Clients', value: new Set(albums.map(a => a.clientId)).size },
     ];
 
     const quickActions = [

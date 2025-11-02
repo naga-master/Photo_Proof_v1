@@ -194,63 +194,73 @@ const App: React.FC = () => {
     // Load initial data from API
     useEffect(() => {
         const loadInitialData = async () => {
+            // Only load data if user is already authenticated on mount
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                console.log('[App] No auth token found, skipping initial data load');
+                return;
+            }
+
+            console.log('[App] Auth token found, loading initial data from API...');
             setIsLoadingData(true);
             try {
-                // Load projects (albums) - only if authenticated
-                const token = localStorage.getItem('auth_token');
-                if (token) {
-                    console.log('[App] Loading initial data from API...');
-                    
-                    // Load projects from API
-                    const projectsResponse = await projectService.getProjects();
-                    const projects = projectsResponse.projects || [];
-                    const albums: Album[] = projects.map(mapProjectToAlbum);
-                    setAllAlbums(albums);
-                    console.log(`[App] Loaded ${albums.length} projects/albums from API`);
+                // Load projects from API
+                const projectsResponse = await projectService.getProjects();
+                const projects = projectsResponse.projects || [];
+                const albums: Album[] = projects.map(mapProjectToAlbum);
+                setAllAlbums(albums);
+                console.log(`[App] Loaded ${albums.length} projects/albums from API`);
 
-                    // Load clients from API
-                    try {
-                        const clients = await clientService.getClients();
-                        const mappedClients: Client[] = clients.map(mapClientResponse);
-                        setAllClients(mappedClients);
-                        console.log(`[App] Loaded ${mappedClients.length} clients from API`);
-                    } catch (clientError) {
-                        console.error('[App] Error loading clients:', clientError);
-                        setAllClients([]);
-                    }
-
-                    // Load service packages from API
-                    try {
-                        const packagesResponse = await servicePackageService.getServicePackages();
-                        const packages = packagesResponse.packages || [];
-                        const mappedPackages = packages.map(mapServicePackageResponse);
-                        setAllPackages(mappedPackages);
-                        console.log(`[App] Loaded ${mappedPackages.length} service packages from API`);
-                    } catch (packageError) {
-                        console.error('[App] Error loading packages:', packageError);
-                        setAllPackages([]);
-                    }
-
-                    // Load invoices from API
-                    try {
-                        const invoices = await invoiceService.getInvoices();
-                        const mappedInvoices = invoices.map(mapInvoiceResponse);
-                        setAllInvoices(mappedInvoices);
-                        console.log(`[App] Loaded ${mappedInvoices.length} invoices from API`);
-                    } catch (invoiceError) {
-                        console.error('[App] Error loading invoices:', invoiceError);
-                        setAllInvoices([]);
-                    }
-                } else {
-                    console.log('[App] No auth token, skipping data load');
+                // Load clients from API
+                try {
+                    const clients = await clientService.getClients();
+                    const mappedClients: Client[] = clients.map(mapClientResponse);
+                    setAllClients(mappedClients);
+                    console.log(`[App] Loaded ${mappedClients.length} clients from API`);
+                } catch (clientError) {
+                    console.error('[App] Error loading clients:', clientError);
+                    setAllClients([]);
                 }
-            } catch (error) {
+
+                // Load service packages from API
+                try {
+                    const packagesResponse = await servicePackageService.getServicePackages();
+                    const packages = packagesResponse.packages || [];
+                    const mappedPackages = packages.map(mapServicePackageResponse);
+                    setAllPackages(mappedPackages);
+                    console.log(`[App] Loaded ${mappedPackages.length} service packages from API`);
+                } catch (packageError) {
+                    console.error('[App] Error loading packages:', packageError);
+                    setAllPackages([]);
+                }
+
+                // Load invoices from API
+                try {
+                    const invoices = await invoiceService.getInvoices();
+                    const mappedInvoices = invoices.map(mapInvoiceResponse);
+                    setAllInvoices(mappedInvoices);
+                    console.log(`[App] Loaded ${mappedInvoices.length} invoices from API`);
+                } catch (invoiceError) {
+                    console.error('[App] Error loading invoices:', invoiceError);
+                    setAllInvoices([]);
+                }
+            } catch (error: any) {
                 console.error('[App] Error loading initial data:', error);
-                toast.error('Failed to load data from server');
+                // Handle 401 errors gracefully - user will need to login
+                if (error?.status === 401) {
+                    console.log('[App] Authentication failed, clearing token');
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_data');
+                    setUserRole(null);
+                    setPage('login');
+                } else {
+                    toast.error('Failed to load data from server');
+                }
                 // Set empty arrays so app doesn't crash
                 setAllAlbums([]);
                 setAllClients([]);
                 setAllPackages([]);
+                setAllInvoices([]);
             } finally {
                 setIsLoadingData(false);
             }
@@ -259,9 +269,76 @@ const App: React.FC = () => {
         loadInitialData();
     }, []); // Load once on mount
 
+    // Function to load all data from API
+    const loadDataFromAPI = async () => {
+        setIsLoadingData(true);
+        try {
+            console.log('[App] Loading data from API...');
+            
+            // Load projects from API
+            const projectsResponse = await projectService.getProjects();
+            const projects = projectsResponse.projects || [];
+            const albums: Album[] = projects.map(mapProjectToAlbum);
+            setAllAlbums(albums);
+            console.log(`[App] Loaded ${albums.length} projects/albums from API`);
+
+            // Load clients from API
+            try {
+                const clients = await clientService.getClients();
+                const mappedClients: Client[] = clients.map(mapClientResponse);
+                setAllClients(mappedClients);
+                console.log(`[App] Loaded ${mappedClients.length} clients from API`);
+            } catch (clientError) {
+                console.error('[App] Error loading clients:', clientError);
+                setAllClients([]);
+            }
+
+            // Load service packages from API
+            try {
+                const packagesResponse = await servicePackageService.getServicePackages();
+                const packages = packagesResponse.packages || [];
+                const mappedPackages = packages.map(mapServicePackageResponse);
+                setAllPackages(mappedPackages);
+                console.log(`[App] Loaded ${mappedPackages.length} service packages from API`);
+            } catch (packageError) {
+                console.error('[App] Error loading packages:', packageError);
+                setAllPackages([]);
+            }
+
+            // Load invoices from API
+            try {
+                const invoices = await invoiceService.getInvoices();
+                const mappedInvoices = invoices.map(mapInvoiceResponse);
+                setAllInvoices(mappedInvoices);
+                console.log(`[App] Loaded ${mappedInvoices.length} invoices from API`);
+            } catch (invoiceError) {
+                console.error('[App] Error loading invoices:', invoiceError);
+                setAllInvoices([]);
+            }
+        } catch (error: any) {
+            console.error('[App] Error loading data:', error);
+            if (error?.status === 401) {
+                console.log('[App] Authentication failed');
+                toast.error('Please login again');
+            } else {
+                toast.error('Failed to load data from server');
+            }
+            setAllAlbums([]);
+            setAllClients([]);
+            setAllPackages([]);
+            setAllInvoices([]);
+        } finally {
+            setIsLoadingData(false);
+        }
+    };
+
     // Handlers
-    const handleLogin = (role: UserRole) => {
+    const handleLogin = async (role: UserRole) => {
         setUserRole(role);
+        
+        // Load data from API after successful login
+        await loadDataFromAPI();
+        
         if (role === 'client') {
             setPage('albums');
             setNavigationStack(['albums']); // Set entry point for client
