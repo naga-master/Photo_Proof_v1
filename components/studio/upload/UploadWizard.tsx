@@ -247,7 +247,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={resetUpload} className="text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</button>
+            {step !== 5 && <button onClick={resetUpload} className="text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</button>}
             {step > 1 && !isUploadingOrDone && <button onClick={handlePrev} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">Back</button>}
             {!isUploadingOrDone && (
                 <button 
@@ -261,11 +261,6 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
                   title={!continueEnabled ? 'Please fill all required fields' : ''}
                 >
                     {step === 3 ? 'Start Upload' : 'Save & Continue'}
-                </button>
-            )}
-             {step === 5 && (
-                <button onClick={onExit} className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-md hover:bg-slate-700">
-                    Finish
                 </button>
             )}
           </div>

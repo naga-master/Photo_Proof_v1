@@ -19,10 +19,14 @@ interface Step5_SummaryProps {
 
 const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated, onViewGallery, showToast }) => {
   const { state, retryFailedUploads } = useUpload();
-  const { uploadQueue, projectDetails, backendProjectId } = state;
+  const { uploadQueue, projectDetails, backendProjectId, mode } = state;
   const createdAlbumRef = useRef<Album | null>(null);
   const [selectedCoverIndex, setSelectedCoverIndex] = useState<number | null>(null);
   const [isSavingCoverPhoto, setIsSavingCoverPhoto] = useState(false);
+
+  // Determine button text based on mode
+  const isAddingToExisting = mode === 'existing';
+  const publishButtonText = isAddingToExisting ? 'Update Project' : 'Publish Project';
 
   const { successCount, failedCount } = useMemo(() => {
     return {
@@ -133,7 +137,7 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
       <div className="mt-8 border-t pt-6">
         <h3 className="font-semibold text-gray-800">What's next?</h3>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button onClick={handlePublish} className="p-3 bg-gray-800 text-white rounded-md font-semibold hover:bg-gray-700">Publish Project</button>
+            <button onClick={handlePublish} className="p-3 bg-gray-800 text-white rounded-md font-semibold hover:bg-gray-700">{publishButtonText}</button>
             <button onClick={handleNotifyClient} className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">Notify Client</button>
             <button onClick={handleViewGallery} className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">View Gallery</button>
         </div>
