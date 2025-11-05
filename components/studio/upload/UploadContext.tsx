@@ -81,7 +81,22 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
       uploadQueueManager.clearAll();
       return getInitialState();
     case 'SET_PROJECT_DETAILS':
-        return { ...state, projectDetails: { ...state.projectDetails, ...action.payload } };
+        const updatedDetails = { ...state.projectDetails, ...action.payload };
+        // Initialize newClientDetails when switching to 'new' client
+        if (updatedDetails.clientId === 'new' && !updatedDetails.newClientDetails) {
+            updatedDetails.newClientDetails = {
+                firstName: '',
+                lastName: '',
+                email: '',
+                phone: '',
+                profilePicture: ''
+            };
+        }
+        // Clear newClientDetails when switching away from 'new' client
+        if (updatedDetails.clientId !== 'new' && state.projectDetails.clientId === 'new') {
+            updatedDetails.newClientDetails = undefined;
+        }
+        return { ...state, projectDetails: updatedDetails };
     case 'SET_BACKEND_PROJECT_ID':
         return { ...state, backendProjectId: action.payload };
     case 'SET_FILES':
