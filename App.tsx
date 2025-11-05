@@ -9,6 +9,7 @@ import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails,
 import CoverPage from './components/CoverPage';
 import GalleryPage from './components/GalleryPage';
 import GalleryFoldersPage from './components/GalleryFoldersPage';
+import AlbumFoldersView from './components/AlbumFoldersView';
 import AlbumsPage from './components/AlbumsPage';
 import LoginPage from './components/LoginPage';
 import DashboardPage from './components/DashboardPage';
@@ -33,7 +34,7 @@ import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
 import type { Invoice as BackendInvoice } from './services/invoiceService';
 
-type Page = 'login' | 'cover' | 'albums' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
+type Page = 'login' | 'cover' | 'albums' | 'albumFolders' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
 
 const pageVariants = {
     initial: { opacity: 0 },
@@ -163,6 +164,7 @@ const App: React.FC = () => {
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
+    const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
     const [galleryContent, setGalleryContent] = useState<{photos: Photo[], title: string} | null>(null);
     const [favorites, setFavorites] = useState<string[]>([]);
     const [selections, setSelections] = useState<string[]>([]);
@@ -449,7 +451,7 @@ const App: React.FC = () => {
         }
     };
     
-    const handleSelectFolder = (folder: Folder) => {
+    const handleSelectFolderOld = (folder: Folder) => {
         setGalleryContent({ photos: folder.photos, title: folder.name });
         setNavigationStack([...navigationStack, 'gallery']);
         setPage('gallery');
@@ -534,11 +536,32 @@ const App: React.FC = () => {
     };
     
     const handleBackFromGallery = () => {
-        // If studio owner navigated from dashboard, go back to dashboard
+        // If viewing photos from gallery, go back to album folders view
+        if (page === 'gallery' && currentAlbum) {
+            setCurrentFolder(null); // Clear folder filter
+            setGalleryContent(null); // Clear gallery content
+            setPage('albumFolders');
+            return;
+        }
+        
+        // If on album folders view, go back to studio dashboard or client albums
+        if (page === 'albumFolders') {
+            if (userRole === 'studio' && previousPage === 'dashboard') {
+                setCurrentAlbum(null);
+                setStudioReturnToProject(null);
+                setPage('dashboard');
+                setPreviousPage(null);
+            } else {
+                setCurrentAlbum(null);
+                setPage('albums');
+            }
+            return;
+        }
+        
+        // Legacy behavior for other cases
         if (userRole === 'studio' && previousPage === 'dashboard') {
             setPage('dashboard');
             setPreviousPage(null);
-            // Don't clear studioReturnToProject - let the dashboard handle it
         } else if (currentAlbum?.folders) {
             handleBackToFolders();
         } else {
@@ -562,54 +585,89 @@ const App: React.FC = () => {
     const handleNavigateToGallery = async (album: Album) => {
         setPreviousPage(page);
         setCurrentAlbum(album);
+        setCurrentFolder(null); // Clear any previous folder selection
         
-        // Fetch photos from backend API and update album with cover photo
+        // Store the project for studio return navigation
+        if (userRole === 'studio') {
+            setStudioReturnToProject(album);
+        }
+        
+        // Navigate to album folders view first (not directly to photos)
+        setPage('albumFolders');
+    };
+
+    const handleSelectFolder = async (folder: Folder) => {
+        // User selected a specific folder, navigate to photos with folder filter
+        setCurrentFolder(folder);
+        
+        // Fetch photos for this specific folder
         try {
-            console.log('[App] Fetching photos for project:', album.id);
-            const response = await photoService.getProjectPhotos(album.id);
-            console.log('[App] Fetched photos:', response);
+            console.log('[App] Fetching photos for folder:', folder.id);
+            const response = await photoService.getProjectPhotos(
+                currentAlbum!.id,
+                folder.id // Pass folder ID as categoryId parameter
+            );
+            console.log('[App] Fetched folder photos:', response);
             
             // Map backend photos to frontend Photo type
             const photos = response.photos.map((photo: any) => ({
                 id: String(photo.id),
-                src: `http://localhost:8000${photo.src}`, // Prepend backend URL
+                src: `http://localhost:8000${photo.src}`,
                 alt: photo.original_filename || photo.alt,
                 width: photo.width || 800,
                 height: photo.height || 1200,
                 comments: []
             }));
             
-            setGalleryContent({ photos, title: album.title });
+            setGalleryContent({ photos, title: `${currentAlbum!.title} - ${folder.name}` });
+            setPage('gallery');
+        } catch (error) {
+            console.error('[App] Failed to fetch folder photos:', error);
+            toast.error('Failed to load photos from folder');
+        }
+    };
+
+    const handleViewAllPhotos = async () => {
+        // User wants to see all photos (bypass folder filtering)
+        setCurrentFolder(null);
+        
+        // Fetch all photos for the project
+        try {
+            console.log('[App] Fetching all photos for project:', currentAlbum!.id);
+            const response = await photoService.getProjectPhotos(currentAlbum!.id);
+            console.log('[App] Fetched photos:', response);
+            
+            // Map backend photos to frontend Photo type
+            const photos = response.photos.map((photo: any) => ({
+                id: String(photo.id),
+                src: `http://localhost:8000${photo.src}`,
+                alt: photo.original_filename || photo.alt,
+                width: photo.width || 800,
+                height: photo.height || 1200,
+                comments: []
+            }));
+            
+            setGalleryContent({ photos, title: currentAlbum!.title });
             
             // Update album cover photo if we have photos
-            if (photos.length > 0 && (!album.coverPhotoSrc || album.coverPhotoSrc.startsWith('blob:'))) {
+            if (photos.length > 0 && (!currentAlbum!.coverPhotoSrc || currentAlbum!.coverPhotoSrc.startsWith('blob:'))) {
                 const updatedAlbum = {
-                    ...album,
-                    coverPhotoSrc: photos[0].src // Use first photo as cover
+                    ...currentAlbum!,
+                    coverPhotoSrc: photos[0].src
                 };
                 setCurrentAlbum(updatedAlbum);
                 
                 // Also update in albums array
                 const updatedAlbums = allAlbums.map(a => 
-                    a.id === album.id ? updatedAlbum : a
+                    a.id === currentAlbum!.id ? updatedAlbum : a
                 );
                 setAllAlbums(updatedAlbums);
             }
+            
+            setPage('gallery');
         } catch (error) {
             console.error('[App] Failed to fetch photos:', error);
-            // Fallback to album photos if API fails
-            setGalleryContent({ photos: album.photos || [], title: album.title });
             toast.error('Failed to load photos from server');
-        }
-        
-        // Store the project for studio return navigation
-        if (userRole === 'studio') {
-            setStudioReturnToProject(album);
-            // Start fresh navigation stack for studio users
-            setNavigationStack(['albums', 'cover']);
-            setPage('cover');
-        } else {
-            setPage('gallery');
         }
     };
 
@@ -830,13 +888,25 @@ const App: React.FC = () => {
             case 'albums':
                 component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
                 break;
+            case 'albumFolders':
+                if (!currentAlbum) {
+                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                } else {
+                    component = <AlbumFoldersView
+                        album={currentAlbum}
+                        onBack={handleBackFromGallery}
+                        onSelectFolder={handleSelectFolder}
+                        onViewAllPhotos={handleViewAllPhotos}
+                    />;
+                }
+                break;
             case 'galleryFolders':
                 if (!currentAlbum) {
                     component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
                     component = <GalleryFoldersPage 
                         album={currentAlbum} 
-                        onSelectFolder={handleSelectFolder} 
+                        onSelectFolder={handleSelectFolderOld} 
                         onBackToAlbums={handleBackToAlbums} 
                     />;
                 }
@@ -985,6 +1055,12 @@ const App: React.FC = () => {
             navigationStackLength: navigationStack.length,
             navigationStack
         });
+        
+        // Hide back button on pages that have their own integrated back button
+        if (page === 'albumFolders' || page === 'gallery') {
+            console.log('[App] ❌ Back button hidden: Page has own back button');
+            return false;
+        }
         
         // For studio users - show back button when viewing from dashboard
         if (userRole === 'studio' && previousPage === 'dashboard') {

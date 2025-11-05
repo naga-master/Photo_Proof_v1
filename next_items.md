@@ -9,3 +9,20 @@
 9. while typing in all forms typing box, there is an outer border comes which looks odd, so need to modernize all the forms.- (partially finished)
 10. In Studio general settings a photo and description section, this is for updating the about page of client facing page. analyse the client's page about page and this in settings of studio login, editable photo section, about description box, Add another options for Studio display image for showing studio image in brands place. show studio related general informations in the studio section, give option to set defualt invoice type from existing presets - (finished)
 11. After clicking Save invoice from invoice, it should redirect to invoice page. - (finished)
+
+12. When we click the view gallery from the studio page,
+
+    1. it directly goes and list all the photos for the project, but it should actually go that album section of the project page.
+    2. from there if we click the gallery from header, it shows all projects albums for all clients, it should be show only the alnums for that particular albums for particular project of particular client, so understand the hierarchy.
+    3. we had a back button flow implemented find that implement it back for gallery page which clicked from studio projects Page.
+       for all above understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.
+
+13. once we save the projects, the cover photo is updated in the projects box. And if we see the gallery, immediately cover for the albums are also updated. but when we refresh the page cover photo for projects are not visible, seems it is using placeholder and same for gallery albums cover also removed using placeholder. Same for selecting cover photo after refresh it says No photos available in this project. so studio user be able to select the data for cover photos. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.
+
+14. In Clients page, total projects count for the client is 0, get the count of the project from backend API somehow and update. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows. get the data in best possible way and follow industry best practice and reduce api calls.
+
+15. Remove manage button from clients page.
+
+16. if there is no image for the clients, set it random images, which the github and mobile contacts and others app are doing like palceholder profile picture
+
+17.when we click select photo to continue from the store, is the photos are not listed there, it just a empty screen

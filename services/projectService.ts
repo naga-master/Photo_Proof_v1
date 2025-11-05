@@ -115,6 +115,13 @@ class ProjectService {
   async getProjectStats(projectId: string): Promise<any> {
     return apiClient.get<any>(`/api/projects/${projectId}/stats`);
   }
+
+  /**
+   * Get folders for a project
+   */
+  async getProjectFolders(projectId: string): Promise<{ folders: any[]; total: number }> {
+    return apiClient.get<{ folders: any[]; total: number }>(`/api/projects/${projectId}/folders`);
+  }
 }
 
 export const projectService = new ProjectService();
