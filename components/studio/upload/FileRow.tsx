@@ -51,11 +51,15 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
         </div>
         <div className="w-6 flex items-center justify-center">{renderStatus()}</div>
       </div>
-      {status !== 'success' && (
+      {status !== 'queued' && (
         <div className="mt-2 pl-14">
             <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div 
-                    className={`h-1.5 rounded-full transition-all duration-200 ${status === 'failed' ? 'bg-red-500' : 'bg-blue-600'}`} 
+                    className={`h-1.5 rounded-full transition-all duration-200 ${
+                      status === 'failed' ? 'bg-red-500' : 
+                      status === 'success' ? 'bg-green-500' : 
+                      'bg-blue-600'
+                    }`} 
                     style={{ width: `${progress}%` }}
                 ></div>
             </div>
