@@ -1,24 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useUpload } from './UploadContext';
 import FileRow from './FileRow';
 import { PauseIcon, PlayIcon } from '../../icons';
-import { uploadQueueManager } from '../../../services/uploadQueueManager';
 
 const Step4_UploadManager: React.FC = () => {
     const { state, startUpload, pauseUpload, resumeUpload, nextStep } = useUpload();
     const { uploadQueue, isUploading } = state;
-    const [queueStatus, setQueueStatus] = useState(uploadQueueManager.getStatus());
     
     useEffect(() => {
         // This effect runs once when the component mounts to kick off the upload process.
         startUpload();
-        
-        // Update queue status periodically
-        const interval = setInterval(() => {
-            setQueueStatus(uploadQueueManager.getStatus());
-        }, 500);
-        
-        return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -87,29 +78,6 @@ const Step4_UploadManager: React.FC = () => {
                             </svg>
                         </button>
                     )}
-                </div>
-            </div>
-
-            {/* Queue Status Display */}
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-gray-700">Queue Status:</span>
-                    <div className="flex gap-4">
-                        <span className="text-blue-600">
-                            <span className="font-semibold">{queueStatus.uploading}</span> Uploading
-                        </span>
-                        <span className="text-gray-600">
-                            <span className="font-semibold">{queueStatus.pending}</span> Pending
-                        </span>
-                        <span className="text-green-600">
-                            <span className="font-semibold">{queueStatus.completed}</span> Done
-                        </span>
-                        {queueStatus.failed > 0 && (
-                            <span className="text-red-600">
-                                <span className="font-semibold">{queueStatus.failed}</span> Failed
-                            </span>
-                        )}
-                    </div>
                 </div>
             </div>
             
