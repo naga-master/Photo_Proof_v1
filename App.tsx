@@ -123,7 +123,8 @@ const mapClientResponse = (client: BackendClient): Client => ({
     profilePicture: (client as any).profile_picture ?? null,
     whatsappOptIn: (client as any).whatsapp_opt_in ?? false,
     emailOptIn: (client as any).email_opt_in ?? true,
-    projects: [],
+    projects: [],  // Empty array for compatibility
+    totalProjects: (client as any).total_projects ?? 0,  // Use API count
     lastActivity: client.updated_at ?? client.created_at,
     status: (client as any).status ?? (client.is_active ? 'active' : 'inactive'),
 });

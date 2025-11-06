@@ -208,7 +208,6 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credentials</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
-                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Manage</span></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -238,11 +237,10 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                             <PasswordDisplay password={client.password} onTriggerClick={(e) => e.stopPropagation()} />
                         </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.projects.length}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.lastActivity}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={(e) => { e.stopPropagation(); onManageClient(client); }} className="text-indigo-600 hover:text-indigo-900">Manage</button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {client.totalProjects ?? client.projects.length}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.lastActivity}</td>
                   </tr>
               ))}
             </tbody>

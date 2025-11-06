@@ -17,14 +17,14 @@
     3. we had a back button flow implemented find that implement it back for gallery page which clicked from studio projects Page.(finished)
        for all above understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.
 
-13. once we save the projects, the cover photo is updated in the projects box. And if we see the gallery, immediately cover for the albums are also updated. but when we refresh the page cover photo for projects are not visible, seems it is using placeholder and same for gallery albums cover also removed using placeholder. Same for selecting cover photo after refresh it says No photos available in this project. so studio user be able to select the data for cover photos. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.
+13. once we save the projects, the cover photo is updated in the projects box. And if we see the gallery, immediately cover for the albums are also updated. but when we refresh the page cover photo for projects are not visible, seems it is using placeholder and same for gallery albums cover also removed using placeholder. Same for selecting cover photo after refresh it says No photos available in this project. so studio user be able to select the data for cover photos. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.(finished)
 
-14. In Clients page, total projects count for the client is 0, get the count of the project from backend API somehow and update. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows. get the data in best possible way and follow industry best practice and reduce api calls.
+14. In Clients page, total projects count for the client is 0, get the count of the project from backend API somehow and update. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows. get the data in best possible way and follow industry best practice and reduce api calls.(finished)
 
-15. Remove manage button from clients page.
+15. Remove manage button from clients page.(finished)
 
-16. if there is no image for the clients, set it random images, which the github and mobile contacts and others app are doing like palceholder profile picture
+16. if there is no image for the clients, set it random images, which the github and mobile contacts and others app are doing like palceholder profile picture (finished)
 
-17.when we click select photo to continue from the store, is the photos are not listed there, it just a empty screen
+17.when we click select photo to continue from the store, the photos are not listed there to select, it just a empty screen
 
-18. once the client is created, using there mailid and generate random password, map that to that client, client should login using the mailid and password to see the projects and client facing galleries, check if the we having this feature in backend API or frontent API. understand that and implement. based exisiting users in DB, using their mailId and set OldClient as password update the DB. same update the client of the demo credential. plan and act
+18. once the client is created, using there mailid and generate random password, map that to that client, client should login using the mailid and password to see the projects and client facing galleries, check if the we having this feature in backend API or frontent API. understand that and implement. based exisiting users in DB, using their mailId and set OldClient as password update the DB. same update the client of the demo credential. plan and act - (finished)

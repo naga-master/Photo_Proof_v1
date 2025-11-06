@@ -21,6 +21,7 @@ import InvoicesListPage from './invoices/InvoicesPage';
 import InvoicePreviewModal from './invoices/InvoicePreviewModal';
 import { MenuIcon } from '../icons';
 import { projectService } from '../../services/projectService';
+import { clientService } from '../../services/clientService';
 
 interface StudioLayoutProps {
   albums: Album[];
@@ -148,9 +149,37 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         onUpdateClients([...clients, newClient]);
     };
     
-    const handleUpdateClient = (updatedClient: Client) => {
-        onUpdateClients(clients.map(c => c.id === updatedClient.id ? updatedClient : c));
-        setManagingClient(updatedClient);
+    const handleUpdateClient = async (updatedClient: Client) => {
+        console.log('[StudioLayout] handleUpdateClient called with:', {
+            id: updatedClient.id,
+            name: updatedClient.name,
+            hasProfilePicture: !!updatedClient.profilePicture,
+            profilePictureLength: updatedClient.profilePicture?.length
+        });
+        
+        try {
+            // Call API to update client
+            const updated = await clientService.updateClient(String(updatedClient.id), {
+                name: updatedClient.name,
+                email: updatedClient.email,
+                phone: updatedClient.phone,
+                address: updatedClient.address,
+                profile_picture: updatedClient.profilePicture,
+                whatsapp_opt_in: updatedClient.whatsappOptIn,
+                email_opt_in: updatedClient.emailOptIn,
+            });
+            
+            console.log('[StudioLayout] Client updated successfully:', updated);
+            
+            // Update local state
+            onUpdateClients(clients.map(c => c.id === updatedClient.id ? updatedClient : c));
+            setManagingClient(updatedClient);
+            
+            toast.success('Client updated successfully!');
+        } catch (error: any) {
+            console.error('[StudioLayout] Error updating client:', error);
+            toast.error(error?.message || 'Failed to update client');
+        }
     };
 
     const handleCreateProjectForClient = (clientId: string) => {

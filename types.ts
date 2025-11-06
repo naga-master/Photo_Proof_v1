@@ -74,7 +74,8 @@ export interface Client {
   profilePicture?: string | null;
   whatsappOptIn?: boolean;
   emailOptIn?: boolean;
-  projects?: string[];
+  projects: string[];  // Array of project IDs for compatibility
+  totalProjects?: number;  // Total count from API
   lastActivity?: string;
   status?: string;
 }

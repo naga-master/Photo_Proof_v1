@@ -19,6 +19,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
     const [details, setDetails] = useState(client);
     const [isEditingProfilePic, setIsEditingProfilePic] = useState(false);
     const [profilePicPreview, setProfilePicPreview] = useState<string>(client.profilePicture || client.avatarUrl || '');
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
     useEffect(() => {
         setDetails(client);
@@ -33,29 +34,47 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
         setDetails(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setIsUploadingPhoto(true);
             const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result as string;
-                setDetails(prev => ({ ...prev, profilePicture: result }));
-                setProfilePicPreview(result);
-                setIsEditingProfilePic(false);
+            reader.onloadend = async () => {
+                try {
+                    const result = reader.result as string;
+                    const updatedDetails = { ...details, profilePicture: result };
+                    setDetails(updatedDetails);
+                    setProfilePicPreview(result);
+                    setIsEditingProfilePic(false);
+                    
+                    // Auto-save the profile picture immediately
+                    await onUpdateClient(updatedDetails);
+                } finally {
+                    setIsUploadingPhoto(false);
+                }
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const removeProfilePicture = () => {
-        setDetails(prev => ({ ...prev, profilePicture: '' }));
-        setProfilePicPreview(client.avatarUrl || '');
-        setIsEditingProfilePic(false);
+    const removeProfilePicture = async () => {
+        setIsUploadingPhoto(true);
+        try {
+            const updatedDetails = { ...details, profilePicture: '' };
+            setDetails(updatedDetails);
+            setProfilePicPreview(client.avatarUrl || '');
+            setIsEditingProfilePic(false);
+            
+            // Auto-save the removal immediately
+            await onUpdateClient(updatedDetails);
+        } finally {
+            setIsUploadingPhoto(false);
+        }
     };
 
     const handleSaveChanges = () => {
         onUpdateClient(details);
-        alert('Client details saved!');
+        // Toast notification is now shown in StudioLayout handleUpdateClient
     };
 
     const getProjectPackageName = (packageId?: string) => {
@@ -91,22 +110,34 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                                     name={details.name}
                                     profilePicture={profilePicPreview}
                                 />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                    <label className="cursor-pointer text-white text-xs font-medium">
-                                        <span>Change Photo</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleProfilePicChange}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
+                                {isUploadingPhoto && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-full">
+                                        <div className="text-white text-xs font-medium">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-1"></div>
+                                            <span>Uploading...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {!isUploadingPhoto && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                        <label className="cursor-pointer text-white text-xs font-medium">
+                                            <span>Change Photo</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleProfilePicChange}
+                                                className="hidden"
+                                                disabled={isUploadingPhoto}
+                                            />
+                                        </label>
+                                    </div>
+                                )}
                             </div>
-                            {details.profilePicture && (
+                            {details.profilePicture && !isUploadingPhoto && (
                                 <button 
                                     onClick={removeProfilePicture}
                                     className="text-xs text-red-600 hover:text-red-800 mb-2"
+                                    disabled={isUploadingPhoto}
                                 >
                                     Remove custom photo
                                 </button>
