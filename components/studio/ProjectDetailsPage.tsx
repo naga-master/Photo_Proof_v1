@@ -34,7 +34,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
     alert('Changes saved!');
   };
 
-  const handleUpdateCover = (newCoverSrc: string) => {
+  const handleUpdateCover = async (newCoverSrc: string) => {
     const updatedDetails = { ...details, coverPhotoSrc: newCoverSrc };
     setDetails(updatedDetails);
     onUpdateProject(updatedDetails);

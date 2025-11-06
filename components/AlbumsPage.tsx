@@ -8,6 +8,13 @@ interface AlbumsPageProps {
 }
 
 const AlbumsPage: React.FC<AlbumsPageProps> = ({ albums, onSelectAlbum }) => {
+  console.log('[AlbumsPage] Rendering with albums:', albums.map(a => ({
+    id: a.id,
+    title: a.title,
+    coverPhotoSrc: a.coverPhotoSrc,
+    isPlaceholder: a.coverPhotoSrc?.includes('placeholder')
+  })));
+  
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -16,7 +23,12 @@ const AlbumsPage: React.FC<AlbumsPageProps> = ({ albums, onSelectAlbum }) => {
           <p className="mt-2 text-lg text-gray-500">A collection of moments from our special day.</p>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {albums.map((album) => (
+          {albums.map((album) => {
+            console.log(`[AlbumsPage] Rendering album ${album.id}:`, {
+              title: album.title,
+              coverPhotoSrc: album.coverPhotoSrc
+            });
+            return (
             <div
               key={album.id}
               onClick={() => onSelectAlbum(album)}
@@ -26,6 +38,9 @@ const AlbumsPage: React.FC<AlbumsPageProps> = ({ albums, onSelectAlbum }) => {
                 src={album.coverPhotoSrc}
                 alt={`Cover for ${album.title}`}
                 className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-110"
+                onError={(e) => {
+                  console.error(`[AlbumsPage] Image failed to load for album ${album.id}:`, album.coverPhotoSrc);
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
               <div className="absolute bottom-0 left-0 p-6 text-white w-full">
@@ -38,7 +53,8 @@ const AlbumsPage: React.FC<AlbumsPageProps> = ({ albums, onSelectAlbum }) => {
                 <p className="text-sm opacity-90 mt-1">{album.photoCount} photos</p>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

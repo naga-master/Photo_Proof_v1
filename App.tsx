@@ -81,24 +81,36 @@ const normalizeInvoiceStatus = (status: string): Invoice['status'] => {
     }
 };
 
-const mapProjectToAlbum = (project: BackendProject): Album => ({
-    id: String(project.id),
-    title: project.title ?? 'Untitled Project',
-    clientId: project.client_id ? String(project.client_id) : '',
-    shootDate: project.shoot_date ?? project.created_at,
-    coverPhotoSrc: project.cover_photo_src ?? FALLBACK_COVER_IMAGE,
-    photoCount: project.photo_count ?? 0,
-    isLocked: project.is_locked ?? false,
-    layout: project.layout as LayoutId | undefined,
-    paymentStatus: normalizePaymentStatus(project.payment_status),
-    price: project.price ? Number(project.price) : undefined,
-    packageId: project.package_id ?? undefined,
-    status: project.status,
-    createdAt: project.created_at,
-    updatedAt: project.updated_at,
-    photos: [],
-    folders: project.has_folders ? [] : undefined,
-});
+const mapProjectToAlbum = (project: BackendProject): Album => {
+    console.log('[mapProjectToAlbum] Processing project:', {
+        id: project.id,
+        title: project.title,
+        cover_photo_id: project.cover_photo_id,
+        cover_photo_src: project.cover_photo_src,
+        has_cover_src: !!project.cover_photo_src
+    });
+    
+    return {
+        id: String(project.id),
+        title: project.title ?? 'Untitled Project',
+        clientId: project.client_id ? String(project.client_id) : '',
+        shootDate: project.shoot_date ?? project.created_at,
+        coverPhotoSrc: project.cover_photo_src && !project.cover_photo_src.startsWith('http')
+            ? `http://localhost:8000${project.cover_photo_src}`
+            : project.cover_photo_src ?? FALLBACK_COVER_IMAGE,
+        photoCount: project.photo_count ?? 0,
+        isLocked: project.is_locked ?? false,
+        layout: project.layout as LayoutId | undefined,
+        paymentStatus: normalizePaymentStatus(project.payment_status),
+        price: project.price ? Number(project.price) : undefined,
+        packageId: project.package_id ?? undefined,
+        status: project.status,
+        createdAt: project.created_at,
+        updatedAt: project.updated_at,
+        photos: [],
+        folders: project.has_folders ? [] : undefined,
+    };
+};
 
 const mapClientResponse = (client: BackendClient): Client => ({
     id: String(client.id),
@@ -253,10 +265,13 @@ const App: React.FC = () => {
             try {
                 // Load projects from API
                 const projectsResponse = await projectService.getProjects();
+                console.log('[App] RAW API Response:', projectsResponse);
+                console.log('[App] First project sample:', projectsResponse.projects?.[0]);
                 const projects = projectsResponse.projects || [];
                 const albums: Album[] = projects.map(mapProjectToAlbum);
                 setAllAlbums(albums);
                 console.log(`[App] Loaded ${albums.length} projects/albums from API`);
+                console.log('[App] First album mapped:', albums[0]);
 
                 // Load clients from API
                 try {

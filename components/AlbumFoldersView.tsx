@@ -25,8 +25,19 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
       try {
         setLoading(true);
         const response = await projectService.getProjectFolders(album.id);
-        const fetchedFolders = response.folders || [];
+        const fetchedFolders = (response.folders || []).map((folder: any) => ({
+          ...folder,
+          // Ensure cover photo src has full URL
+          coverPhotoSrc: folder.coverPhotoSrc && !folder.coverPhotoSrc.startsWith('http') 
+            ? `http://localhost:8000${folder.coverPhotoSrc}` 
+            : folder.coverPhotoSrc
+        }));
         setFolders(fetchedFolders);
+        
+        console.log('[AlbumFoldersView] Fetched folders:', {
+          count: fetchedFolders.length,
+          folders: fetchedFolders.map((f: any) => ({ name: f.name, photoCount: f.photoCount, hasCover: !!f.coverPhotoSrc }))
+        });
         
         // Note: No auto-redirect here - parent component handles navigation
         // based on folder count before we even get here

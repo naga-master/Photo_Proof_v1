@@ -128,12 +128,24 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
               ) : (
                 filteredAndSortedAlbums.map((album) => {
                   const commentCount = (album.photos || []).reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
+                  console.log(`[StudioProjects] Rendering project ${album.id}:`, {
+                    title: album.title,
+                    coverPhotoSrc: album.coverPhotoSrc,
+                    isPlaceholder: album.coverPhotoSrc?.includes('placeholder')
+                  });
                   return (
                     <tr key={album.id} onClick={() => onManageProject(album)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <img className="h-10 w-10 rounded-md object-cover" src={album.coverPhotoSrc} alt={album.title} />
+                            <img 
+                              className="h-10 w-10 rounded-md object-cover" 
+                              src={album.coverPhotoSrc} 
+                              alt={album.title}
+                              onError={(e) => {
+                                console.error(`[StudioProjects] Image failed to load for project ${album.id}:`, album.coverPhotoSrc);
+                              }}
+                            />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{album.title}</div>

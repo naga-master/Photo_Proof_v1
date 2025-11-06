@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircleIcon, CloseIcon } from '../icons';
 import type { Album, Photo } from '../../types';
+import { photoService } from '../../services/photoService';
+import { projectService } from '../../services/projectService';
+import { toast } from 'react-toastify';
 
 interface CoverPhotoChangerProps {
   project: Album;
@@ -10,16 +13,80 @@ interface CoverPhotoChangerProps {
 
 const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdateCover, onClose }) => {
   const [selectedPhotoSrc, setSelectedPhotoSrc] = useState<string>(project.coverPhotoSrc);
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
   const ITEMS_PER_PAGE = 30; // 5x6 grid
 
-  const handleSave = () => {
-    onUpdateCover(selectedPhotoSrc);
-    onClose();
+  // Fetch photos when component mounts
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      setIsLoading(true);
+      try {
+        console.log('[CoverPhotoChanger] Fetching photos for project:', project.id);
+        const response = await photoService.getProjectPhotos(project.id);
+        
+        // Map backend photos to frontend Photo type
+        const mappedPhotos = response.photos.map((photo: any) => ({
+          id: String(photo.id),
+          src: `http://localhost:8000${photo.src}`,
+          alt: photo.original_filename || photo.alt,
+          width: photo.width || 800,
+          height: photo.height || 1200,
+          comments: []
+        }));
+        
+        setPhotos(mappedPhotos);
+        console.log('[CoverPhotoChanger] Loaded', mappedPhotos.length, 'photos');
+        
+        // Find the currently selected photo ID if coverPhotoSrc matches
+        const currentCoverPhoto = mappedPhotos.find(p => p.src === project.coverPhotoSrc);
+        if (currentCoverPhoto) {
+          setSelectedPhotoId(currentCoverPhoto.id);
+        }
+      } catch (error) {
+        console.error('[CoverPhotoChanger] Failed to fetch photos:', error);
+        toast.error('Failed to load photos');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPhotos();
+  }, [project.id, project.coverPhotoSrc]);
+
+  const handleSave = async () => {
+    if (!selectedPhotoId) {
+      toast.error('Please select a photo');
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      // Save to backend
+      console.log('[CoverPhotoChanger] Setting cover photo:', selectedPhotoId);
+      await projectService.setCoverPhoto(project.id, selectedPhotoId);
+      console.log('[CoverPhotoChanger] Cover photo updated successfully');
+      
+      // Update frontend
+      onUpdateCover(selectedPhotoSrc);
+      toast.success('Cover photo updated');
+      onClose();
+    } catch (error) {
+      console.error('[CoverPhotoChanger] Failed to update cover photo:', error);
+      toast.error('Failed to update cover photo');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const photos = project.photos || [];
+  const handlePhotoSelect = (photo: Photo) => {
+    setSelectedPhotoSrc(photo.src);
+    setSelectedPhotoId(photo.id);
+  };
   
   // Pagination calculations
   const totalPages = Math.ceil(photos.length / ITEMS_PER_PAGE);
@@ -81,7 +148,12 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
 
         {/* Photo Grid */}
         <div className="flex-1 overflow-y-auto p-6">
-          {photos.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12 text-gray-500">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p>Loading photos...</p>
+            </div>
+          ) : photos.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p>No photos available in this project.</p>
             </div>
@@ -94,7 +166,7 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
                   return (
                     <button
                       key={photo.id}
-                      onClick={() => setSelectedPhotoSrc(photo.src)}
+                      onClick={() => handlePhotoSelect(photo)}
                       className={`relative aspect-square rounded-lg overflow-hidden group hover:ring-2 hover:ring-blue-400 transition-all ${
                         isSelected ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
                       }`}
@@ -181,21 +253,33 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(endIndex, photos.length)} of {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
+            {photos.length > 0 ? (
+              <>Showing {startIndex + 1}-{Math.min(endIndex, photos.length)} of {photos.length} {photos.length === 1 ? 'photo' : 'photos'}</>
+            ) : (
+              <>No photos</>
+            )}
           </p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md font-medium transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md font-medium transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              disabled={!selectedPhotoSrc}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              disabled={!selectedPhotoSrc || isSaving || isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
-              Save Cover Photo
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Cover Photo'
+              )}
             </button>
           </div>
         </div>
