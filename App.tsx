@@ -502,7 +502,14 @@ const App: React.FC = () => {
     };
     
     const handleBack = () => {
-        console.log('[App] handleBack called:', { page, previousPage, isStudioUser: isStudioUser(), studioReturnToProject: studioReturnToProject?.id });
+        console.log('[App] handleBack called:', { 
+            page, 
+            previousPage, 
+            isStudioUser: isStudioUser(), 
+            studioReturnToProject: studioReturnToProject?.id,
+            currentFolder: currentFolder?.id,
+            projectHasFolders
+        });
         
         // Handle back from cover page (new gallery hierarchy)
         // Cover → Dashboard (for studio users)
@@ -532,12 +539,25 @@ const App: React.FC = () => {
         }
         
         // Handle back from gallery page
-        // Gallery → Cover (skip albumFolders since we never went there)
+        // Gallery → AlbumFolders (if project has folders) OR Cover (if no folders)
         if (page === 'gallery' && currentAlbum) {
-            console.log('[App] Going back from gallery to cover');
-            setCurrentFolder(null);
-            setGalleryContent(null);
-            setPage('cover');
+            console.log('[App] Going back from gallery', {
+                hasCurrentFolder: !!currentFolder,
+                projectHasFolders
+            });
+            
+            setGalleryContent(null); // Clear gallery content
+            
+            // If we came from a folder or project has folders, go to folders view
+            if (currentFolder || projectHasFolders) {
+                console.log('[App] → Navigating back to albumFolders view');
+                setCurrentFolder(null); // Clear folder filter
+                setPage('albumFolders');
+            } else {
+                // Otherwise go to cover page
+                console.log('[App] → Navigating back to cover page (no folders)');
+                setPage('cover');
+            }
             return;
         }
         
@@ -613,16 +633,33 @@ const App: React.FC = () => {
     };
     
     const handleBackFromGallery = () => {
-        // If viewing photos from gallery, go back to album folders view
+        console.log('[App] handleBackFromGallery called', { 
+            page, 
+            currentAlbum: currentAlbum?.id,
+            currentFolder: currentFolder?.id,
+            projectHasFolders 
+        });
+        
+        // If viewing photos from gallery, check where to go back
         if (page === 'gallery' && currentAlbum) {
-            setCurrentFolder(null); // Clear folder filter
             setGalleryContent(null); // Clear gallery content
-            setPage('albumFolders');
+            
+            // If we came from a folder (currentFolder is set) or project has folders, go to folders view
+            if (currentFolder || projectHasFolders) {
+                console.log('[App] Navigating back to albumFolders view');
+                setCurrentFolder(null); // Clear folder filter
+                setPage('albumFolders');
+            } else {
+                // Otherwise go to cover page
+                console.log('[App] Navigating back to cover page (no folders)');
+                setPage('cover');
+            }
             return;
         }
         
         // If on album folders view, go back to studio dashboard or client albums
         if (page === 'albumFolders') {
+            console.log('[App] Navigating back from albumFolders');
             if (isStudioUser() && previousPage === 'dashboard') {
                 setCurrentAlbum(null);
                 setStudioReturnToProject(null);
@@ -652,6 +689,35 @@ const App: React.FC = () => {
     };
 
     const handleNavigate = (targetPage: 'albums' | 'store' | 'about' | 'cart') => {
+        console.log('[App] handleNavigate called:', { 
+            targetPage, 
+            userRole, 
+            isStudioUser: isStudioUser(),
+            currentAlbum: currentAlbum?.id,
+            page
+        });
+        
+        // Handle Gallery navigation differently based on user role and context
+        if (targetPage === 'albums') {
+            if (isStudioUser()) {
+                // Studio users clicking "Gallery" should go to dashboard
+                console.log('[App] Studio user clicked Gallery - redirecting to dashboard');
+                setPage('dashboard');
+                setPreviousPage(null);
+                return;
+            } else {
+                // Client users - if currently viewing a project, go to its folders/cover
+                if (currentAlbum) {
+                    console.log('[App] Client clicked Gallery while viewing project - going to project folders');
+                    // Navigate to albumFolders if project has folders, else cover
+                    setPage('albumFolders');
+                    return;
+                }
+                // Otherwise go to albums list
+                console.log('[App] Client user clicked Gallery - showing their albums');
+            }
+        }
+        
         setPreviousPage(page);
         if (userRole === 'client') {
             setNavigationStack([...navigationStack, targetPage]);
@@ -953,6 +1019,19 @@ const App: React.FC = () => {
     
     const renderPage = () => {
         const key = page + (currentAlbum?.id || '') + (currentProduct?.id || '') + (galleryContent?.title || '');
+        
+        // Filter albums based on user role for security
+        let visibleAlbums = allAlbums;
+        if (userRole === 'client' && user) {
+            // Clients should only see their own projects
+            visibleAlbums = allAlbums.filter(album => album.clientId === user.id);
+            console.log('[App] Filtered albums for client:', {
+                userId: user.id,
+                totalAlbums: allAlbums.length,
+                visibleAlbums: visibleAlbums.length
+            });
+        }
+        
         let component;
         switch (page) {
             case 'login':
@@ -960,17 +1039,17 @@ const App: React.FC = () => {
                 break;
             case 'cover':
                 if (!currentAlbum) {
-                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                    component = <AlbumsPage albums={visibleAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
                     component = <CoverPage onOpenGallery={handleOpenGalleryFromCover} album={currentAlbum} />;
                 }
                 break;
             case 'albums':
-                component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                component = <AlbumsPage albums={visibleAlbums} onSelectAlbum={handleSelectAlbum} />;
                 break;
             case 'albumFolders':
                 if (!currentAlbum) {
-                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                    component = <AlbumsPage albums={visibleAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
                     component = <AlbumFoldersView
                         album={currentAlbum}
@@ -982,7 +1061,7 @@ const App: React.FC = () => {
                 break;
             case 'galleryFolders':
                 if (!currentAlbum) {
-                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                    component = <AlbumsPage albums={visibleAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
                     component = <GalleryFoldersPage 
                         album={currentAlbum} 
@@ -993,7 +1072,7 @@ const App: React.FC = () => {
                 break;
             case 'gallery':
                 if (!currentAlbum || !galleryContent) {
-                    component = <AlbumsPage albums={allAlbums} onSelectAlbum={handleSelectAlbum} />;
+                    component = <AlbumsPage albums={visibleAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
                     component = <GalleryPage
                         album={currentAlbum}
@@ -1076,7 +1155,7 @@ const App: React.FC = () => {
                      component = <StorePage onSelectProduct={handleSelectProduct} />;
                 } else {
                      component = <PhotoSelectionPage 
-                        albums={allAlbums} 
+                        albums={visibleAlbums} 
                         onPhotosSelect={handlePhotosSelected}
                         onBack={() => setPage('productDetail')}
                         productName={currentProduct.name}
