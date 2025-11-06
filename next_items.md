@@ -10,11 +10,11 @@
 10. In Studio general settings a photo and description section, this is for updating the about page of client facing page. analyse the client's page about page and this in settings of studio login, editable photo section, about description box, Add another options for Studio display image for showing studio image in brands place. show studio related general informations in the studio section, give option to set defualt invoice type from existing presets - (finished)
 11. After clicking Save invoice from invoice, it should redirect to invoice page. - (finished)
 
-12. When we click the view gallery from the studio page,
+12. When we click the view gallery from the studio page, (finished)
 
-    1. it directly goes and list all the photos for the project, but it should actually go that album section of the project page.
-    2. from there if we click the gallery from header, it shows all projects albums for all clients, it should be show only the alnums for that particular albums for particular project of particular client, so understand the hierarchy.
-    3. we had a back button flow implemented find that implement it back for gallery page which clicked from studio projects Page.
+    1. it directly goes and list all the photos for the project, but it should actually go that album section of the project page. (finished)
+    2. from there if we click the gallery from header, it shows all projects albums for all clients, it should be show only the alnums for that particular albums for particular project of particular client, so understand the hierarchy. (finished)
+    3. we had a back button flow implemented find that implement it back for gallery page which clicked from studio projects Page.(finished)
        for all above understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.
 
 13. once we save the projects, the cover photo is updated in the projects box. And if we see the gallery, immediately cover for the albums are also updated. but when we refresh the page cover photo for projects are not visible, seems it is using placeholder and same for gallery albums cover also removed using placeholder. Same for selecting cover photo after refresh it says No photos available in this project. so studio user be able to select the data for cover photos. understand the backend and frontend code, categories it, plan well and do the change, don't break other flows.
@@ -26,3 +26,5 @@
 16. if there is no image for the clients, set it random images, which the github and mobile contacts and others app are doing like palceholder profile picture
 
 17.when we click select photo to continue from the store, is the photos are not listed there, it just a empty screen
+
+18. once the client is created, using there mailid and generate random password, map that to that client, client should login using the mailid and password to see the projects and client facing galleries, check if the we having this feature in backend API or frontent API. understand that and implement. based exisiting users in DB, using their mailId and set OldClient as password update the DB. same update the client of the demo credential. plan and act

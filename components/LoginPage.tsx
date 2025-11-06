@@ -19,8 +19,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      // Try studio login first
-      const isStudioLogin = username === 'studio@admin.com';
+      // Determine if this is a studio or client login based on email
+      // Studio emails: studio@admin.com or contains "studio" or "admin"
+      const emailLower = username.toLowerCase();
+      const isStudioLogin = emailLower === 'studio@admin.com' || 
+                           emailLower.includes('studio') || 
+                           emailLower.includes('admin');
+      
       await login({ username, password }, isStudioLogin);
       
       // On success, determine role and call onLogin
@@ -54,14 +59,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-300" htmlFor="username">
-              Username
+              Email
             </label>
             <input
               id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full bg-slate-800/50 border border-slate-600 rounded-md shadow-sm py-2.5 px-3 text-white focus-visible:border-sky-500 focus-visible:ring-2 focus-visible:ring-sky-200 outline-none transition-colors sm:text-sm"
+              placeholder="your.email@example.com"
+              className="mt-1 block w-full bg-slate-800/50 border border-slate-600 rounded-md shadow-sm py-2.5 px-3 text-white placeholder-slate-500 focus-visible:border-sky-500 focus-visible:ring-2 focus-visible:ring-sky-200 outline-none transition-colors sm:text-sm"
               required
             />
           </div>
@@ -93,7 +99,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="mt-8 pt-6 border-t border-slate-700 text-xs text-slate-400 text-center">
             <p className="font-bold mb-2 uppercase tracking-wider">Demo Credentials</p>
             <p><strong className="font-medium text-slate-300">Studio:</strong> studio@admin.com / password123</p>
-            <p><strong className="font-medium text-slate-300">Client:</strong> emily.james@email.com / wedding2024</p>
+            <p><strong className="font-medium text-slate-300">Client:</strong> emily.james@email.com / OldClient</p>
+            <p className="mt-1 text-slate-500 italic">All clients can login with their email and password: OldClient</p>
         </div>
       </div>
     </div>

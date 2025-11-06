@@ -1021,15 +1021,15 @@ const App: React.FC = () => {
     const renderPage = () => {
         const key = page + (currentAlbum?.id || '') + (currentProduct?.id || '') + (galleryContent?.title || '');
         
-        // Filter albums based on user role for security
-        let visibleAlbums = allAlbums;
-        if (userRole === 'client' && user) {
-            // Clients should only see their own projects
-            visibleAlbums = allAlbums.filter(album => album.clientId === user.id);
-            console.log('[App] Filtered albums for client:', {
-                userId: user.id,
+        // Backend now handles filtering for client users
+        // The /api/projects endpoint filters by client_id automatically
+        // So allAlbums already contains only the client's projects
+        const visibleAlbums = allAlbums;
+        
+        if (userRole === 'client') {
+            console.log('[App] Client viewing albums:', {
+                userId: user?.id,
                 totalAlbums: allAlbums.length,
-                visibleAlbums: visibleAlbums.length
             });
         }
         
