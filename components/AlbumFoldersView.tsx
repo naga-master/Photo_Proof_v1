@@ -25,7 +25,11 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
       try {
         setLoading(true);
         const response = await projectService.getProjectFolders(album.id);
-        setFolders(response.folders || []);
+        const fetchedFolders = response.folders || [];
+        setFolders(fetchedFolders);
+        
+        // Note: No auto-redirect here - parent component handles navigation
+        // based on folder count before we even get here
       } catch (error: any) {
         console.error('[AlbumFoldersView] Failed to fetch folders:', error);
         toast.error('Failed to load folders');
@@ -54,24 +58,14 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{album.title}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {album.shootDate && `Shoot Date: ${new Date(album.shootDate).toLocaleDateString()}`}
-                {' · '}
-                {album.photoCount} {album.photoCount === 1 ? 'photo' : 'photos'}
-                {folders.length > 0 && ` in ${folders.length} ${folders.length === 1 ? 'folder' : 'folders'}`}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{album.title}</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {album.shootDate && `Shoot Date: ${new Date(album.shootDate).toLocaleDateString()}`}
+              {' · '}
+              {album.photoCount} {album.photoCount === 1 ? 'photo' : 'photos'}
+              {folders.length > 0 && ` in ${folders.length} ${folders.length === 1 ? 'folder' : 'folders'}`}
+            </p>
           </div>
         </div>
       </div>

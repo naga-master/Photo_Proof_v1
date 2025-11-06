@@ -2,6 +2,7 @@ import React, { createContext, useReducer, useContext, useEffect, useCallback, u
 import type { DetectedFolder, FolderMap, UploadFile, UploadRules, UploadMode, ProjectDetails, LayoutId, UploadState } from '../../../types';
 import { uploadService } from '../../../services/uploadService';
 import { uploadQueueManager } from '../../../services/uploadQueueManager';
+import { projectService } from '../../../services/projectService';
 
 type UploadAction =
   | { type: 'SET_MODE'; payload: UploadMode }
@@ -226,62 +227,121 @@ export const useUpload = () => {
 
     console.log('[UploadContext] ✅ INITIALIZING UPLOADS (ONE TIME)', filesToUpload.length, 'files, session:', uploadSessionId.current);
 
-    // Set up callbacks for the queue manager
-    uploadQueueManager.setCallbacks({
-        onProgress: (uploadId, progress) => {
-            dispatch({ 
-                type: 'UPDATE_FILE_PROGRESS', 
-                payload: { id: uploadId, progress } 
-            });
-        },
-        onSuccess: (uploadId, result) => {
-            console.log(`[UploadContext] Upload complete for file ID: ${uploadId}`, result);
-            dispatch({ 
-                type: 'FILE_UPLOAD_SUCCESS', 
-                payload: { 
-                    fileId: uploadId, 
-                    photoId: result.id 
-                } 
-            });
-        },
-        onError: (uploadId, error) => {
-            console.error(`[UploadContext] Upload failed for file ID: ${uploadId}`, error);
-            dispatch({ 
-                type: 'FILE_UPLOAD_FAIL', 
-                payload: { 
-                    id: uploadId, 
-                    error: error || 'Upload failed'
-                }
-            });
-        },
-        onQueueUpdate: (queue) => {
-            const status = uploadQueueManager.getStatus();
-            console.log('[UploadContext] Queue status:', status);
-        }
-    });
-
-    // Prepare queue items from files to upload
-    const queueItems = filesToUpload.map(file => {
-        const folderMapping = state.folderMap.find(
-            map => map.sourcePath === file.folderPath
-        );
+    // Step 0: Create folders in the backend if they don't have IDs yet
+    const createFoldersIfNeeded = async () => {
+      const foldersNeedingCreation = state.folderMap.filter(f => !f.targetId);
+      
+      if (foldersNeedingCreation.length > 0) {
+        console.log(`[UploadContext] 📁 Creating ${foldersNeedingCreation.length} folders in backend...`);
         
-        return {
-            id: file.id,
-            file: file.file,
-            projectId: state.backendProjectId!,
-            folderId: folderMapping?.targetId
-        };
-    });
+        try {
+          // Create all folders in parallel
+          const folderCreationPromises = foldersNeedingCreation.map(async (folder) => {
+            try {
+              const createdFolder = await projectService.createFolder(
+                state.backendProjectId!,
+                folder.targetAlbumName
+              );
+              console.log(`[UploadContext] ✅ Created folder: ${folder.targetAlbumName} with ID: ${createdFolder.id}`);
+              
+              // Update folder map with the new ID
+              return {
+                ...folder,
+                targetId: createdFolder.id
+              };
+            } catch (error) {
+              console.error(`[UploadContext] ❌ Failed to create folder: ${folder.targetAlbumName}`, error);
+              throw error;
+            }
+          });
 
-    // Add files to the queue (queue manager handles concurrency and batch operations)
-    if (queueItems.length > 0) {
-        console.log(`[UploadContext] 🚀 Adding ${queueItems.length} files to upload queue (session: ${uploadSessionId.current})`);
-        // Note: addToQueue is now async as it fetches presigned URLs in batch
-        uploadQueueManager.addToQueue(queueItems).catch(error => {
-            console.error('[UploadContext] Failed to add files to queue:', error);
-        });
-    }
+          const updatedFolders = await Promise.all(folderCreationPromises);
+          
+          // Update the folder map with the new IDs
+          const newFolderMap = state.folderMap.map(existingFolder => {
+            const updatedFolder = updatedFolders.find(
+              uf => uf.sourcePath === existingFolder.sourcePath
+            );
+            return updatedFolder || existingFolder;
+          });
+
+          // Dispatch update to folder map
+          dispatch({ type: 'UPDATE_FOLDER_MAP', payload: newFolderMap });
+          
+          console.log('[UploadContext] ✅ All folders created successfully');
+          
+          // Return the updated folder map for immediate use
+          return newFolderMap;
+        } catch (error) {
+          console.error('[UploadContext] ❌ Folder creation failed:', error);
+          dispatch({ type: 'PAUSE_UPLOAD' });
+          // TODO: Show error to user
+          return state.folderMap;
+        }
+      }
+      
+      return state.folderMap;
+    };
+
+    // Create folders first, then start uploads
+    createFoldersIfNeeded().then(updatedFolderMap => {
+      // Step 1: Set up callbacks for the queue manager
+      uploadQueueManager.setCallbacks({
+          onProgress: (uploadId, progress) => {
+              dispatch({ 
+                  type: 'UPDATE_FILE_PROGRESS', 
+                  payload: { id: uploadId, progress } 
+              });
+          },
+          onSuccess: (uploadId, result) => {
+              console.log(`[UploadContext] Upload complete for file ID: ${uploadId}`, result);
+              dispatch({ 
+                  type: 'FILE_UPLOAD_SUCCESS', 
+                  payload: { 
+                      fileId: uploadId, 
+                      photoId: result.id 
+                  } 
+              });
+          },
+          onError: (uploadId, error) => {
+              console.error(`[UploadContext] Upload failed for file ID: ${uploadId}`, error);
+              dispatch({ 
+                  type: 'FILE_UPLOAD_FAIL', 
+                  payload: { 
+                      id: uploadId, 
+                      error: error || 'Upload failed'
+                  }
+              });
+          },
+          onQueueUpdate: (queue) => {
+              const status = uploadQueueManager.getStatus();
+              console.log('[UploadContext] Queue status:', status);
+          }
+      });
+
+      // Step 2: Prepare queue items from files to upload using the updated folder map
+      const queueItems = filesToUpload.map(file => {
+          const folderMapping = updatedFolderMap.find(
+              map => map.sourcePath === file.folderPath
+          );
+          
+          return {
+              id: file.id,
+              file: file.file,
+              projectId: state.backendProjectId!,
+              folderId: folderMapping?.targetId
+          };
+      });
+
+      // Step 3: Add files to the queue (queue manager handles concurrency and batch operations)
+      if (queueItems.length > 0) {
+          console.log(`[UploadContext] 🚀 Adding ${queueItems.length} files to upload queue (session: ${uploadSessionId.current})`);
+          // Note: addToQueue is now async as it fetches presigned URLs in batch
+          uploadQueueManager.addToQueue(queueItems).catch(error => {
+              console.error('[UploadContext] Failed to add files to queue:', error);
+          });
+      }
+    });
 
   }, [state.isUploading, state.backendProjectId, dispatch]);
   

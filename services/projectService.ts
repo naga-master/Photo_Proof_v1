@@ -122,6 +122,23 @@ class ProjectService {
   async getProjectFolders(projectId: string): Promise<{ folders: any[]; total: number }> {
     return apiClient.get<{ folders: any[]; total: number }>(`/api/projects/${projectId}/folders`);
   }
+
+  /**
+   * Create a folder in a project
+   */
+  async createFolder(projectId: string, folderName: string): Promise<{
+    id: string;
+    name: string;
+    project_id: string;
+    photoCount: number;
+    coverPhotoId?: string;
+    coverPhotoSrc?: string;
+    order_index: number;
+    created_at?: string;
+    updated_at?: string;
+  }> {
+    return apiClient.post<any>(`/api/projects/${projectId}/folders?folder_name=${encodeURIComponent(folderName)}`);
+  }
 }
 
 export const projectService = new ProjectService();

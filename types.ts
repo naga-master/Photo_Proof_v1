@@ -228,6 +228,7 @@ export interface DetectedFolder {
 export interface FolderMap {
     sourcePath: string;
     targetAlbumName: string;
+    targetId?: string; // Backend folder ID after folder creation
 }
   
 export interface UploadRules {

@@ -176,6 +176,12 @@ const App: React.FC = () => {
     const [studioReturnToProject, setStudioReturnToProject] = useState<Album | null>(null);
     const [navigationStack, setNavigationStack] = useState<Page[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
+    const [projectHasFolders, setProjectHasFolders] = useState<boolean>(true); // Track if current project has folders
+    
+    // Helper function to check if user is a studio user (any studio role)
+    const isStudioUser = () => {
+        return userRole && (userRole === 'studio' || userRole.startsWith('studio_'));
+    };
 
     // Sync authentication state with AuthContext
     useEffect(() => {
@@ -415,28 +421,60 @@ const App: React.FC = () => {
         }
     };
     
-    const handleOpenGalleryFromCover = () => {
+    const handleOpenGalleryFromCover = async () => {
         if (!currentAlbum) return;
         
-        if (currentAlbum.folders && currentAlbum.folders.length > 0) {
-            setNavigationStack([...navigationStack, 'galleryFolders']);
-            setPage('galleryFolders');
-        } else {
-            setGalleryContent({ photos: currentAlbum.photos || [], title: currentAlbum.title });
-            setNavigationStack([...navigationStack, 'gallery']);
-            setPage('gallery');
+        console.log('[App] Opening gallery from cover, fetching folders...');
+        
+        try {
+            // Fetch folders from API to check if project has any
+            const foldersResponse = await projectService.getProjectFolders(currentAlbum.id);
+            const folders = foldersResponse.folders || [];
+            
+            console.log('[App] Fetched folders:', {
+                folderCount: folders.length,
+                folders: folders.map((f: any) => f.name)
+            });
+            
+            // Update currentAlbum with the fetched folders
+            const updatedAlbum = {
+                ...currentAlbum,
+                folders: folders.map((f: any) => ({
+                    id: f.id,
+                    name: f.name,
+                    photos: [], // Will be loaded when folder is selected
+                    coverPhotoSrc: f.coverPhotoSrc,
+                    photoCount: f.photoCount || 0
+                }))
+            };
+            setCurrentAlbum(updatedAlbum);
+            
+            // Check if project has folders - if yes, show folder grid first
+            if (folders.length > 0) {
+                console.log('[App] Project has folders, navigating to albumFolders view');
+                setNavigationStack([...navigationStack, 'albumFolders']);
+                setPage('albumFolders');
+            } else {
+                // No folders - go directly to gallery with all photos
+                console.log('[App] No folders found, going directly to gallery');
+                await handleViewAllPhotos();
+            }
+        } catch (error) {
+            console.error('[App] Error fetching folders:', error);
+            // On error, fallback to showing all photos
+            await handleViewAllPhotos();
         }
     };
 
     const handleSelectAlbum = (album: Album) => {
-        if (album.isLocked && userRole !== 'studio') {
+        if (album.isLocked && !isStudioUser()) {
             toast.warn('This gallery is locked. Please contact the studio for access.');
             return;
         }
         setCurrentAlbum(album);
         
         // For studio users from dashboard, add to navigation stack
-        if (userRole === 'studio' && previousPage === 'dashboard') {
+        if (isStudioUser() && previousPage === 'dashboard') {
             setNavigationStack([...navigationStack, 'cover']);
             setPage('cover');
         } else {
@@ -464,8 +502,47 @@ const App: React.FC = () => {
     };
     
     const handleBack = () => {
+        console.log('[App] handleBack called:', { page, previousPage, isStudioUser: isStudioUser(), studioReturnToProject: studioReturnToProject?.id });
+        
+        // Handle back from cover page (new gallery hierarchy)
+        // Cover → Dashboard (for studio users)
+        if (page === 'cover') {
+            if (isStudioUser() && (previousPage === 'dashboard' || studioReturnToProject)) {
+                console.log('[App] Going back from cover to dashboard (studio user)');
+                setCurrentAlbum(null);
+                setStudioReturnToProject(null);
+                setProjectHasFolders(true); // Reset flag
+                setPage('dashboard');
+                setPreviousPage(null);
+            } else {
+                console.log('[App] Going back from cover to albums (client)');
+                setCurrentAlbum(null);
+                setProjectHasFolders(true); // Reset flag
+                setPage('albums');
+            }
+            return;
+        }
+        
+        // Handle back from albumFolders page (new gallery hierarchy)
+        // AlbumFolders → Cover
+        if (page === 'albumFolders') {
+            console.log('[App] Going back from albumFolders to cover');
+            setPage('cover');
+            return;
+        }
+        
+        // Handle back from gallery page
+        // Gallery → Cover (skip albumFolders since we never went there)
+        if (page === 'gallery' && currentAlbum) {
+            console.log('[App] Going back from gallery to cover');
+            setCurrentFolder(null);
+            setGalleryContent(null);
+            setPage('cover');
+            return;
+        }
+        
         // For studio users viewing from dashboard
-        if (userRole === 'studio' && previousPage === 'dashboard') {
+        if (isStudioUser() && previousPage === 'dashboard') {
             // Go back one level in the stack
             const newStack = [...navigationStack];
             newStack.pop();
@@ -546,7 +623,7 @@ const App: React.FC = () => {
         
         // If on album folders view, go back to studio dashboard or client albums
         if (page === 'albumFolders') {
-            if (userRole === 'studio' && previousPage === 'dashboard') {
+            if (isStudioUser() && previousPage === 'dashboard') {
                 setCurrentAlbum(null);
                 setStudioReturnToProject(null);
                 setPage('dashboard');
@@ -559,7 +636,7 @@ const App: React.FC = () => {
         }
         
         // Legacy behavior for other cases
-        if (userRole === 'studio' && previousPage === 'dashboard') {
+        if (isStudioUser() && previousPage === 'dashboard') {
             setPage('dashboard');
             setPreviousPage(null);
         } else if (currentAlbum?.folders) {
@@ -586,19 +663,21 @@ const App: React.FC = () => {
         setPreviousPage(page);
         setCurrentAlbum(album);
         setCurrentFolder(null); // Clear any previous folder selection
+        setProjectHasFolders(true); // Reset flag for new project (assume has folders until proven otherwise)
         
         // Store the project for studio return navigation
-        if (userRole === 'studio') {
+        if (isStudioUser()) {
             setStudioReturnToProject(album);
         }
         
-        // Navigate to album folders view first (not directly to photos)
-        setPage('albumFolders');
+        // Navigate to cover page first (show project cover with "View Gallery" button)
+        setPage('cover');
     };
 
     const handleSelectFolder = async (folder: Folder) => {
         // User selected a specific folder, navigate to photos with folder filter
         setCurrentFolder(folder);
+        setProjectHasFolders(true); // Mark that this project has folders
         
         // Fetch photos for this specific folder
         try {
@@ -630,6 +709,7 @@ const App: React.FC = () => {
     const handleViewAllPhotos = async () => {
         // User wants to see all photos (bypass folder filtering)
         setCurrentFolder(null);
+        setProjectHasFolders(false); // Mark that this project has no folders (or user chose to view all)
         
         // Fetch all photos for the project
         try {
@@ -697,7 +777,7 @@ const App: React.FC = () => {
 
                 const newComment: {id: number, author: 'Client' | 'Studio', text: string, timestamp: string, replyToId?: number, replies?: any[]} = {
                     id: Date.now(),
-                    author: userRole === 'studio' ? 'Studio' : 'Client',
+                    author: isStudioUser() ? 'Studio' : 'Client',
                     text: commentText,
                     timestamp: 'Just now',
                     replyToId: parentId // Store which message this is replying to
@@ -894,7 +974,7 @@ const App: React.FC = () => {
                 } else {
                     component = <AlbumFoldersView
                         album={currentAlbum}
-                        onBack={handleBackFromGallery}
+                        onBack={handleBack}
                         onSelectFolder={handleSelectFolder}
                         onViewAllPhotos={handleViewAllPhotos}
                     />;
@@ -926,7 +1006,7 @@ const App: React.FC = () => {
                         toggleSelection={toggleSelection}
                         onAddComment={addComment}
                         onNavigateToStore={() => setPage('store')}
-                        isStudioPreview={userRole === 'studio'}
+                        isStudioPreview={isStudioUser()}
                         userRole={userRole}
                     />;
                 }
@@ -1052,20 +1132,19 @@ const App: React.FC = () => {
             userRole,
             previousPage,
             page,
+            studioReturnToProject: studioReturnToProject?.id,
             navigationStackLength: navigationStack.length,
             navigationStack
         });
         
-        // Hide back button on pages that have their own integrated back button
-        if (page === 'albumFolders' || page === 'gallery') {
-            console.log('[App] ❌ Back button hidden: Page has own back button');
-            return false;
-        }
-        
-        // For studio users - show back button when viewing from dashboard
-        if (userRole === 'studio' && previousPage === 'dashboard') {
-            console.log('[App] ✅ Show back button: Studio user from dashboard');
-            return true;
+        // For studio users - show back button when:
+        // 1. Came from dashboard (previousPage === 'dashboard'), OR
+        // 2. Has a studioReturnToProject set (viewing project from studio)
+        if (isStudioUser()) {
+            if (previousPage === 'dashboard' || studioReturnToProject) {
+                console.log('[App] ✅ Show back button: Studio user from dashboard or viewing project');
+                return true;
+            }
         }
         
         // For client users - show back button when NOT on entry page (albums)
@@ -1081,7 +1160,7 @@ const App: React.FC = () => {
 
     return (
         <div className="h-full">
-            {page !== 'login' && page !== 'cover' && page !== 'dashboard' && (
+            {page !== 'login' && page !== 'dashboard' && (
                 <TopNavBar 
                     onNavigate={handleNavigate} 
                     cartCount={cart.length} 
