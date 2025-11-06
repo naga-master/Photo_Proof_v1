@@ -270,9 +270,37 @@ const App: React.FC = () => {
                 console.log('[App] First project sample:', projectsResponse.projects?.[0]);
                 const projects = projectsResponse.projects || [];
                 const albums: Album[] = projects.map(mapProjectToAlbum);
-                setAllAlbums(albums);
-                console.log(`[App] Loaded ${albums.length} projects/albums from API`);
-                console.log('[App] First album mapped:', albums[0]);
+                
+                // Load photos for each project/album
+                console.log(`[App] Loading photos for ${albums.length} projects...`);
+                const albumsWithPhotos = await Promise.all(
+                    albums.map(async (album) => {
+                        try {
+                            const photosResponse = await photoService.getProjectPhotos(album.id);
+                            console.log(`[App] Photo response for project ${album.id}:`, photosResponse.photos[0]);
+                            const photos: Photo[] = photosResponse.photos.map((p: any) => ({
+                                id: String(p.id),
+                                src: p.src && !p.src.startsWith('http')
+                                    ? `http://localhost:8000${p.src}`
+                                    : p.src || '',
+                                alt: p.original_filename || p.alt || 'Photo',
+                                width: p.width || 0,
+                                height: p.height || 0,
+                                comments: []
+                            }));
+                            console.log(`[App] Loaded ${photos.length} photos for project ${album.id}`);
+                            console.log(`[App] First photo mapped:`, photos[0]);
+                            return { ...album, photos };
+                        } catch (photoError) {
+                            console.error(`[App] Error loading photos for project ${album.id}:`, photoError);
+                            return { ...album, photos: [] };
+                        }
+                    })
+                );
+                
+                setAllAlbums(albumsWithPhotos);
+                console.log(`[App] Loaded ${albumsWithPhotos.length} projects/albums with photos from API`);
+                console.log('[App] First album with photos:', albumsWithPhotos[0]);
 
                 // Load clients from API
                 try {

@@ -43,13 +43,24 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
       return;
     }
 
-    // Get the photo ID from the selected cover index
     const successfulFiles = uploadQueue.filter(f => f.status === 'success');
-    const coverIndex = selectedCoverIndex !== null ? selectedCoverIndex : 0;
+    
+    if (successfulFiles.length === 0) {
+      console.warn('[Step5_Summary] No successful uploads to set as cover photo');
+      return;
+    }
+
+    // If no cover photo selected, pick a random one
+    let coverIndex = selectedCoverIndex;
+    if (coverIndex === null) {
+      coverIndex = Math.floor(Math.random() * successfulFiles.length);
+      console.log(`[Step5_Summary] Auto-selected random cover photo at index ${coverIndex}`);
+    }
+
     const coverFile = successfulFiles[coverIndex];
 
     if (!coverFile || !coverFile.photoId) {
-      console.warn('[Step5_Summary] No cover photo selected or no photo ID');
+      console.warn('[Step5_Summary] No cover photo available or no photo ID');
       return;
     }
 

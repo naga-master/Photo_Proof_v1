@@ -13,9 +13,10 @@ interface ClientDetailsPageProps {
     onCreateProject: (clientId: number) => void;
     onCreateInvoice: (client: Client, project: Album) => void;
     onPreviewInvoice: (invoice: Invoice) => void;
+    onViewProject: (project: Album) => void;
 }
 
-const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, invoices, packages, onBack, onUpdateClient, onCreateProject, onCreateInvoice, onPreviewInvoice }) => {
+const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, invoices, packages, onBack, onUpdateClient, onCreateProject, onCreateInvoice, onPreviewInvoice, onViewProject }) => {
     const [details, setDetails] = useState(client);
     const [isEditingProfilePic, setIsEditingProfilePic] = useState(false);
     const [profilePicPreview, setProfilePicPreview] = useState<string>(client.profilePicture || client.avatarUrl || '');
@@ -178,7 +179,11 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                         </div>
                         <ul className="divide-y divide-gray-200">
                             {clientProjects.map(proj => (
-                                <li key={proj.id} className="py-3 flex justify-between items-center">
+                                <li 
+                                    key={proj.id} 
+                                    className="py-3 flex justify-between items-center hover:bg-gray-50 -mx-6 px-6 cursor-pointer transition-colors"
+                                    onClick={() => onViewProject(proj)}
+                                >
                                     <div>
                                         <p className="font-semibold">{proj.title}</p>
                                         <p className="text-xs text-gray-500">{getProjectPackageName(proj.packageId)}</p>

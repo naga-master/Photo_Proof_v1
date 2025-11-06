@@ -25,6 +25,11 @@
 
 16. if there is no image for the clients, set it random images, which the github and mobile contacts and others app are doing like palceholder profile picture (finished)
 
-17.when we click select photo to continue from the store, the photos are not listed there to select, it just a empty screen
+17.when we click select photo to continue from the store, the photos are not listed there to select, it just a empty screen.(finished)
 
 18. once the client is created, using there mailid and generate random password, map that to that client, client should login using the mailid and password to see the projects and client facing galleries, check if the we having this feature in backend API or frontent API. understand that and implement. based exisiting users in DB, using their mailId and set OldClient as password update the DB. same update the client of the demo credential. plan and act - (finished)
+
+19. In clients page, if we click any one client , we have projects cards where all the projects where listed, but it has to clickable, if user clicks anyone the project it should redirect to the specific project page.(finished)
+
+20. Back button is not working in gallery page, when we are in store or, topNav Bar gallery page.
+21. when we click the projects from the clients page then if click the back button, it is going to actual projects page, but it should come to the specific clients page where we actually entered into it
