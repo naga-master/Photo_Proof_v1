@@ -699,21 +699,22 @@ const App: React.FC = () => {
         
         // Handle Gallery navigation differently based on user role and context
         if (targetPage === 'albums') {
+            // If currently viewing a project (any user), go to its folders view
+            if (currentAlbum) {
+                console.log('[App] User clicked Gallery while viewing project - going to folders view');
+                setPage('albumFolders');
+                return;
+            }
+            
+            // If NOT viewing a project:
             if (isStudioUser()) {
-                // Studio users clicking "Gallery" should go to dashboard
-                console.log('[App] Studio user clicked Gallery - redirecting to dashboard');
+                // Studio users go to dashboard
+                console.log('[App] Studio user clicked Gallery (no project) - redirecting to dashboard');
                 setPage('dashboard');
                 setPreviousPage(null);
                 return;
             } else {
-                // Client users - if currently viewing a project, go to its folders/cover
-                if (currentAlbum) {
-                    console.log('[App] Client clicked Gallery while viewing project - going to project folders');
-                    // Navigate to albumFolders if project has folders, else cover
-                    setPage('albumFolders');
-                    return;
-                }
-                // Otherwise go to albums list
+                // Client users go to their albums list
                 console.log('[App] Client user clicked Gallery - showing their albums');
             }
         }
