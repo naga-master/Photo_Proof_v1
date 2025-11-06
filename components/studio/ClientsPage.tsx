@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Client } from '../../types';
 import { PlusIcon, XCircleIcon, EyeIcon, EyeSlashIcon } from '../icons';
+import { Avatar } from '../Avatar';
 
 const PasswordDisplay: React.FC<{ password?: string, onTriggerClick?: (e: React.MouseEvent) => void }> = ({ password = '', onTriggerClick }) => {
     const [isRevealed, setIsRevealed] = useState(false);
@@ -215,8 +216,12 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                   <tr key={client.id} onClick={() => onManageClient(client)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <img className="h-10 w-10 rounded-full object-cover" src={client.profilePicture || client.avatarUrl} alt={client.name} />
+                        <div className="flex-shrink-0">
+                          <Avatar 
+                            name={client.name} 
+                            profilePicture={client.profilePicture || client.avatarUrl} 
+                            size={40}
+                          />
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{client.name}</div>

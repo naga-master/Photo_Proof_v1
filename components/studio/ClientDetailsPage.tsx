@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Client, Album, Invoice, ServicePackage } from '../../types';
 import { ArrowLeftIcon, PlusIcon } from '../icons';
+import { AvatarLarge } from '../Avatar';
 
 interface ClientDetailsPageProps {
     client: Client;
@@ -85,8 +86,11 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-6 border border-gray-200 rounded-lg">
                         <div className="flex flex-col items-center text-center">
-                            <div className="relative group">
-                                <img src={profilePicPreview} alt={details.name} className="w-24 h-24 rounded-full mb-4 object-cover" />
+                            <div className="relative group mb-4">
+                                <AvatarLarge 
+                                    name={details.name}
+                                    profilePicture={profilePicPreview}
+                                />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                                     <label className="cursor-pointer text-white text-xs font-medium">
                                         <span>Change Photo</span>
