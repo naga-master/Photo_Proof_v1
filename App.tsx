@@ -549,6 +549,7 @@ const App: React.FC = () => {
         console.log('[App] handleBack called:', { 
             page, 
             previousPage, 
+            navigationStack: [...navigationStack],
             isStudioUser: isStudioUser(), 
             studioReturnToProject: studioReturnToProject?.id,
             currentFolder: currentFolder?.id,
@@ -556,7 +557,7 @@ const App: React.FC = () => {
         });
         
         // Handle back from cover page (new gallery hierarchy)
-        // Cover → Dashboard (for studio users)
+        // Cover → Dashboard (for studio users) or Albums (for clients)
         if (page === 'cover') {
             if (isStudioUser() && (previousPage === 'dashboard' || studioReturnToProject)) {
                 console.log('[App] Going back from cover to dashboard (studio user)');
@@ -605,6 +606,39 @@ const App: React.FC = () => {
             return;
         }
         
+        // For client users - use navigation stack for store/about/cart pages
+        if (userRole === 'client' && navigationStack.length > 1) {
+            const newStack = [...navigationStack];
+            newStack.pop(); // Remove current page
+            let previousPage = newStack[newStack.length - 1];
+            
+            console.log('[App] Client going back using navigation stack:', {
+                currentPage: page,
+                previousPage,
+                newStack
+            });
+            
+            // Skip cover page - go to the page before it
+            if (previousPage === 'cover') {
+                newStack.pop(); // Remove cover
+                previousPage = newStack[newStack.length - 1];
+            }
+            
+            setNavigationStack(newStack);
+            setPage(previousPage);
+            
+            // Clear gallery content when going back from gallery to folders
+            if (previousPage === 'galleryFolders') {
+                setGalleryContent(null);
+            }
+            // Clear album when going back to albums list or other pages
+            if (previousPage === 'albums' || previousPage === 'store' || previousPage === 'about' || previousPage === 'cart') {
+                setCurrentAlbum(null);
+                setGalleryContent(null);
+            }
+            return;
+        }
+        
         // For studio users viewing from dashboard
         if (isStudioUser() && previousPage === 'dashboard') {
             // Go back one level in the stack
@@ -649,27 +683,14 @@ const App: React.FC = () => {
             return;
         }
         
-        // For client users - go back one level in navigation stack, skipping cover page
-        if (navigationStack.length > 1) {
-            const newStack = [...navigationStack];
-            newStack.pop(); // Remove current page
-            let previousPage = newStack[newStack.length - 1];
-            
-            // Skip cover page - go to the page before it
-            if (previousPage === 'cover') {
-                newStack.pop(); // Remove cover
-                previousPage = newStack[newStack.length - 1];
-            }
-            
-            setNavigationStack(newStack);
+        // Fallback: if no specific handler matched, try previousPage
+        if (previousPage) {
+            console.log('[App] Falling back to previousPage:', previousPage);
             setPage(previousPage);
+            setPreviousPage(null);
             
-            // Clear gallery content when going back from gallery to folders
-            if (previousPage === 'galleryFolders') {
-                setGalleryContent(null);
-            }
-            // Clear album when going back to albums list
-            if (previousPage === 'albums') {
+            // Clear context when going back
+            if (previousPage === 'albums' || previousPage === 'store' || previousPage === 'about') {
                 setCurrentAlbum(null);
                 setGalleryContent(null);
             }

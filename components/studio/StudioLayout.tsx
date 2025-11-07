@@ -66,6 +66,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [view, setView] = useState<DashboardView>('overview');
     const [managingProject, setManagingProject] = useState<Album | null>(null);
     const [managingClient, setManagingClient] = useState<Client | null>(null);
+    const [previousView, setPreviousView] = useState<DashboardView | null>(null);
     const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
     
     const [isSidebarMobileOpen, setSidebarMobileOpen] = useState(false);
@@ -100,12 +101,32 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const handleSetView = (newView: DashboardView) => {
         setManagingClient(null);
         setManagingProject(null);
+        setPreviousView(null);
         setView(newView);
     }
     
     const handleManageProject = (album: Album) => {
+        setPreviousView(view); // Store current view before navigating
         setManagingProject(album);
         setView('projectDetails');
+    };
+
+    const handleBackFromProjectDetails = () => {
+        // If we came from clientDetails, go back there and restore the client
+        if (previousView === 'clientDetails' && managingProject) {
+            const client = clients.find(c => c.id === managingProject.clientId);
+            if (client) {
+                setManagingClient(client);
+                setManagingProject(null);
+                setView('clientDetails');
+                setPreviousView(null);
+                return;
+            }
+        }
+        // Otherwise, go to projects page
+        setManagingProject(null);
+        setPreviousView(null);
+        handleSetView('projects');
     };
 
     const handleUpdateProject = (updatedAlbum: Album) => {
@@ -315,7 +336,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'tools': return <StudioToolsPage />;
             case 'notifications': return <NotificationsPage />;
             case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} existingProjectId={uploadExistingProjectId} initialStep={uploadInitialStep} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); setUploadExistingProjectId(undefined); setUploadInitialStep(0); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
-            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={() => handleSetView('projects')} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} onGenerateInvoice={handleGenerateInvoice} />;
+            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={handleBackFromProjectDetails} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} onGenerateInvoice={handleGenerateInvoice} />;
             case 'clientDetails': return managingClient && <ClientDetailsPage client={managingClient} albums={props.albums} invoices={props.invoices} packages={props.packages} onBack={() => handleSetView('clients')} onUpdateClient={handleUpdateClient} onCreateProject={handleCreateProjectForClient} onCreateInvoice={handleCreateInvoiceForProject} onPreviewInvoice={setViewingInvoice} onViewProject={handleManageProject} />;
             default: return <StudioOverview albums={props.albums} setView={handleSetView} />;
         }
