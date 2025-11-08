@@ -13,6 +13,9 @@ const CACHE_VERSION = 'v2'; // Incremented to force update (fixed URL pattern)
 const IMAGE_CACHE = `photo-proof-images-${CACHE_VERSION}`;
 const COVER_CACHE = `photo-proof-covers-${CACHE_VERSION}`;
 
+// Debug flag - set to true to enable logging
+const DEBUG = false; // Set to true when debugging Service Worker
+
 // Cache expiration times
 const IMAGE_CACHE_DAYS = 30;
 const COVER_CACHE_DAYS = 7;
@@ -21,14 +24,14 @@ const COVER_CACHE_DAYS = 7;
 const MAX_IMAGE_CACHE_MB = 500;
 const MAX_COVER_CACHE_MB = 100;
 
-console.log('[SW] Service Worker script loaded');
+if (DEBUG) console.log('[SW] Service Worker script loaded');
 
 /**
  * Install Event
  * Called when Service Worker is first installed
  */
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
+  if (DEBUG) console.log('[SW] Installing Service Worker...');
   
   // Skip waiting to activate immediately
   self.skipWaiting();
@@ -38,7 +41,7 @@ self.addEventListener('install', (event) => {
       caches.open(IMAGE_CACHE),
       caches.open(COVER_CACHE)
     ]).then(() => {
-      console.log('[SW] Caches initialized');
+      if (DEBUG) console.log('[SW] Caches initialized');
     })
   );
 });
@@ -48,7 +51,7 @@ self.addEventListener('install', (event) => {
  * Called when Service Worker is activated
  */
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
+  if (DEBUG) console.log('[SW] Activating Service Worker...');
   
   event.waitUntil(
     // Clean up old caches
@@ -59,7 +62,7 @@ self.addEventListener('activate', (event) => {
           if (cacheName.startsWith('photo-proof-') && 
               cacheName !== IMAGE_CACHE && 
               cacheName !== COVER_CACHE) {
-            console.log('[SW] Deleting old cache:', cacheName);
+            if (DEBUG) console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -68,7 +71,7 @@ self.addEventListener('activate', (event) => {
       // Take control of all clients immediately
       return self.clients.claim();
     }).then(() => {
-      console.log('[SW] Service Worker activated and ready');
+      if (DEBUG) console.log('[SW] Service Worker activated and ready');
     })
   );
 });
@@ -132,7 +135,7 @@ async function cacheFirst(request, cacheName) {
     const cached = await cache.match(request);
     
     if (cached) {
-      console.log('[SW] Cache HIT:', request.url);
+      if (DEBUG) console.log('[SW] Cache HIT:', request.url);
       
       // Update access time in background
       updateCacheMetadata(request, cacheName);
@@ -140,7 +143,7 @@ async function cacheFirst(request, cacheName) {
       return cached;
     }
     
-    console.log('[SW] Cache MISS, fetching:', request.url);
+    if (DEBUG) console.log('[SW] Cache MISS, fetching:', request.url);
     
     // Fetch from network
     const response = await fetch(request);
@@ -148,7 +151,7 @@ async function cacheFirst(request, cacheName) {
     // Cache if successful
     if (response.ok) {
       cache.put(request, response.clone());
-      console.log('[SW] Cached:', request.url);
+      if (DEBUG) console.log('[SW] Cached:', request.url);
       
       // Check cache quota after adding
       checkCacheQuota(cacheName);
@@ -164,7 +167,7 @@ async function cacheFirst(request, cacheName) {
     const cached = await cache.match(request);
     
     if (cached) {
-      console.log('[SW] Returning stale cache (offline)');
+      if (DEBUG) console.log('[SW] Returning stale cache (offline)');
       return cached;
     }
     
@@ -190,7 +193,7 @@ async function staleWhileRevalidate(request, cacheName) {
     const fetchPromise = fetch(request).then(response => {
       if (response.ok) {
         cache.put(request, response.clone());
-        console.log('[SW] Updated cache:', request.url);
+        if (DEBUG) console.log('[SW] Updated cache:', request.url);
       }
       return response;
     }).catch(error => {
@@ -200,12 +203,12 @@ async function staleWhileRevalidate(request, cacheName) {
     
     // Return cached immediately if available
     if (cached) {
-      console.log('[SW] Returning cached (revalidating):', request.url);
+      if (DEBUG) console.log('[SW] Returning cached (revalidating):', request.url);
       return cached;
     }
     
     // No cache, wait for fetch
-    console.log('[SW] No cache, waiting for fetch:', request.url);
+    if (DEBUG) console.log('[SW] No cache, waiting for fetch:', request.url);
     return await fetchPromise;
     
   } catch (error) {
@@ -266,7 +269,7 @@ async function checkCacheQuota(cacheName) {
  * Listen for messages from the app
  */
 self.addEventListener('message', (event) => {
-  console.log('[SW] Received message:', event.data);
+  if (DEBUG) console.log('[SW] Received message:', event.data);
   
   if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -278,7 +281,7 @@ self.addEventListener('message', (event) => {
         caches.delete(IMAGE_CACHE),
         caches.delete(COVER_CACHE)
       ]).then(() => {
-        console.log('[SW] Caches cleared');
+        if (DEBUG) console.log('[SW] Caches cleared');
         event.ports[0].postMessage({ success: true });
       })
     );
@@ -319,4 +322,4 @@ async function getCacheStats() {
   }
 }
 
-console.log('[SW] Service Worker ready');
+if (DEBUG) console.log('[SW] Service Worker ready');
