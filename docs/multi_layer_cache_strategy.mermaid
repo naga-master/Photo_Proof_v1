@@ -1,0 +1,66 @@
+flowchart TD
+    START[Component Needs Photo Data] --> CHECK1{Check PhotoStore<br/>In-Memory Cache}
+    
+    CHECK1 -->|"HIT<br/>Data exists<br/>< 5 min old"| RETURN1[Return Immediately<br/>⚡ 0ms latency<br/>✓ Zero network]
+    
+    CHECK1 -->|"MISS or STALE"| CHECK2{Check IndexedDB<br/>Persistent Cache}
+    
+    CHECK2 -->|"HIT<br/>Data exists<br/>< 24 hours old"| HYDRATE1[Load into PhotoStore]
+    HYDRATE1 --> RETURN2[Return from Memory<br/>⚡ 50-100ms latency<br/>✓ Zero network]
+    HYDRATE1 -.->|"Background refresh"| REFRESH1[API Call to Verify Freshness]
+    
+    CHECK2 -->|"MISS or EXPIRED"| CHECK3{Check Service Worker<br/>Image Cache}
+    
+    CHECK3 -->|"HIT<br/>Image URL cached"| CDN1[Fetch from CDN]
+    CDN1 --> RETURN3[Return Cached Image<br/>⚡ 20-50ms latency<br/>✓ CDN edge server]
+    
+    CHECK3 -->|"MISS<br/>First request"| API1[API Call: GET /v2/photos/...]
+    
+    API1 --> BACKEND{Backend Processing}
+    
+    BACKEND --> DB[Query Database<br/>Photo Metadata]
+    BACKEND --> CDN2{Image Request}
+    
+    CDN2 -->|"CDN HIT<br/>95% of requests"| EDGE[Serve from Edge<br/>⚡ Fast delivery<br/>✓ Zero origin load]
+    
+    CDN2 -->|"CDN MISS<br/>5% of requests"| ORIGIN[Fetch from Origin<br/>/uploads/ directory]
+    ORIGIN --> CACHE_CDN[Cache at CDN Edge<br/>Future requests = edge served]
+    
+    DB --> RESPONSE[JSON Response<br/>Photo metadata + URLs]
+    EDGE --> RESPONSE
+    CACHE_CDN --> RESPONSE
+    
+    RESPONSE --> STORE1[Store in PhotoStore<br/>Immediate access]
+    STORE1 --> STORE2[Persist to IndexedDB<br/>Survive refresh]
+    STORE2 --> STORE3[Cache via Service Worker<br/>Offline capability]
+    
+    STORE3 --> RETURN4[Return to Component<br/>⚡ 200-500ms first time<br/>✓ Cached for future]
+    
+    %% Parallel background operations
+    REFRESH1 -.->|"If changed"| UPDATE1[Update PhotoStore<br/>Silent update]
+    UPDATE1 -.->|"Notify"| NOTIFY[UI updates automatically<br/>via store subscriptions]
+    
+    %% Cache warming strategy
+    START -.->|"On app init"| PREFETCH[Prefetch Strategy]
+    PREFETCH -.-> WARM1[Load recent projects<br/>in background]
+    PREFETCH -.-> WARM2[Predict next navigation<br/>prefetch photos]
+    WARM1 & WARM2 -.-> STORE1
+    
+    %% Invalidation triggers
+    UPLOAD[User Uploads Photo] --> INVALIDATE1[Add to PhotoStore]
+    DELETE[User Deletes Photo] --> INVALIDATE2[Remove from PhotoStore]
+    INVALIDATE1 & INVALIDATE2 --> SYNC[Sync to IndexedDB]
+    SYNC --> BROADCAST[Broadcast Change<br/>All components update]
+    
+    %% Styling
+    classDef hitClass fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    classDef missClass fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    classDef cacheClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef backendClass fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
+    classDef actionClass fill:#b3e5fc,stroke:#01579b,stroke-width:2px
+    
+    class RETURN1,RETURN2,RETURN3,EDGE hitClass
+    class API1,ORIGIN missClass
+    class CHECK1,CHECK2,CHECK3,STORE1,STORE2,STORE3 cacheClass
+    class BACKEND,DB,CDN2 backendClass
+    class PREFETCH,INVALIDATE1,INVALIDATE2,BROADCAST actionClass

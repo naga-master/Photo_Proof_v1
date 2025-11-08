@@ -1,0 +1,79 @@
+graph TB
+    subgraph "Current State Analysis"
+        CS1[Typical User Session:<br/>5 albums × 3 folders each]
+        CS2[API Calls per Session:<br/>21+ requests]
+        CS3[Egress per User:<br/>42MB average]
+        CS4[Response Time:<br/>2s per page load]
+        CS5[Server Load:<br/>High, frequent spikes]
+        
+        CS1 --> CS2 --> CS3 --> CS4 --> CS5
+    end
+    
+    subgraph "Optimization Investment"
+        INV1[Week 1: Foundation<br/>40 hours<br/>Global stores + HTTP cache]
+        INV2[Week 2: Persistence<br/>40 hours<br/>IndexedDB + Service Worker]
+        INV3[Week 3: CDN & Backend<br/>40 hours<br/>CDN setup + API optimization]
+        INV4[Week 4: Advanced<br/>32 hours<br/>Prefetch + monitoring]
+        
+        TOTAL[Total Investment:<br/>152 hours ≈ 1 month]
+        
+        INV1 --> INV2 --> INV3 --> INV4 --> TOTAL
+    end
+    
+    subgraph "Optimized State"
+        OS1[Same User Session:<br/>5 albums × 3 folders]
+        OS2[API Calls per Session:<br/>2 requests only]
+        OS3[Egress per User:<br/>500KB JSON only]
+        OS4[Response Time:<br/>2s first, 100ms rest]
+        OS5[Server Load:<br/>95% reduction]
+        
+        OS1 --> OS2 --> OS3 --> OS4 --> OS5
+    end
+    
+    subgraph "Quantified Benefits"
+        B1[API Call Reduction:<br/>21 → 2 calls<br/>⬇ 90% reduction]
+        B2[Egress Cost Savings:<br/>42MB → 0.5MB<br/>⬇ 95% reduction<br/>💰 $500-5000/month saved*]
+        B3[User Experience:<br/>42s → 2.5s total wait<br/>⬆ 94% faster<br/>😊 Higher satisfaction]
+        B4[Server Capacity:<br/>Current load → 20x capacity<br/>⬆ 2000% increase<br/>🚀 Scale without hardware]
+        B5[Development Velocity:<br/>Instant feature testing<br/>⚡ Faster iterations<br/>👨‍💻 Better DX]
+        
+        OS2 --> B1
+        OS3 --> B2
+        OS4 --> B3
+        OS5 --> B4
+        B1 & B2 & B3 & B4 --> B5
+    end
+    
+    subgraph "ROI Calculation"
+        ROI1[One-time Cost:<br/>$15,000-20,000<br/>1 senior dev × 1 month]
+        ROI2[Ongoing Savings:<br/>Egress: $500-5000/month<br/>Server: $200-1000/month<br/>Support: $500-2000/month<br/>Total: $1200-8000/month]
+        ROI3[Break-even:<br/>2-3 months<br/>12-month ROI: 400-800%]
+        ROI4[Intangible Benefits:<br/>• Better user retention<br/>• Higher conversion<br/>• Competitive advantage<br/>• Technical debt reduced]
+        
+        ROI1 --> ROI2 --> ROI3 --> ROI4
+    end
+    
+    subgraph "Risk Assessment"
+        R1[Implementation Risk: LOW<br/>✓ Standard patterns<br/>✓ Proven technologies<br/>✓ Incremental rollout]
+        R2[Operational Risk: LOW<br/>✓ Backwards compatible<br/>✓ Gradual migration<br/>✓ Easy rollback]
+        R3[Maintenance Burden: LOW<br/>✓ Reduces complexity<br/>✓ Self-documenting<br/>✓ Industry standard]
+        
+        R1 --> R2 --> R3 --> RISK_SCORE[Overall Risk: LOW<br/>High Confidence]
+    end
+    
+    TOTAL -.->|"Investment"| ROI1
+    B2 -.->|"Drives"| ROI2
+    
+    classDef currentClass fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef investClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef optimizedClass fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef benefitClass fill:#b3e5fc,stroke:#01579b,stroke-width:2px
+    classDef roiClass fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
+    classDef riskClass fill:#dcedc8,stroke:#558b2f,stroke-width:2px
+    
+    class CS1,CS2,CS3,CS4,CS5 currentClass
+    class INV1,INV2,INV3,INV4,TOTAL investClass
+    class OS1,OS2,OS3,OS4,OS5 optimizedClass
+    class B1,B2,B3,B4,B5 benefitClass
+    class ROI1,ROI2,ROI3,ROI4 roiClass
+    class R1,R2,R3,RISK_SCORE riskClass

@@ -1,0 +1,83 @@
+graph TB
+    subgraph "User Interactions"
+        U1[Dashboard View]
+        U2[Gallery View]
+        U3[Folder Navigation]
+        U4[Cover Selection]
+        U5[Print Selection]
+        U6[AI Features]
+    end
+
+    subgraph "Frontend Layer"
+        subgraph "Global State Management"
+            PS[PhotoStore<br/>All Photos Indexed]
+            PRS[ProjectStore<br/>All Projects]
+            MS[MetadataStore<br/>Folders & Selections]
+        end
+        
+        subgraph "Service Layer Gateway"
+            PSV[PhotoService]
+            PRSV[ProjectService]
+        end
+        
+        subgraph "Persistence Layer"
+            IDB[(IndexedDB<br/>Metadata Cache<br/>7 day TTL)]
+            SW[Service Worker<br/>Image Cache<br/>Immutable]
+        end
+    end
+
+    subgraph "Network Layer"
+        CDN[CDN Edge Locations<br/>CloudFlare/CloudFront<br/>95% Traffic]
+        API[FastAPI Backend<br/>5% Traffic]
+    end
+
+    subgraph "Backend Layer"
+        APIE["/v2/photos Endpoints"]
+        DB[(SQLite DB<br/>Photo Metadata)]
+        FS[(/uploads/<br/>Local Storage)]
+    end
+
+    %% User Flow - All Features
+    U1 & U2 & U3 & U4 & U5 & U6 --> PS
+    U1 & U2 & U3 --> PRS
+    U4 & U5 & U6 --> MS
+
+    %% Service Layer Flow
+    PS --> PSV
+    PRS --> PRSV
+    
+    %% Cache Check Flow
+    PSV --> IDB
+    PRSV --> IDB
+    
+    %% Cache Miss Flow
+    IDB -->|"Miss"| PSV
+    IDB -->|"Miss"| PRSV
+    
+    %% API Call Flow - Only on Cache Miss
+    PSV -->|"Cache Miss<br/>First Load Only"| API
+    PRSV -->|"Cache Miss<br/>First Load Only"| API
+    
+    %% Image Request Flow
+    PS -->|"Image URLs"| SW
+    SW -->|"95% Hits"| CDN
+    SW -->|"5% Miss"| CDN
+    CDN -->|"Rare Miss"| FS
+    
+    %% Backend Flow
+    API --> APIE
+    APIE --> DB
+    APIE --> FS
+
+    %% Styling
+    classDef userClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef storeClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef cacheClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef networkClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef backendClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class U1,U2,U3,U4,U5,U6 userClass
+    class PS,PRS,MS storeClass
+    class IDB,SW,CDN cacheClass
+    class API networkClass
+    class APIE,DB,FS backendClass

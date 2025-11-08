@@ -1,0 +1,105 @@
+graph TB
+    subgraph "User Authentication & Profiling"
+        LOGIN[User Login]
+        DETECT{Detect User Role}
+        
+        LOGIN --> DETECT
+        DETECT -->|"role: client<br/>projects: 3-10"| CLIENT_PROFILE[Client Profile<br/>Memory-Optimized Strategy]
+        DETECT -->|"role: studio<br/>projects: 100+"| STUDIO_PROFILE[Studio Profile<br/>Selective Strategy]
+    end
+    
+    subgraph "CLIENT USER STRATEGY - Aggressive Caching"
+        subgraph "Client Data Layer"
+            C_MEM[Memory Store<br/>Cache ALL Projects<br/>No Limit<br/>~50-100MB]
+            C_IDB[IndexedDB<br/>Persist ALL Projects<br/>7-day TTL<br/>~50-100MB]
+            C_SW[Service Worker<br/>Cache ALL Images<br/>Immutable<br/>~100-200MB]
+        end
+        
+        subgraph "Client Loading Pattern"
+            C_DASH[Dashboard Load<br/>Fetch ALL 10 projects<br/>+ thumbnails immediately]
+            C_PREFETCH[Auto-Prefetch<br/>3 recent projects<br/>photos in background]
+            C_NAV[Navigation<br/>Instant from memory<br/>0 API calls]
+        end
+        
+        CLIENT_PROFILE --> C_MEM
+        C_MEM <--> C_IDB
+        C_MEM --> C_SW
+        
+        C_DASH --> C_MEM
+        C_PREFETCH --> C_MEM
+        C_NAV --> C_MEM
+        
+        C_METRICS_CLIENT[Metrics:<br/>⚡ <100ms navigation<br/>💾 ~300MB total<br/>📡 2-3 API calls/session<br/>✓ 95%+ cache hit]
+        C_NAV --> C_METRICS_CLIENT
+    end
+    
+    subgraph "STUDIO USER STRATEGY - Selective Caching"
+        subgraph "Studio Data Layer"
+            S_MEM[Memory Store<br/>Cache 10 ACTIVE Projects<br/>LRU Eviction<br/>~200-500MB]
+            S_IDB[IndexedDB<br/>Metadata: ALL projects<br/>Full Data: 20 recent<br/>~50-100MB]
+            S_SW[Service Worker<br/>Cache ACTIVE Images Only<br/>7-day expiry<br/>~500MB-1GB]
+        end
+        
+        subgraph "Studio Loading Pattern"
+            S_DASH[Dashboard Load<br/>Metadata ONLY<br/>100+ projects lightweight<br/>Virtual scrolling]
+            S_OPEN[Project Open<br/>Load full data on-demand<br/>Acceptable 2s delay]
+            S_EVICT[Smart Eviction<br/>30min idle → evict<br/>Keep last 10 accessed]
+        end
+        
+        STUDIO_PROFILE --> S_MEM
+        S_MEM <--> S_IDB
+        S_MEM --> S_SW
+        
+        S_DASH --> S_IDB
+        S_OPEN --> S_MEM
+        S_EVICT --> S_MEM
+        
+        S_METRICS_STUDIO[Metrics:<br/>⚡ <2s project open<br/>💾 ~1.5GB max controlled<br/>📡 5-10 API calls/session<br/>✓ 70%+ cache hit<br/>acceptable for scale]
+        S_EVICT --> S_METRICS_STUDIO
+    end
+    
+    subgraph "Backend API Optimization"
+        API_LIGHT[GET /v2/projects?mode=list<br/>Metadata only: id, name,<br/>thumbnail, count<br/>~1KB per project]
+        
+        API_FULL[GET /v2/projects?mode=full<br/>Full data: all metadata,<br/>photos, folders<br/>~50KB per project]
+        
+        API_PHOTOS[GET /v2/photos/...<br/>?metadata_only=true<br/>Thumbnails only for studio<br/>Full res for client]
+    end
+    
+    C_DASH --> API_FULL
+    S_DASH --> API_LIGHT
+    S_OPEN --> API_FULL
+    
+    subgraph "Storage Budget Management"
+        QUOTA{Monitor Storage Quota}
+        
+        QUOTA -->|"Client: <300MB<br/>Green zone"| KEEP_ALL[Keep All Data]
+        QUOTA -->|"Studio: >1GB<br/>Yellow zone"| CLEANUP[Auto-Cleanup<br/>Purge oldest 50%<br/>Keep active projects]
+        QUOTA -->|"Studio: >2GB<br/>Red zone"| AGGRESSIVE[Aggressive Eviction<br/>Keep only current<br/>+ 5 recent]
+    end
+    
+    C_SW --> QUOTA
+    S_SW --> QUOTA
+    
+    subgraph "Adaptive Prefetch Strategy"
+        PREFETCH_ENGINE{Prefetch Engine}
+        
+        PREFETCH_ENGINE -->|"Client Mode"| PREFETCH_AGGRESSIVE[Aggressive:<br/>• Hover → prefetch<br/>• Background: recent 3<br/>• Predictive next project]
+        
+        PREFETCH_ENGINE -->|"Studio Mode"| PREFETCH_CONSERVATIVE[Conservative:<br/>• 2s hover → prefetch<br/>• No background fetch<br/>• Manual trigger only]
+    end
+    
+    CLIENT_PROFILE --> PREFETCH_ENGINE
+    STUDIO_PROFILE --> PREFETCH_ENGINE
+    
+    classDef clientClass fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef studioClass fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    classDef apiClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef managementClass fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef metricsClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class CLIENT_PROFILE,C_MEM,C_IDB,C_SW,C_DASH,C_PREFETCH,C_NAV,PREFETCH_AGGRESSIVE clientClass
+    class STUDIO_PROFILE,S_MEM,S_IDB,S_SW,S_DASH,S_OPEN,S_EVICT,PREFETCH_CONSERVATIVE studioClass
+    class API_LIGHT,API_FULL,API_PHOTOS apiClass
+    class QUOTA,KEEP_ALL,CLEANUP,AGGRESSIVE,PREFETCH_ENGINE managementClass
+    class C_METRICS_CLIENT,S_METRICS_STUDIO metricsClass

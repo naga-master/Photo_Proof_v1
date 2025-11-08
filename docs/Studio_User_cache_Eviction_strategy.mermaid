@@ -1,0 +1,78 @@
+flowchart TD
+    START[Studio User Opens Project] --> CHECK{Memory Store Status}
+    
+    CHECK -->|"< 10 projects<br/>Space available"| LOAD1[Load project into memory<br/>Store in slot N]
+    LOAD1 --> TRACK[Track: last_accessed_time<br/>access_count]
+    
+    CHECK -->|"= 10 projects<br/>At capacity"| EVICT_DECISION{Eviction Strategy}
+    
+    EVICT_DECISION --> TIME_CHECK{Any project<br/>idle > 30 min?}
+    TIME_CHECK -->|"Yes"| EVICT_TIME[Evict oldest idle project<br/>Free slot]
+    TIME_CHECK -->|"No"| EVICT_LRU[Evict Least Recently Used<br/>LRU algorithm]
+    
+    EVICT_TIME --> PRESERVE{Should preserve?}
+    EVICT_LRU --> PRESERVE
+    
+    PRESERVE -->|"Has unsaved changes"| WARN[Show warning<br/>Save changes first]
+    WARN --> USER_CHOICE{User Action}
+    USER_CHOICE -->|"Save"| SAVE[Save changes]
+    USER_CHOICE -->|"Discard"| EVICT_EXECUTE
+    SAVE --> EVICT_EXECUTE[Execute Eviction]
+    
+    PRESERVE -->|"No unsaved changes"| EVICT_EXECUTE
+    
+    EVICT_EXECUTE --> METADATA_KEEP[Keep in IndexedDB:<br/>• Project metadata<br/>• Thumbnail<br/>• Photo list IDs]
+    METADATA_KEEP --> MEMORY_FREE[Free from Memory:<br/>• Full photo objects<br/>• Image blobs<br/>• Comments/selections]
+    MEMORY_FREE --> LOAD2[Load new project<br/>into freed slot]
+    
+    LOAD2 --> TRACK
+    TRACK --> MONITOR[Monitor Memory Usage]
+    
+    MONITOR --> MEM_CHECK{Memory Health}
+    MEM_CHECK -->|"> 500MB"| AGGRESSIVE_EVICT[Aggressive Mode:<br/>Reduce to 5 projects<br/>Clear image cache]
+    MEM_CHECK -->|"< 500MB"| NORMAL[Normal Operation]
+    
+    AGGRESSIVE_EVICT --> NORMAL
+    
+    subgraph "Eviction Scoring Algorithm"
+        SCORE[Calculate Eviction Score<br/>for each project]
+        SCORE --> FACTOR1[Factor 1:<br/>Time since last access<br/>weight: 40%]
+        SCORE --> FACTOR2[Factor 2:<br/>Access frequency<br/>weight: 30%]
+        SCORE --> FACTOR3[Factor 3:<br/>Data size<br/>weight: 20%]
+        SCORE --> FACTOR4[Factor 4:<br/>User pinned?<br/>weight: 10%]
+        
+        FACTOR1 & FACTOR2 & FACTOR3 & FACTOR4 --> RANK[Rank projects<br/>Highest score = First to evict]
+    end
+    
+    EVICT_LRU -.-> SCORE
+    
+    subgraph "IndexedDB Cleanup Strategy"
+        IDB_CHECK{IndexedDB Status}
+        IDB_CHECK -->|"> 80MB<br/>Yellow zone"| IDB_CLEANUP1[Remove photo data<br/>for projects not accessed<br/>in 14 days]
+        IDB_CHECK -->|"> 100MB<br/>Red zone"| IDB_CLEANUP2[Aggressive cleanup:<br/>Keep only 10 most recent<br/>Clear all others]
+        IDB_CHECK -->|"< 80MB<br/>Green zone"| IDB_NORMAL[No action needed]
+    end
+    
+    MEMORY_FREE -.-> IDB_CHECK
+    
+    subgraph "User Recovery Path"
+        USER_RETURN[User returns to<br/>evicted project]
+        USER_RETURN --> QUICK_CHECK{In IndexedDB?}
+        QUICK_CHECK -->|"Yes<br/>Metadata exists"| QUICK_LOAD[Load from IndexedDB<br/>⚡ 200-500ms<br/>Then fetch fresh data]
+        QUICK_CHECK -->|"No<br/>Fully purged"| FULL_LOAD[Full API fetch<br/>⚡ 1-2s]
+        
+        QUICK_LOAD --> DISPLAY[Display to user]
+        FULL_LOAD --> DISPLAY
+    end
+    
+    NORMAL -.->|"User navigates back"| USER_RETURN
+    
+    classDef normalClass fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef evictClass fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    classDef warningClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef recoveryClass fill:#b3e5fc,stroke:#01579b,stroke-width:2px
+    
+    class LOAD1,LOAD2,TRACK,NORMAL,IDB_NORMAL normalClass
+    class EVICT_DECISION,EVICT_TIME,EVICT_LRU,EVICT_EXECUTE,AGGRESSIVE_EVICT,IDB_CLEANUP1,IDB_CLEANUP2 evictClass
+    class WARN,USER_CHOICE warningClass
+    class USER_RETURN,QUICK_CHECK,QUICK_LOAD,FULL_LOAD,DISPLAY recoveryClass

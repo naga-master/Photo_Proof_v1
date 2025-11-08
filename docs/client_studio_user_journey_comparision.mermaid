@@ -1,0 +1,100 @@
+sequenceDiagram
+    participant CU as Client User<br/>(3-10 projects)
+    participant CM as Client Memory
+    participant API as Backend API
+    participant SU as Studio User<br/>(100+ projects)
+    participant SM as Studio Memory<br/>(LRU-10)
+    
+    Note over CU,SU: DASHBOARD LOAD
+    
+    rect rgb(225, 245, 255)
+    Note right of CU: Client Strategy: Load ALL
+    CU->>CM: Request dashboard
+    CM->>API: GET /projects?mode=full<br/>(10 projects, all data)
+    API-->>CM: 500KB response<br/>All projects + photos
+    CM-->>CU: Instant render<br/>⚡ 1-2s
+    Note right of CU: Prefetch 3 recent in background
+    CM->>API: Prefetch photos<br/>for recent projects
+    end
+    
+    rect rgb(255, 243, 224)
+    Note right of SU: Studio Strategy: Metadata Only
+    SU->>SM: Request dashboard
+    SM->>API: GET /projects?mode=list<br/>(100 projects, metadata)
+    API-->>SM: 100KB response<br/>Thumbnails only
+    SM-->>SU: Virtual scroll render<br/>⚡ <1s
+    Note right of SU: NO prefetch (save bandwidth)
+    end
+    
+    Note over CU,SU: PROJECT NAVIGATION (30 seconds later)
+    
+    rect rgb(225, 245, 255)
+    Note right of CU: Client: Instant from cache
+    CU->>CM: Open Project B
+    CM-->>CU: Read from memory<br/>⚡ <100ms<br/>✓ 0 API calls
+    end
+    
+    rect rgb(255, 243, 224)
+    Note right of SU: Studio: On-demand load
+    SU->>SM: Open Project #45
+    SM->>API: GET /projects/45/photos
+    API-->>SM: 2MB response<br/>Full project data
+    SM-->>SU: Render gallery<br/>⚡ 1-2s (acceptable)
+    Note right of SU: Cache in memory (slot 1/10)
+    end
+    
+    Note over CU,SU: RAPID NAVIGATION (next 5 minutes)
+    
+    rect rgb(225, 245, 255)
+    CU->>CM: Switch to Project C
+    CM-->>CU: ⚡ Instant <100ms
+    CU->>CM: Back to Project A
+    CM-->>CU: ⚡ Instant <100ms
+    CU->>CM: Open Project D
+    CM-->>CU: ⚡ Instant <100ms
+    Note right of CU: 3 switches = 0 API calls<br/>All from memory
+    end
+    
+    rect rgb(255, 243, 224)
+    SU->>SM: Open Project #12
+    SM->>API: GET /projects/12/photos
+    API-->>SM: 1.5MB response
+    SM-->>SU: ⚡ 1-2s
+    Note right of SU: Cache slot 2/10
+    
+    SU->>SM: Open Project #78
+    SM->>API: GET /projects/78/photos
+    API-->>SM: 2MB response
+    SM-->>SU: ⚡ 1-2s
+    Note right of SU: Cache slot 3/10
+    
+    Note right of SU: 2 switches = 2 API calls<br/>Acceptable for large dataset
+    end
+    
+    Note over CU,SU: AFTER 15 PROJECTS OPENED (Studio LRU kicks in)
+    
+    rect rgb(255, 243, 224)
+    Note right of SU: Memory now has 10 projects
+    SU->>SM: Open Project #89 (11th)
+    SM->>SM: Evict Project #45<br/>(least recently used)
+    SM->>API: GET /projects/89/photos
+    API-->>SM: 2MB response
+    SM-->>SU: ⚡ 1-2s
+    
+    SU->>SM: Back to Project #45
+    Note right of SU: Was evicted, need reload
+    SM->>API: GET /projects/45/photos
+    API-->>SM: 2MB response (re-fetch)
+    SM-->>SU: ⚡ 1-2s
+    Note right of SU: Acceptable: infrequent revisits
+    end
+    
+    Note over CU,SU: SESSION SUMMARY
+    
+    rect rgb(225, 245, 255)
+    Note right of CU: Client Totals:<br/>• API Calls: 2-3<br/>• Data Transfer: ~1-2MB<br/>• Navigation: Instant<br/>• Memory: ~100MB stable
+    end
+    
+    rect rgb(255, 243, 224)
+    Note right of SU: Studio Totals:<br/>• API Calls: 8-12<br/>• Data Transfer: ~15-25MB<br/>• Navigation: Fast enough<br/>• Memory: ~500MB controlled
+    end

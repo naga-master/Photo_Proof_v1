@@ -1,0 +1,83 @@
+graph TB
+    subgraph "BEFORE OPTIMIZATION - Redundant Fetches"
+        subgraph "User Journey"
+            B1[Dashboard<br/>Load Projects]
+            B2[Gallery View<br/>Load Photos]
+            B3[Folder Switch<br/>Reload Photos]
+            B4[Cover Selection<br/>Reload Photos]
+            B5[Print Selection<br/>Reload Photos]
+            B6[AI Feature<br/>Reload Photos]
+        end
+        
+        subgraph "API Calls - Every Time"
+            BA1[GET /api/projects]
+            BA2[GET /v2/photos/...]
+            BA3[GET /v2/photos/...]
+            BA4[GET /v2/photos/...]
+            BA5[GET /v2/photos/...]
+            BA6[GET /v2/photos/...]
+        end
+        
+        B1 -->|"1 API call"| BA1
+        B2 -->|"2 API calls"| BA2
+        B3 -->|"3 API calls"| BA3
+        B4 -->|"4 API calls"| BA4
+        B5 -->|"5 API calls"| BA5
+        B6 -->|"6 API calls"| BA6
+        
+        BA1 & BA2 & BA3 & BA4 & BA5 & BA6 -->|"21+ API calls<br/>42MB egress<br/>42s wait time"| BBACK[Backend<br/>Origin Server]
+    end
+
+    subgraph "AFTER OPTIMIZATION - Single Fetch"
+        subgraph "User Journey Optimized"
+            A1[Dashboard<br/>Load Projects]
+            A2[Gallery View<br/>Load Photos]
+            A3[Folder Switch<br/>Read Cache]
+            A4[Cover Selection<br/>Read Cache]
+            A5[Print Selection<br/>Read Cache]
+            A6[AI Feature<br/>Read Cache]
+        end
+        
+        subgraph "Smart Data Layer"
+            STORE[PhotoStore<br/>Global State<br/>Session Cache]
+            IDBCACHE[IndexedDB<br/>Persistent Cache<br/>7 day TTL]
+            SWCACHE[Service Worker<br/>Image Cache<br/>Immutable]
+        end
+        
+        A1 -->|"Check cache"| STORE
+        STORE -->|"Miss: First load"| AA1[GET /api/projects]
+        AA1 -->|"1 API call"| API[Backend API]
+        AA1 -->|"Store result"| STORE
+        
+        A2 -->|"Check cache"| STORE
+        STORE -->|"Miss: First load"| AA2[GET /v2/photos/...]
+        AA2 -->|"1 API call<br/>ONLY"| API
+        AA2 -->|"Store result"| STORE
+        
+        A3 -->|"Instant read"| STORE
+        A4 -->|"Instant read"| STORE
+        A5 -->|"Instant read"| STORE
+        A6 -->|"Instant read"| STORE
+        
+        STORE <-->|"Persist metadata"| IDBCACHE
+        STORE -->|"Request images"| SWCACHE
+        SWCACHE -->|"95% hits"| CDN[CDN Edge<br/>No Origin Load]
+        SWCACHE -->|"5% miss"| CDN
+        CDN -->|"Rare miss"| API
+        
+        API -->|"2 API calls TOTAL<br/>500KB egress<br/>2.5s wait time"| ORIGIN[Origin Server<br/>95% less load]
+    end
+
+    %% Metrics
+    BBACK -.->|"Compare"| METRICS[Improvement:<br/>⬇ 90% API calls<br/>⬇ 95% egress<br/>⬇ 94% wait time<br/>⬆ 20x capacity]
+    ORIGIN -.->|"Results"| METRICS
+
+    classDef beforeClass fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef afterClass fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef cacheClass fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef metricsClass fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    
+    class B1,B2,B3,B4,B5,B6,BA1,BA2,BA3,BA4,BA5,BA6,BBACK beforeClass
+    class A1,A2,A3,A4,A5,A6,AA1,AA2,API,ORIGIN,CDN afterClass
+    class STORE,IDBCACHE,SWCACHE cacheClass
+    class METRICS metricsClass

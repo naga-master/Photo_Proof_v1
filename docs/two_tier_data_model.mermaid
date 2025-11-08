@@ -1,0 +1,100 @@
+graph TB
+    subgraph "API Response Optimization"
+        REQUEST[Client Request]
+        REQUEST --> MODE{Request Mode}
+        
+        MODE -->|"?mode=list<br/>Dashboard"| TIER1_API[Tier 1 Response<br/>Lightweight Metadata]
+        MODE -->|"?mode=full<br/>Project Open"| TIER2_API[Tier 2 Response<br/>Full Data]
+    end
+    
+    subgraph "TIER 1: Lightweight Metadata (Always Cached)"
+        TIER1_API --> META1[Project Metadata]
+        META1 --> P_ID[id: 123]
+        META1 --> P_NAME[name: "Wedding Shoot"]
+        META1 --> P_THUMB[thumbnail_url: "..."]
+        META1 --> P_COUNT[photo_count: 250]
+        META1 --> P_DATE[updated_at: "2024-01"]
+        META1 --> P_STATUS[status: "active"]
+        
+        TIER1_API --> PHOTO_LIST[Photo ID List]
+        PHOTO_LIST --> PH_IDS[photo_ids: [1,2,3...]]
+        PHOTO_LIST --> PH_THUMBS[thumbnails: [...urls]]
+        
+        TIER1_SIZE[Size: ~1KB per project<br/>100 projects = 100KB<br/>✓ Fast dashboard load]
+    end
+    
+    subgraph "TIER 2: Full Data (Selective Cache)"
+        TIER2_API --> FULL_PROJECT[Full Project Data]
+        FULL_PROJECT --> ALL_META[All Tier 1 fields]
+        FULL_PROJECT --> FOLDERS[folders: Array]
+        FULL_PROJECT --> SETTINGS[project_settings: Object]
+        
+        TIER2_API --> FULL_PHOTOS[Full Photo Objects]
+        FULL_PHOTOS --> PH_FULL[Photo Details]
+        PH_FULL --> PH_SRC[src: full_resolution_url]
+        PH_FULL --> PH_DIM[width, height, size]
+        PH_FULL --> PH_EXIF[exif_data: Object]
+        PH_FULL --> PH_COMMENTS[comments: Array]
+        PH_FULL --> PH_SELECTIONS[selections: Array]
+        PH_FULL --> PH_META_FULL[All metadata fields]
+        
+        TIER2_SIZE[Size: ~50KB per project<br/>10 projects = 500KB<br/>✓ Full data when needed]
+    end
+    
+    subgraph "CLIENT USER STORAGE"
+        C_STRATEGY[Client Strategy:<br/>Cache Everything]
+        
+        C_STRATEGY --> C_TIER1[Tier 1: ALL Projects<br/>Stored in Memory + IndexedDB]
+        C_STRATEGY --> C_TIER2[Tier 2: ALL Projects<br/>Loaded eagerly, cached fully]
+        
+        C_TIER1 --> C_DASH[Dashboard:<br/>Instant load from Tier 1<br/>10 projects × 1KB = 10KB]
+        C_TIER2 --> C_NAV[Navigation:<br/>Instant from Tier 2 cache<br/>0 API calls]
+        
+        C_TOTAL[Total Storage:<br/>~100-300MB<br/>Acceptable for small dataset]
+    end
+    
+    subgraph "STUDIO USER STORAGE"
+        S_STRATEGY[Studio Strategy:<br/>Metadata All, Full Selective]
+        
+        S_STRATEGY --> S_TIER1[Tier 1: ALL 100+ Projects<br/>Always in IndexedDB<br/>100KB total]
+        S_STRATEGY --> S_TIER2[Tier 2: 10 Active Projects<br/>LRU in Memory<br/>500KB active]
+        
+        S_TIER1 --> S_DASH[Dashboard:<br/>Virtual scroll 100 projects<br/>Load from Tier 1<br/>⚡ <1s]
+        S_TIER2 --> S_OPEN[Project Open:<br/>Fetch Tier 2 on-demand<br/>⚡ 1-2s acceptable]
+        
+        S_TIER1 -.->|"Background sync"| S_REFRESH[Periodic metadata refresh<br/>Keep Tier 1 current<br/>without full reload]
+        
+        S_TOTAL[Total Storage:<br/>~500MB-1GB controlled<br/>Scales to 1000s projects]
+    end
+    
+    subgraph "Performance Comparison"
+        COMPARE[Dashboard Load Performance]
+        
+        COMPARE --> OLD[Old Approach:<br/>Load all full data<br/>100 projects × 50KB = 5MB<br/>❌ 5-10s load time<br/>❌ Memory overflow]
+        
+        COMPARE --> NEW_CLIENT[New Client:<br/>Load all full data<br/>10 projects × 50KB = 500KB<br/>✓ 1-2s load time<br/>✓ Manageable memory]
+        
+        COMPARE --> NEW_STUDIO[New Studio:<br/>Load Tier 1 metadata<br/>100 projects × 1KB = 100KB<br/>✓ <1s load time<br/>✓ Tier 2 on-demand]
+    end
+    
+    subgraph "API Endpoint Structure"
+        ENDPOINTS[Backend Endpoints]
+        
+        ENDPOINTS --> EP1[GET /v2/projects<br/>?mode=list<br/>Returns: Tier 1 only]
+        ENDPOINTS --> EP2[GET /v2/projects<br/>?mode=full<br/>Returns: Tier 1 + Tier 2]
+        ENDPOINTS --> EP3[GET /v2/projects/{id}<br/>?fields=metadata<br/>Returns: Tier 1 for single]
+        ENDPOINTS --> EP4[GET /v2/projects/{id}<br/>Default<br/>Returns: Full Tier 2]
+        ENDPOINTS --> EP5[GET /v2/photos/.../photos<br/>?metadata_only=true<br/>Returns: IDs + thumbnails only]
+    end
+    
+    classDef tier1Class fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef tier2Class fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef clientClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef studioClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef compareClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class TIER1_API,META1,PHOTO_LIST,TIER1_SIZE,S_TIER1,C_TIER1 tier1Class
+    class TIER2_API,FULL_PROJECT,FULL_PHOTOS,TIER2_SIZE,S_TIER2,C_TIER2 tier2Class
+    class C_STRATEGY,C_DASH,C_NAV,C_TOTAL,NEW_CLIENT clientClass
+    class S_STRATEGY,S_DASH,S_OPEN,S_TOTAL,NEW_STUDIO studioClass
+    class COMPARE,OLD compareClass
