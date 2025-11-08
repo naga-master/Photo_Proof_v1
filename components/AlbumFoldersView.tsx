@@ -4,6 +4,9 @@ import type { Album, Folder } from '../types';
 import { FolderIcon, CameraIcon } from './icons';
 import { projectService } from '../services/projectService';
 
+// Request deduplication map - prevents duplicate simultaneous requests
+const inflightRequests = new Map<string, Promise<any>>();
+
 interface AlbumFoldersViewProps {
   album: Album;
   onBack: () => void;
@@ -22,9 +25,43 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
 
   useEffect(() => {
     const fetchFolders = async () => {
+      const cacheKey = `folders:${album.id}`;
+      
+      // Check if request is already in-flight (deduplication)
+      if (inflightRequests.has(cacheKey)) {
+        console.log('[AlbumFoldersView] ⚡ Deduplicating request - using in-flight promise');
+        try {
+          const response = await inflightRequests.get(cacheKey);
+          const fetchedFolders = (response.folders || []).map((folder: any) => ({
+            ...folder,
+            coverPhotoSrc: folder.coverPhotoSrc && !folder.coverPhotoSrc.startsWith('http') 
+              ? `http://localhost:8000${folder.coverPhotoSrc}` 
+              : folder.coverPhotoSrc
+          }));
+          setFolders(fetchedFolders);
+        } catch (error: any) {
+          console.error('[AlbumFoldersView] Failed to fetch folders (deduplicated):', error);
+          toast.error('Failed to load folders');
+          setFolders([]);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+      
+      // Make the API request
       try {
         setLoading(true);
-        const response = await projectService.getProjectFolders(album.id);
+        const promise = projectService.getProjectFolders(album.id)
+          .finally(() => {
+            // Remove from in-flight map when complete
+            inflightRequests.delete(cacheKey);
+          });
+        
+        // Store promise in map for deduplication
+        inflightRequests.set(cacheKey, promise);
+        
+        const response = await promise;
         const fetchedFolders = (response.folders || []).map((folder: any) => ({
           ...folder,
           // Ensure cover photo src has full URL

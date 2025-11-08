@@ -9,10 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "dexie": "^4.2.1",
+    "dexie-react-hooks": "^4.2.0",
+    "framer-motion": "^11.3.19",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-toastify": "^11.0.5",
-    "framer-motion": "^11.3.19"
+    "recharts": "^3.3.0",
+    "uuid": "^13.0.0",
+    "workbox-window": "^7.3.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

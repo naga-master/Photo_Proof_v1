@@ -1,0 +1,750 @@
+ Photo Proof Optimization - Final Implementation Plan
+
+   Based on your comprehensive requirements and the mermaid diagrams, here's my complete implementation strategy.
+
+   ──────────────────────────────────────────
+
+   Phase 0: Knowledge Foundation & System Understanding
+
+   Current System Analysis
+
+   I will first conduct a thorough analysis of:
+
+   Backend Architecture (photo_proof_api/)
+   •  API endpoints structure (v1 legacy /api/projects vs v2 modern /v2/photos, /v2/upload)
+   •  Database models (Photo, Project, Folder, UploadSession, UploadToken)
+   •  Upload lifecycle and storage patterns
+   •  Authentication and authorization flows
+   •  Response formats and data structures
+
+   Frontend Architecture (Photo_Proof_v1/)
+   •  Component hierarchy and state management
+   •  Current API consumption patterns
+   •  Routing and navigation flows
+   •  Service layer architecture (photoService, projectService, uploadService)
+   •  Current caching (if any) and data fetching patterns
+
+   Database Schema (SQLite)
+   •  Table relationships and foreign keys
+   •  Indexing strategy
+   •  Query patterns
+   •  Data access patterns
+
+   Documentation Deliverable:
+   •  docs/phase-0-system-analysis/BACKEND_ARCHITECTURE.md
+   •  docs/phase-0-system-analysis/FRONTEND_ARCHITECTURE.md
+   •  docs/phase-0-system-analysis/DATABASE_SCHEMA.md
+   •  docs/phase-0-system-analysis/CURRENT_DATA_FLOW.md
+
+   ──────────────────────────────────────────
+
+   Architecture Plan: Configuration-First, Observable, Incremental
+
+   1. Configuration-First Design (Control Center)
+
+   File: config/cache-strategy.config.ts
+
+   typescript
+     export interface CacheStrategyConfig {
+       // Role-based profiles
+       profiles: {
+         client: ClientCacheProfile;
+         studio: StudioCacheProfile;
+       };
+
+       // Cache TTLs
+       ttl: {
+         memory: number;        // milliseconds
+         indexedDB: number;     // milliseconds
+         serviceWorker: number; // milliseconds
+       };
+
+       // Storage quotas
+       quotas: {
+         client: StorageQuota;
+         studio: StorageQuota;
+       };
+
+       // Eviction thresholds
+       eviction: {
+         studio: EvictionConfig;
+       };
+
+       // Feature flags
+       features: {
+         memoryCache: boolean;
+         indexedDBCache: boolean;
+         serviceWorkerCache: boolean;
+         prefetching: boolean;
+         roleBasedStrategy: boolean;
+       };
+
+       // API configuration
+       api: {
+         endpoints: {
+           projectsList: string;    // ?mode=list
+           projectsFull: string;    // ?mode=full
+           photosMetadata: string;  // ?metadata_only=true
+         };
+         compression: 'brotli' | 'gzip' | 'none';
+       };
+
+       // Logging and monitoring
+       monitoring: {
+         enableLogging: boolean;
+         logLevel: 'debug' | 'info' | 'warn' | 'error';
+         enableMetrics: boolean;
+         metricsInterval: number; // milliseconds
+       };
+     }
+
+     interface ClientCacheProfile {
+       maxProjects: number;          // unlimited (-1)
+       maxMemoryMB: number;          // ~300MB
+       maxIndexedDBMB: number;       // ~100MB
+       maxServiceWorkerMB: number;   // ~200MB
+       prefetchStrategy: 'aggressive' | 'conservative' | 'off';
+       prefetchCount: number;        // number of recent projects
+     }
+
+     interface StudioCacheProfile {
+       maxActiveProjects: number;    // 10 in memory
+       maxMemoryMB: number;          // ~500MB
+       maxIndexedDBMB: number;       // ~100MB
+       maxServiceWorkerMB: number;   // ~1GB
+       prefetchStrategy: 'aggressive' | 'conservative' | 'off';
+       virtualScrolling: boolean;
+     }
+
+     interface StorageQuota {
+       greenThresholdMB: number;   // normal operation
+       yellowThresholdMB: number;  // soft cleanup
+       redThresholdMB: number;     // aggressive eviction
+     }
+
+     interface EvictionConfig {
+       idleTimeoutMinutes: number;  // 30 min
+       lruSlots: number;            // 10
+       scoringWeights: {
+         lastAccess: number;        // 40%
+         frequency: number;         // 30%
+         size: number;              // 20%
+         pinned: number;            // 10%
+       };
+     }
+
+   Features:
+   •  Hot-reloadable (watch mode in development)
+   •  Environment-specific overrides (config/cache-strategy.dev.ts, config/cache-strategy.prod.ts)
+   •  TypeScript interfaces for type safety
+   •  JSON schema validation
+
+   Documentation Deliverable:
+   •  docs/configuration/CONFIG_REFERENCE.md - Every option explained with examples
+   •  docs/configuration/CONFIG_EXAMPLES.md - Common configuration scenarios
+
+   ──────────────────────────────────────────
+
+   2. Observable Architecture (Everything Logs)
+
+   File: src/services/cache-events/CacheEventEmitter.ts
+
+   typescript
+     export enum CacheEventType {
+       // Cache operations
+       CACHE_HIT = 'cache.hit',
+       CACHE_MISS = 'cache.miss',
+       CACHE_SET = 'cache.set',
+       CACHE_EVICT = 'cache.evict',
+       CACHE_CLEAR = 'cache.clear',
+
+       // Storage operations
+       STORAGE_QUOTA_CHECK = 'storage.quota',
+       STORAGE_CLEANUP = 'storage.cleanup',
+
+       // API operations
+       API_CALL_START = 'api.call.start',
+       API_CALL_SUCCESS = 'api.call.success',
+       API_CALL_ERROR = 'api.call.error',
+
+       // Prefetch operations
+       PREFETCH_START = 'prefetch.start',
+       PREFETCH_COMPLETE = 'prefetch.complete',
+       PREFETCH_CANCEL = 'prefetch.cancel',
+
+       // Role detection
+       ROLE_DETECTED = 'role.detected',
+       PROFILE_LOADED = 'profile.loaded',
+     }
+
+     export interface CacheEvent {
+       type: CacheEventType;
+       timestamp: number;
+       operationId: string;
+       metadata: Record<string, any>;
+       context?: {
+         userId?: string;
+         sessionId?: string;
+         role?: 'client' | 'studio';
+       };
+     }
+
+     export class CacheEventEmitter extends EventEmitter {
+       private devModeLogger: DevModeLogger;
+       private analyticsHook: AnalyticsHook;
+
+       emit(event: CacheEvent): void;
+       subscribe(eventType: CacheEventType, handler: (event: CacheEvent) => void): void;
+       getEventHistory(filters?: EventFilters): CacheEvent[];
+     }
+
+   Integration Points:
+   •  Every cache operation emits events BEFORE and AFTER
+   •  Dev mode: Console logger with color-coded output
+   •  Production: Analytics hook (e.g., Sentry, DataDog, custom)
+   •  Event history buffer (last 1000 events in memory)
+
+   Documentation Deliverable:
+   •  docs/observability/EVENT_REFERENCE.md - All event types with examples
+   •  docs/observability/DEBUGGING_GUIDE.md - How to use logs to debug issues
+
+   ──────────────────────────────────────────
+
+   3. Layered Implementation (Incremental + Rollback)
+
+   Each stage is independently functional and can be rolled back via feature flags.
+
+   **Stage 1: Foundation** (Week 1)
+
+   Objective: Set up global stores, configuration system, and logging infrastructure
+
+   Deliverables:
+
+   1. Configuration System
+     •  config/cache-strategy.config.ts - Main config with all interfaces
+     •  config/cache-strategy.dev.ts - Development overrides
+     •  config/cache-strategy.prod.ts - Production settings
+     •  src/services/config/ConfigLoader.ts - Hot-reload service
+
+   2. Event System
+     •  src/services/cache-events/CacheEventEmitter.ts
+     •  src/services/cache-events/DevModeLogger.ts
+     •  src/services/cache-events/AnalyticsHook.ts
+
+   3. Global Stores (No Caching Yet)
+     •  src/stores/PhotoStore.ts - Global photo state management
+     •  src/stores/ProjectStore.ts - Global project state management
+     •  src/stores/MetadataStore.ts - Global metadata (folders, selections)
+
+   4. Service Layer Gateway
+     •  src/services/PhotoService.ts - Abstraction over API calls
+     •  src/services/ProjectService.ts - Abstraction over API calls
+     •  Refactor existing components to use stores instead of direct API calls
+
+   Success Criteria:
+   •  Config changes reflect immediately (hot-reload works)
+   •  All store operations visible in dev console logs
+   •  Components read from stores, not direct API calls
+   •  NO caching implemented yet - just foundation
+
+   Test Plan:
+
+   bash
+     # Local testing
+     npm run dev
+     # 1. Change config value (e.g., monitoring.logLevel = 'debug')
+     # 2. Observe console shows more detailed logs
+     # 3. Navigate between pages
+     # 4. Verify all operations emit events
+     # 5. Check event history via window.__cacheEvents__
+
+   Rollback:
+
+   typescript
+     // config/cache-strategy.config.ts
+     features: {
+       memoryCache: false,
+       indexedDBCache: false,
+       serviceWorkerCache: false,
+       roleBasedStrategy: false,
+     }
+
+   Documentation Deliverable:
+   •  docs/stage-1-foundation/ARCHITECTURE.md - Decision record
+   •  docs/stage-1-foundation/IMPLEMENTATION_GUIDE.md - How it works
+   •  docs/stage-1-foundation/TESTING_GUIDE.md - Step-by-step local testing
+   •  docs/stage-1-foundation/VALIDATION_CHECKLIST.md - Success criteria verification
+   •  docs/stage-1-foundation/ROLLBACK_PROCEDURE.md - How to disable
+
+   ──────────────────────────────────────────
+
+   **Stage 2: Memory Cache** (Week 2)
+
+   Objective: Implement in-memory caching only (no persistence yet)
+
+   Deliverables:
+
+   1. Memory Cache Implementation
+     •  src/services/cache/MemoryCacheManager.ts
+     •  Integrates with PhotoStore/ProjectStore
+     •  TTL-based expiration
+     •  LRU eviction (studio only)
+
+   2. Cache Interceptor
+     •  Wraps PhotoService/ProjectService
+     •  Check cache before API call
+     •  Update cache after API call
+     •  Emit cache hit/miss events
+
+   3. Role Detection
+     •  src/services/auth/RoleDetector.ts
+     •  Detect client vs studio based on auth + project count
+     •  Load appropriate cache profile from config
+
+   Success Criteria:
+   •  Navigation within session doesn't refetch (cache hit >90%)
+   •  API calls reduced during navigation
+   •  Memory usage stays within configured limits
+   •  Studio eviction works when >10 projects
+
+   Test Plan:
+
+   bash
+     # Local testing
+     npm run dev
+     # 1. Login as client user (3-10 projects)
+     # 2. Navigate to dashboard → gallery → folder → back
+     # 3. Open metrics dashboard (http://localhost:3000/__metrics__)
+     # 4. Verify cache hit rate >90% after first load
+     # 5. Verify API calls: first load = N calls, navigation = 0 calls
+     # 6. Login as studio user (100+ projects)
+     # 7. Open 12 projects sequentially
+     # 8. Verify memory stays <500MB
+     # 9. Verify projects 1-2 evicted when opening project 11-12
+
+   Rollback:
+
+   typescript
+     features: {
+       memoryCache: false, // Disable this stage
+     }
+
+   Documentation Deliverable:
+   •  docs/stage-2-memory-cache/ARCHITECTURE.md
+   •  docs/stage-2-memory-cache/CACHE_FLOW.md - Detailed flow diagrams
+   •  docs/stage-2-memory-cache/TESTING_GUIDE.md
+   •  docs/stage-2-memory-cache/VALIDATION_CHECKLIST.md
+   •  docs/stage-2-memory-cache/ROLLBACK_PROCEDURE.md
+   •  docs/stage-2-memory-cache/TROUBLESHOOTING.md - Common issues + fixes
+
+   ──────────────────────────────────────────
+
+   **Stage 3: Persistence (IndexedDB)** (Week 2-3)
+
+   Objective: Add persistent storage so data survives page refresh
+
+   Deliverables:
+
+   1. IndexedDB Schema & Service
+     •  src/services/cache/IndexedDBSchema.ts
+     •  src/services/cache/IndexedDBManager.ts (using Dexie.js)
+     •  Tables: projects, photos, metadata, cache_metadata
+
+   2. Cache Synchronization
+     •  Memory ↔ IndexedDB sync
+     •  Write-through pattern (update both simultaneously)
+     •  Background refresh for stale data
+
+   3. Cold Start Optimization
+     •  On app init, load from IndexedDB into memory
+     •  Display cached data immediately
+     •  Background refresh to validate freshness
+
+   Success Criteria:
+   •  Page refresh doesn't refetch (cold start uses cached data)
+   •  Cache hit rate >95% for returning users
+   •  IndexedDB storage stays within quotas
+   •  Background refresh updates stale data silently
+
+   Test Plan:
+
+   bash
+     # Local testing
+     npm run dev
+     # 1. Login, navigate to projects
+     # 2. Check metrics: cache populated
+     # 3. Refresh page (hard reload)
+     # 4. Verify immediate render from IndexedDB
+     # 5. Check console: background refresh API calls
+     # 6. Open DevTools → Application → IndexedDB
+     # 7. Verify data structure matches schema
+     # 8. Close browser, reopen
+     # 9. Verify data persists across sessions
+
+   Rollback:
+
+   typescript
+     features: {
+       indexedDBCache: false, // Disable persistence
+     }
+
+   Documentation Deliverable:
+   •  docs/stage-3-persistence/ARCHITECTURE.md
+   •  docs/stage-3-persistence/INDEXEDDB_SCHEMA.md - Table structure
+   •  docs/stage-3-persistence/SYNC_STRATEGY.md - Memory ↔ IndexedDB sync
+   •  docs/stage-3-persistence/TESTING_GUIDE.md
+   •  docs/stage-3-persistence/VALIDATION_CHECKLIST.md
+   •  docs/stage-3-persistence/ROLLBACK_PROCEDURE.md
+   •  docs/stage-3-persistence/MIGRATION_GUIDE.md - Schema versioning
+
+   ──────────────────────────────────────────
+
+   **Stage 4: Role-Based Optimization** (Week 3)
+
+   Objective: Split client aggressive vs studio selective strategies
+
+   Deliverables:
+
+   1. Client Profile Implementation
+     •  Unlimited memory cache
+     •  Aggressive prefetching (hover + background)
+     •  Cache all images via Service Worker
+
+   2. Studio Profile Implementation
+     •  LRU cache (10 active projects)
+     •  Metadata-only dashboard API
+     •  Virtual scrolling for 100+ projects
+     •  Idle timeout eviction (30 min)
+     •  Storage quota monitoring
+
+   3. Backend API Enhancements
+     •  GET /v2/projects?mode=list - Tier 1 metadata (1KB/project)
+     •  GET /v2/projects?mode=full - Tier 2 full data (50KB/project)
+     •  GET /v2/photos?metadata_only=true - IDs + thumbnails only
+     •  Brotli compression support
+
+   4. Service Worker for Images
+     •  src/service-worker/cache-strategies.ts
+     •  Client: cache-first, immutable
+     •  Studio: network-first with 7-day TTL
+
+   Success Criteria:
+   •  Client: <100ms navigation, 0 API calls after initial load
+   •  Studio: <1s dashboard for 100 projects, memory <500MB
+   •  Storage quotas respected (green/yellow/red thresholds)
+   •  Eviction scoring algorithm works (last_access + frequency + size + pinned)
+
+   Test Plan:
+
+   bash
+     # Client testing
+     npm run dev
+     # 1. Login as client (configure test user with 5 projects)
+     # 2. Dashboard load → metrics: API calls = 2-3
+     # 3. Navigate to all projects → metrics: API calls = 0
+     # 4. Check memory: <300MB
+     # 5. Hover over project → verify prefetch triggered
+     # 6. Check metrics: prefetch events logged
+
+     # Studio testing
+     npm run dev
+     # 1. Login as studio (configure test user with 100+ projects)
+     # 2. Dashboard load → metrics: API calls = 1 (mode=list)
+     # 3. Verify virtual scrolling (only 20-30 rendered)
+     # 4. Open project #1 → metrics: API call (mode=full)
+     # 5. Open projects #2-#10 → memory: <500MB
+     # 6. Open project #11 → verify project #1 evicted
+     # 7. Wait 30 min idle → verify auto-eviction
+     # 8. Check storage quota: green zone
+
+     # Backend testing
+     curl http://localhost:8000/v2/projects?mode=list
+     # Verify response size ~1KB per project
+     curl http://localhost:8000/v2/projects?mode=full
+     # Verify response size ~50KB per project
+     curl -H "Accept-Encoding: br" http://localhost:8000/v2/projects
+     # Verify Brotli compression applied
+
+   Rollback:
+
+   typescript
+     features: {
+       roleBasedStrategy: false, // Use default strategy for all
+     }
+
+   Documentation Deliverable:
+   •  docs/stage-4-role-based/ARCHITECTURE.md
+   •  docs/stage-4-role-based/CLIENT_STRATEGY.md - Aggressive caching details
+   •  docs/stage-4-role-based/STUDIO_STRATEGY.md - Selective caching + LRU
+   •  docs/stage-4-role-based/EVICTION_ALGORITHM.md - Scoring logic
+   •  docs/stage-4-role-based/API_MODES.md - Backend endpoint documentation
+   •  docs/stage-4-role-based/TESTING_GUIDE.md
+   •  docs/stage-4-role-based/VALIDATION_CHECKLIST.md
+   •  docs/stage-4-role-based/ROLLBACK_PROCEDURE.md
+   •  docs/stage-4-role-based/PERFORMANCE_IMPACT.md - Before/after metrics
+
+   ──────────────────────────────────────────
+
+   4. Metrics Dashboard (Validation Layer)
+
+   File: src/components/MetricsDashboard/MetricsDashboard.tsx
+
+   Features:
+   •  Real-time metrics display
+   •  Historical charts (last 1 hour)
+   •  Export to CSV
+   •  Filterable event log
+   •  Storage quota visualization
+
+   Metrics Tracked:
+
+   typescript
+     interface CacheMetrics {
+       // API metrics
+       apiCallsPerSession: number;
+       apiCallsByEndpoint: Record<string, number>;
+       apiResponseSizes: Record<string, number>;
+       apiDurationAvg: number;
+
+       // Cache metrics
+       cacheHitRate: {
+         overall: number;
+         memory: number;
+         indexedDB: number;
+         serviceWorker: number;
+       };
+
+       // Storage metrics
+       storageUsage: {
+         memory: { used: number; quota: number; percentage: number };
+         indexedDB: { used: number; quota: number; percentage: number };
+         serviceWorker: { used: number; quota: number; percentage: number };
+       };
+
+       // Performance metrics
+       avgNavigationTime: number;
+       coldStartTime: number;
+       warmStartTime: number;
+
+       // Eviction metrics
+       evictionCount: number;
+       evictionReasons: Record<string, number>;
+
+       // Role metrics
+       userRole: 'client' | 'studio';
+       activeProjects: number;
+       totalProjects: number;
+     }
+
+   Access:
+   •  Development: http://localhost:3000/__metrics__
+   •  Production: Feature flag controlled, admin-only
+
+   Documentation Deliverable:
+   •  docs/metrics/DASHBOARD_GUIDE.md - How to use metrics dashboard
+   •  docs/metrics/METRICS_REFERENCE.md - All metrics explained
+   •  docs/metrics/INTERPRETATION_GUIDE.md - How to read metrics
+
+   ──────────────────────────────────────────
+
+   5. Progressive Validation (Test Before Ship)
+
+   Testing Strategy:
+
+   **Local Dev Testing (Every Stage)**
+   1. Run metrics dashboard
+   2. Perform typical user flow
+   3. Check event logs for expected events
+   4. Validate metrics against targets
+   5. Test rollback flag works
+
+   **Staging Testing (After Stage 4)**
+   1. Deploy with feature flag off
+   2. Enable for 10% of users
+   3. Monitor metrics for 24 hours
+   4. Compare to control group (metrics comparison)
+   5. Rollback if metrics worse
+
+   **Production Rollout (Gradual)**
+   1. Week 1: 10% of users
+   2. Week 2: 50% of users
+   3. Week 3: 100% of users
+   4. Keep rollback ready for 1 week
+   5. Monitor continuously
+
+   Documentation Deliverable:
+   •  docs/testing/LOCAL_TEST_PLAN.md - Step-by-step for each stage
+   •  docs/testing/STAGING_TEST_PLAN.md - 10% rollout procedure
+   •  docs/testing/PRODUCTION_ROLLOUT.md - Gradual deployment strategy
+   •  docs/testing/MONITORING_CHECKLIST.md - What to watch
+
+   ──────────────────────────────────────────
+
+   6. Documentation Structure
+
+     Photo_Proof_v1/
+     ├── docs/
+     │   ├── phase-0-system-analysis/
+     │   │   ├── BACKEND_ARCHITECTURE.md
+     │   │   ├── FRONTEND_ARCHITECTURE.md
+     │   │   ├── DATABASE_SCHEMA.md
+     │   │   └── CURRENT_DATA_FLOW.md
+     │   │
+     │   ├── configuration/
+     │   │   ├── CONFIG_REFERENCE.md
+     │   │   └── CONFIG_EXAMPLES.md
+     │   │
+     │   ├── observability/
+     │   │   ├── EVENT_REFERENCE.md
+     │   │   └── DEBUGGING_GUIDE.md
+     │   │
+     │   ├── stage-1-foundation/
+     │   │   ├── ARCHITECTURE.md
+     │   │   ├── IMPLEMENTATION_GUIDE.md
+     │   │   ├── TESTING_GUIDE.md
+     │   │   ├── VALIDATION_CHECKLIST.md
+     │   │   └── ROLLBACK_PROCEDURE.md
+     │   │
+     │   ├── stage-2-memory-cache/
+     │   │   ├── ARCHITECTURE.md
+     │   │   ├── CACHE_FLOW.md
+     │   │   ├── TESTING_GUIDE.md
+     │   │   ├── VALIDATION_CHECKLIST.md
+     │   │   ├── ROLLBACK_PROCEDURE.md
+     │   │   └── TROUBLESHOOTING.md
+     │   │
+     │   ├── stage-3-persistence/
+     │   │   ├── ARCHITECTURE.md
+     │   │   ├── INDEXEDDB_SCHEMA.md
+     │   │   ├── SYNC_STRATEGY.md
+     │   │   ├── TESTING_GUIDE.md
+     │   │   ├── VALIDATION_CHECKLIST.md
+     │   │   ├── ROLLBACK_PROCEDURE.md
+     │   │   └── MIGRATION_GUIDE.md
+     │   │
+     │   ├── stage-4-role-based/
+     │   │   ├── ARCHITECTURE.md
+     │   │   ├── CLIENT_STRATEGY.md
+     │   │   ├── STUDIO_STRATEGY.md
+     │   │   ├── EVICTION_ALGORITHM.md
+     │   │   ├── API_MODES.md
+     │   │   ├── TESTING_GUIDE.md
+     │   │   ├── VALIDATION_CHECKLIST.md
+     │   │   ├── ROLLBACK_PROCEDURE.md
+     │   │   └── PERFORMANCE_IMPACT.md
+     │   │
+     │   ├── metrics/
+     │   │   ├── DASHBOARD_GUIDE.md
+     │   │   ├── METRICS_REFERENCE.md
+     │   │   └── INTERPRETATION_GUIDE.md
+     │   │
+     │   └── testing/
+     │       ├── LOCAL_TEST_PLAN.md
+     │       ├── STAGING_TEST_PLAN.md
+     │       ├── PRODUCTION_ROLLOUT.md
+     │       └── MONITORING_CHECKLIST.md
+     │
+     ├── config/
+     │   ├── cache-strategy.config.ts
+     │   ├── cache-strategy.dev.ts
+     │   └── cache-strategy.prod.ts
+     │
+     └── src/
+         ├── services/
+         │   ├── cache-events/
+         │   │   ├── CacheEventEmitter.ts
+         │   │   ├── DevModeLogger.ts
+         │   │   └── AnalyticsHook.ts
+         │   ├── cache/
+         │   │   ├── MemoryCacheManager.ts
+         │   │   ├── IndexedDBManager.ts
+         │   │   └── IndexedDBSchema.ts
+         │   ├── config/
+         │   │   └── ConfigLoader.ts
+         │   └── auth/
+         │       └── RoleDetector.ts
+         ├── stores/
+         │   ├── PhotoStore.ts
+         │   ├── ProjectStore.ts
+         │   └── MetadataStore.ts
+         └── components/
+             └── MetricsDashboard/
+                 └── MetricsDashboard.tsx
+
+   ──────────────────────────────────────────
+
+   Collaboration Workflow
+
+   Your Role (Design, Configure, Validate)
+
+   1. Phase 0: Review system analysis documentation, approve architecture understanding
+   2. Stage 1: Review foundation architecture doc, approve before coding
+   3. Stage 2: Configure cache limits in config file, review cache flow doc
+   4. Stage 3: Review IndexedDB schema, approve sync strategy
+   5. Stage 4: Configure role thresholds, review eviction algorithm
+   6. All Stages: Run metrics dashboard, validate against targets, approve shipping
+
+   My Role (Implement, Test, Document, Iterate)
+
+   1. Phase 0: Analyze codebase, document architecture
+   2. Stage 1-4:
+     •  Write architecture doc first (get your approval)
+     •  Implement code following config/event requirements
+     •  Write unit + integration tests
+     •  Document testing procedures
+     •  Generate validation checklists
+   3. Debugging: Read event logs, identify issues, propose fixes
+   4. Optimization: Tune performance within your configured constraints
+
+   ──────────────────────────────────────────
+
+   Success Criteria Per Stage
+
+   Stage 1: Foundation
+   •  ✅ Config changes reflect without rebuild
+   •  ✅ All operations visible in dev console logs
+   •  ✅ Components use stores, not direct API calls
+   •  ✅ Zero hardcoded values
+
+   Stage 2: Memory Cache
+   •  ✅ Cache hit rate >90% for navigation
+   •  ✅ API calls reduced by 80%+
+   •  ✅ Memory stays within config limits
+   •  ✅ Studio LRU eviction works
+
+   Stage 3: Persistence
+   •  ✅ Cold start uses cached data (<1s render)
+   •  ✅ Cache hit rate >95% for returning users
+   •  ✅ Background refresh silent
+   •  ✅ IndexedDB quota respected
+
+   Stage 4: Role-Based
+   •  ✅ Client: <100ms navigation, <5 API calls/session
+   •  ✅ Studio: <1s dashboard (100 projects), <10 API calls/session
+   •  ✅ Memory controlled: client <300MB, studio <500MB
+   •  ✅ Eviction scoring algorithm validated
+
+   ──────────────────────────────────────────
+
+   Timeline Estimate
+
+   •  Phase 0: 2-3 days (system analysis + documentation)
+   •  Stage 1: 5-7 days (foundation + refactoring)
+   •  Stage 2: 5-7 days (memory cache + role detection)
+   •  Stage 3: 5-7 days (IndexedDB + sync)
+   •  Stage 4: 7-10 days (role-based split + backend API)
+   •  Testing & Validation: 3-5 days (per stage)
+
+   Total: 27-39 days (4-6 weeks)
+
+   ──────────────────────────────────────────
+
+   Next Steps
+
+   1. Approve this plan - Confirm architecture approach
+   2. Phase 0 starts - I'll analyze and document current system
+   3. Review Phase 0 docs - You validate my understanding
+   4. Stage 1 architecture doc - I propose foundation design
+   5. Approve & implement - Iterative cycle begins
+
+   Ready to proceed with Phase 0: System Analysis?

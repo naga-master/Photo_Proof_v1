@@ -5,6 +5,40 @@ import { motion, AnimatePresence, Transition } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
 import { useAuth } from './contexts/AuthContext';
 
+// Initialize Stage 1: Foundation
+import './src/services/ConfigLoader'; // Auto-loads configuration
+import './src/services/cache-events/DevModeLogger'; // Auto-starts dev logger
+import './src/services/cache-events/AnalyticsHook'; // Initializes analytics hook
+
+// Initialize Stage 2 & 3: Caching
+import './src/services/cache/MemoryCacheManager'; // Stage 2: Initialize memory cache
+import './src/services/cache/IndexedDBManager'; // Stage 3: Initialize IndexedDB for persistence
+
+// Service Worker Registration (Stage 3.5: Image Caching)
+if ('serviceWorker' in navigator && import.meta.env.PROD === false) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('[App] ✅ Service Worker registered:', registration.scope);
+        
+        // Log registration details
+        if (registration.installing) {
+          console.log('[App] Service Worker installing...');
+        } else if (registration.waiting) {
+          console.log('[App] Service Worker waiting...');
+        } else if (registration.active) {
+          console.log('[App] Service Worker active!');
+        }
+        
+        // Expose to window for debugging
+        (window as any).__serviceWorker = registration;
+      })
+      .catch((error) => {
+        console.error('[App] ❌ Service Worker registration failed:', error);
+      });
+  });
+}
+
 import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings, Folder } from './types';
 import CoverPage from './components/CoverPage';
 import GalleryPage from './components/GalleryPage';
@@ -811,14 +845,75 @@ const App: React.FC = () => {
         setCurrentFolder(folder);
         setProjectHasFolders(true); // Mark that this project has folders
         
-        // Fetch photos for this specific folder
+        // Fetch photos for this specific folder (with caching)
         try {
             console.log('[App] Fetching photos for folder:', folder.id);
+            
+            // Cache key for this folder's photos
+            const cacheKey = `photos:project-${currentAlbum!.id}:folder-${folder.id}`;
+            
+            // Check memory cache first
+            let cachedResponse = null;
+            if ((window as any).__cache) {
+              cachedResponse = (window as any).__cache.get(cacheKey);
+              if (cachedResponse) {
+                console.log('[App] ✅ Loaded photos from memory cache');
+                // Map cached photos and use them
+                const photos = cachedResponse.photos.map((photo: any) => ({
+                    id: String(photo.id),
+                    src: `http://localhost:8000${photo.src}`,
+                    alt: photo.original_filename || photo.alt,
+                    width: photo.width || 800,
+                    height: photo.height || 1200,
+                    comments: []
+                }));
+                setGalleryContent({ photos, title: `${currentAlbum!.title} - ${folder.name}` });
+                setPage('gallery');
+                return; // Use cached data
+              }
+            }
+            
+            // Check IndexedDB cache
+            if ((window as any).__indexedDB && !cachedResponse) {
+              cachedResponse = await (window as any).__indexedDB.get(cacheKey);
+              if (cachedResponse) {
+                console.log('[App] ✅ Loaded photos from IndexedDB');
+                // Map cached photos
+                const photos = cachedResponse.photos.map((photo: any) => ({
+                    id: String(photo.id),
+                    src: `http://localhost:8000${photo.src}`,
+                    alt: photo.original_filename || photo.alt,
+                    width: photo.width || 800,
+                    height: photo.height || 1200,
+                    comments: []
+                }));
+                setGalleryContent({ photos, title: `${currentAlbum!.title} - ${folder.name}` });
+                setPage('gallery');
+                // Store in memory for next time
+                if ((window as any).__cache) {
+                  (window as any).__cache.set(cacheKey, cachedResponse);
+                }
+                return; // Use cached data
+              }
+            }
+            
+            // Cache miss - fetch from API
+            console.log('[App] ⚠️ Cache miss, fetching from API');
             const response = await photoService.getProjectPhotos(
                 currentAlbum!.id,
                 folder.id // Pass folder ID as categoryId parameter
             );
             console.log('[App] Fetched folder photos:', response);
+            
+            // Store in caches BEFORE mapping (store raw API response)
+            if ((window as any).__cache) {
+              (window as any).__cache.set(cacheKey, response);
+              console.log('[App] ✅ Stored in memory cache');
+            }
+            if ((window as any).__indexedDB) {
+              await (window as any).__indexedDB.set(cacheKey, response);
+              console.log('[App] ✅ Stored in IndexedDB');
+            }
             
             // Map backend photos to frontend Photo type
             const photos = response.photos.map((photo: any) => ({
