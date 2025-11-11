@@ -469,6 +469,7 @@ if (typeof window !== 'undefined') {
     get: (key: string) => memoryCacheManager.get(key),
     set: (key: string, data: any, options?: { ttl?: number }) => memoryCacheManager.set(key, data, options),
     has: (key: string) => memoryCacheManager.has(key),
+    delete: (key: string) => memoryCacheManager.delete(key),  // Added for cache invalidation
   };
 }
 

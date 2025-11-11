@@ -8,7 +8,8 @@ interface LightboxProps {
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;
-  onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
+  onAddComment: (photoId: string, commentText: string, parentId?: number) => void | Promise<void>;
+  onLoadComments: (photoId: string) => Promise<void>;
   isSlideshowActive: boolean;
   setSlideshowActive: (isActive: boolean) => void;
   favorites: string[];
@@ -21,11 +22,12 @@ interface LightboxProps {
 const CommentForm: React.FC<{
     photoId: string;
     parentId?: number;
-    onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
+    onAddComment: (photoId: string, commentText: string, parentId?: number) => void | Promise<void>;
     onCancel?: () => void;
     isReply?: boolean;
 }> = ({ photoId, parentId, onAddComment, onCancel, isReply = false }) => {
     const [comment, setComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -34,33 +36,54 @@ const CommentForm: React.FC<{
         }
     }, [isReply]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (comment.trim()) {
-            onAddComment(photoId, comment.trim(), parentId);
-            setComment('');
-            if(onCancel) onCancel();
+        if (comment.trim() && !isSubmitting) {
+            setIsSubmitting(true);
+            try {
+                console.log('[CommentForm] Submitting comment:', { photoId, text: comment.trim(), parentId });
+                await onAddComment(photoId, comment.trim(), parentId);
+                console.log('[CommentForm] Comment submitted successfully');
+                setComment('');
+                if(onCancel) onCancel();
+            } catch (error: any) {
+                console.error('[CommentForm] Failed to add comment:', error);
+                // Keep the input text on error so user can retry
+                // Error is already shown by toast in App.tsx
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className={`flex gap-2 ${isReply ? 'p-2 bg-gray-100 rounded-md' : 'p-4 border-t bg-gray-50'}`}>
-            <input
-                ref={inputRef}
-                type="text"
+        <form onSubmit={handleSubmit} className={`flex flex-col gap-2 ${isReply ? 'p-2 bg-gray-100 rounded-md' : 'p-4 border-t bg-gray-50'}`}>
+            <textarea
+                ref={inputRef as any}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder={isReply ? "Write a reply..." : "Add a comment..."}
-                className="flex-1 border border-gray-300 rounded-md py-2 px-3 text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors bg-white text-gray-900"
+                rows={isReply ? 2 : 3}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors bg-white text-gray-900 resize-none"
             />
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 outline-none transition-colors">
-                Send
-            </button>
-            {isReply && onCancel && (
-                 <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-200">
-                    Cancel
+            <div className="flex justify-end gap-2">
+                {isReply && onCancel && (
+                    <button 
+                        type="button" 
+                        onClick={onCancel} 
+                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                )}
+                <button 
+                    type="submit" 
+                    disabled={isSubmitting || !comment.trim()}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isSubmitting ? 'Sending...' : 'Send'}
                 </button>
-            )}
+            </div>
         </form>
     );
 };
@@ -70,12 +93,13 @@ const CommentThread: React.FC<{
     replyingTo: number | null;
     setReplyingTo: (id: number | null) => void;
     photoId: string;
-    onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
+    onAddComment: (photoId: string, commentText: string, parentId?: number) => void | Promise<void>;
     isReply?: boolean;
+    depth?: number;
     allComments?: Comment[];
     messageRefs?: React.MutableRefObject<{ [key: number]: HTMLDivElement | null }>;
     scrollToMessage?: (messageId: number) => void;
-}> = ({ comment, replyingTo, setReplyingTo, photoId, onAddComment, isReply = false, allComments = [], messageRefs, scrollToMessage }) => {
+}> = ({ comment, replyingTo, setReplyingTo, photoId, onAddComment, isReply = false, depth = 0, allComments = [], messageRefs, scrollToMessage }) => {
 
     const isReplying = replyingTo === comment.id;
     
@@ -141,9 +165,9 @@ const CommentThread: React.FC<{
                 </div>
             </div>
 
-            {/* Show replies in a flat thread under parent */}
-            {!isReply && comment.replies && comment.replies.length > 0 && (
-                <div className="pl-10 mt-2 space-y-2 border-l-2 border-gray-200 ml-4">
+            {/* Show replies - all at same visual level (flat hierarchy) */}
+            {comment.replies && comment.replies.length > 0 && (
+                <div className={`mt-2 space-y-2 ${depth === 0 ? 'pl-10 border-l-2 border-gray-200 ml-4' : ''}`}>
                     {comment.replies.map(reply => (
                         <CommentThread 
                             key={reply.id} 
@@ -153,6 +177,7 @@ const CommentThread: React.FC<{
                             photoId={photoId}
                             onAddComment={onAddComment}
                             isReply={true}
+                            depth={depth === 0 ? 1 : depth}
                             allComments={[comment, ...(comment.replies || [])]}
                             messageRefs={messageRefs}
                             scrollToMessage={scrollToMessage}
@@ -163,7 +188,7 @@ const CommentThread: React.FC<{
             
             {/* Reply form */}
             {isReplying && (
-                <div className={`mt-2 ${isReply ? 'ml-0' : 'pl-10 ml-4'}`}>
+                <div className={`mt-2 ${depth === 0 ? 'pl-10 ml-4' : ''}`}>
                     <CommentForm
                         photoId={photoId}
                         parentId={comment.id}
@@ -177,14 +202,30 @@ const CommentThread: React.FC<{
     );
 };
 
-const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, commentText: string, parentId?: number) => void; }> = ({ photo, onAddComment }) => {
+const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, commentText: string, parentId?: number) => void | Promise<void>; }> = ({ photo, onAddComment }) => {
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
+    const [lastRepliedTo, setLastRepliedTo] = useState<number | null>(null);
     const messageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+    const previousCommentCount = useRef(0);
 
+    // Scroll to the comment that was just replied to (not to bottom)
     useEffect(() => {
-        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [photo.comments]);
+        if (photo.comments && photo.comments.length > previousCommentCount.current) {
+            // New comment added
+            if (lastRepliedTo !== null) {
+                // This was a reply - scroll to the parent comment
+                setTimeout(() => {
+                    scrollToMessage(lastRepliedTo);
+                    setLastRepliedTo(null);
+                }, 100);
+            } else {
+                // This was a root comment - scroll to bottom
+                commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        previousCommentCount.current = photo.comments?.length || 0;
+    }, [photo.comments, lastRepliedTo]);
 
     const scrollToMessage = (messageId: number) => {
         const messageElement = messageRefs.current[messageId];
@@ -196,6 +237,14 @@ const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, co
                 messageElement.classList.remove('bg-yellow-100');
             }, 1500);
         }
+    };
+    
+    // Wrapper for onAddComment that tracks which comment was replied to
+    const handleAddComment = async (photoId: string, commentText: string, parentId?: number) => {
+        if (parentId) {
+            setLastRepliedTo(parentId);
+        }
+        await onAddComment(photoId, commentText, parentId);
     };
 
     return (
@@ -212,7 +261,7 @@ const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, co
                         replyingTo={replyingTo}
                         setReplyingTo={setReplyingTo}
                         photoId={photo.id}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         allComments={photo.comments}
                         messageRefs={messageRefs}
                         scrollToMessage={scrollToMessage}
@@ -220,15 +269,16 @@ const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, co
                 ))}
                 <div ref={commentsEndRef} />
             </div>
-            <CommentForm photoId={photo.id} onAddComment={onAddComment} />
+            <CommentForm photoId={photo.id} onAddComment={handleAddComment} />
         </div>
     );
 };
 
 
-const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNext, onPrev, onAddComment, isSlideshowActive, setSlideshowActive, favorites, selections, toggleFavorite, toggleSelection, onDownload }) => {
+const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNext, onPrev, onAddComment, onLoadComments, isSlideshowActive, setSlideshowActive, favorites, selections, toggleFavorite, toggleSelection, onDownload }) => {
   const currentPhoto = photos[currentIndex];
   const [showComments, setShowComments] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -249,6 +299,19 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
   useEffect(() => {
     setShowComments(false);
   }, [currentIndex]);
+  
+  // Load comments when comment panel is opened
+  useEffect(() => {
+    const loadComments = async () => {
+      if (showComments && currentPhoto && (!currentPhoto.comments || currentPhoto.comments.length === 0)) {
+        setCommentsLoading(true);
+        await onLoadComments(currentPhoto.id);
+        setCommentsLoading(false);
+      }
+    };
+    
+    loadComments();
+  }, [showComments, currentPhoto?.id]);
   
   useEffect(() => {
     let timer: number;

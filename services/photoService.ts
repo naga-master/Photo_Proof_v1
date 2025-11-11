@@ -4,6 +4,8 @@
  */
 
 import { apiClient } from '../lib/api-client';
+import { CommentService } from './commentService';
+import type { Comment } from '../types';
 
 export interface Photo {
   id: string;
@@ -119,6 +121,16 @@ class PhotoService {
     return apiClient.post<void>('/v2/photos/reorder', {
       photo_ids: photoIds,
     });
+  }
+
+  /**
+   * Get photo with comments loaded
+   * Helper method that combines photo data with comments
+   */
+  async getPhotoWithComments(photoId: string): Promise<Photo & { comments: Comment[] }> {
+    const photo = await this.getPhoto(photoId);
+    const comments = await CommentService.getPhotoComments(Number(photoId));
+    return { ...photo, comments };
   }
 }
 

@@ -14,7 +14,8 @@ interface GalleryPageProps {
   selections: string[];
   toggleFavorite: (photoId: string) => void;
   toggleSelection: (photoId: string) => void;
-  onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
+  onAddComment: (photoId: string, commentText: string, parentId?: number) => void | Promise<void>;
+  onLoadComments: (photoId: string) => Promise<void>;
   onNavigateToStore: () => void;
   isStudioPreview?: boolean;
   userRole?: UserRole;
@@ -110,6 +111,7 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
           onNext={handleNext}
           onPrev={handlePrev}
           onAddComment={props.onAddComment}
+          onLoadComments={props.onLoadComments}
           isSlideshowActive={isSlideshowActive}
           setSlideshowActive={setSlideshowActive}
           favorites={favorites}

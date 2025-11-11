@@ -428,6 +428,7 @@ if (typeof window !== 'undefined') {
     get: (key: string) => indexedDBManager.get(key),
     set: (key: string, data: any, options?: { ttl?: number }) => indexedDBManager.set(key, data, options),
     has: (key: string) => indexedDBManager.has(key),
+    delete: (key: string) => indexedDBManager.delete(key),  // Added for cache invalidation
   };
 }
 

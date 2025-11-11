@@ -67,13 +67,18 @@ export class ApiClient {
       }
 
       const data = await response.json();
+      console.log('[API Client] Token refresh response:', { hasToken: !!data.token, hasAccessToken: !!data.access_token });
       
       // Store new access token for backwards compatibility
-      if (data.access_token) {
-        localStorage.setItem('auth_token', data.access_token);
-        return data.access_token;
+      // Backend returns 'token' not 'access_token'
+      const newToken = data.token || data.access_token;
+      if (newToken) {
+        console.log('[API Client] ✅ Storing new token in localStorage');
+        localStorage.setItem('auth_token', newToken);
+        return newToken;
       }
       
+      console.warn('[API Client] ⚠️ No token in refresh response');
       return null;
     } catch (error) {
       console.error('Token refresh error:', error);
@@ -116,11 +121,32 @@ export class ApiClient {
           
           if (newToken) {
             this.onRefreshed(newToken);
-            // Token refreshed successfully, but still throw to let caller retry
+            // Token refreshed successfully, throw with flag to let caller retry
             throw { ...error, tokenRefreshed: true };
           } else {
             // Refresh failed, clear auth
             this.clearAuth();
+            throw error;
+          }
+        } else {
+          // Another request is already refreshing, wait for it
+          console.log('[API Client] ⏳ Waiting for token refresh to complete...');
+          
+          // Wait for the refresh to complete (max 5 seconds)
+          const maxWait = 5000;
+          const startTime = Date.now();
+          while (this.isRefreshing && (Date.now() - startTime) < maxWait) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          // Check if token was refreshed
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            console.log('[API Client] ✅ Token refresh completed, retry this request');
+            throw { ...error, tokenRefreshed: true };
+          } else {
+            console.log('[API Client] ❌ Token refresh failed');
+            throw error;
           }
         }
       }
@@ -136,64 +162,104 @@ export class ApiClient {
     return response.json();
   }
 
-  async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-    const url = new URL(`${this.baseUrl}${endpoint}`);
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value);
+  /**
+   * Internal method to make HTTP requests with automatic retry on token refresh
+   */
+  private async makeRequest<T>(
+    method: string,
+    endpoint: string,
+    options: {
+      params?: Record<string, string>;
+      data?: any;
+      retryCount?: number;
+    } = {}
+  ): Promise<T> {
+    const { params, data, retryCount = 0 } = options;
+    const maxRetries = 1; // Only retry once after token refresh
+    
+    try {
+      // Build URL
+      let url: string;
+      if (params) {
+        const urlObj = new URL(`${this.baseUrl}${endpoint}`);
+        Object.entries(params).forEach(([key, value]) => {
+          urlObj.searchParams.append(key, value);
+        });
+        url = urlObj.toString();
+      } else {
+        url = `${this.baseUrl}${endpoint}`;
+      }
+      
+      // Make fetch call
+      const response = await fetch(url, {
+        method,
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+        body: data ? JSON.stringify(data) : undefined,
       });
+      
+      return await this.handleResponse<T>(response);
+      
+    } catch (error: any) {
+      console.log('[API Client] Caught error:', {
+        tokenRefreshed: error.tokenRefreshed,
+        retryCount,
+        maxRetries,
+        canRetry: error.tokenRefreshed && retryCount < maxRetries,
+        errorMessage: error.message,
+        errorStatus: error.status
+      });
+      
+      // Check if token was refreshed and we can retry
+      if (error.tokenRefreshed && retryCount < maxRetries) {
+        console.log(`[API Client] ✨ Token refreshed, retrying ${method} ${endpoint} (attempt ${retryCount + 2})`);
+        
+        // Wait a tiny bit for token to be fully stored
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Retry with new token (increment retry count)
+        return this.makeRequest<T>(method, endpoint, {
+          params,
+          data,
+          retryCount: retryCount + 1,
+        });
+      }
+      
+      // Not retryable or max retries reached
+      console.log('[API Client] ❌ Not retrying:', 
+        error.tokenRefreshed ? 'Max retries reached' : 'Token not refreshed'
+      );
+      
+      // DISABLED: Don't logout automatically, just show error
+      // The backend's /api/auth/refresh endpoint returns invalid tokens
+      // Until that's fixed, we'll just show error messages instead of logging out
+      // if (error.tokenRefreshed && retryCount >= maxRetries) {
+      //   console.error('[API Client] ⚠️ Refreshed token is also invalid! Logging out...');
+      //   this.clearAuth();
+      // }
+      
+      throw error;
     }
+  }
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-      credentials: 'include', // Include cookies
-    });
-
-    return this.handleResponse<T>(response);
+  async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
+    return this.makeRequest<T>('GET', endpoint, { params });
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      credentials: 'include', // Include cookies
-      body: data ? JSON.stringify(data) : undefined,
-    });
-
-    return this.handleResponse<T>(response);
+    return this.makeRequest<T>('POST', endpoint, { data });
   }
 
   async put<T>(endpoint: string, data?: any): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'PUT',
-      headers: this.getAuthHeaders(),
-      credentials: 'include', // Include cookies
-      body: data ? JSON.stringify(data) : undefined,
-    });
-
-    return this.handleResponse<T>(response);
+    return this.makeRequest<T>('PUT', endpoint, { data });
   }
 
   async patch<T>(endpoint: string, data?: any): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      credentials: 'include', // Include cookies
-      body: data ? JSON.stringify(data) : undefined,
-    });
-
-    return this.handleResponse<T>(response);
+    return this.makeRequest<T>('PATCH', endpoint, { data });
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders(),
-      credentials: 'include', // Include cookies
-    });
-
-    return this.handleResponse<T>(response);
+    return this.makeRequest<T>('DELETE', endpoint);
   }
 
   async uploadFile(endpoint: string, file: File, additionalData?: Record<string, any>): Promise<any> {

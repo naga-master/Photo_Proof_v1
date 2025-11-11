@@ -63,6 +63,7 @@ import { clientService } from './services/clientService';
 import { servicePackageService } from './services/servicePackageService';
 import { invoiceService } from './services/invoiceService';
 import { photoService } from './services/photoService';
+import { CommentService } from './services/commentService';
 import type { Project as BackendProject } from './services/projectService';
 import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
@@ -324,7 +325,24 @@ const App: React.FC = () => {
                             }));
                             console.log(`[App] Loaded ${photos.length} photos for project ${album.id}`);
                             console.log(`[App] First photo mapped:`, photos[0]);
-                            return { ...album, photos };
+                            
+                            // TEMPORARILY DISABLED: Comment loading causes 403 errors and logout
+                            // TODO: Fix backend comment endpoint authentication
+                            // Load comments for each photo
+                            // console.log(`[App] Loading comments for ${photos.length} photos in project ${album.id}...`);
+                            // const photosWithComments = await Promise.all(
+                            //     photos.map(async (photo) => {
+                            //         try {
+                            //             const comments = await CommentService.getPhotoComments(Number(photo.id));
+                            //             return { ...photo, comments };
+                            //         } catch (error) {
+                            //             console.error(`[App] Failed to load comments for photo ${photo.id}:`, error);
+                            //             return photo;
+                            //         }
+                            //     })
+                            // );
+                            
+                            return { ...album, photos }; // photosWithComments
                         } catch (photoError) {
                             console.error(`[App] Error loading photos for project ${album.id}:`, photoError);
                             return { ...album, photos: [] };
@@ -925,7 +943,21 @@ const App: React.FC = () => {
                 comments: []
             }));
             
-            setGalleryContent({ photos, title: `${currentAlbum!.title} - ${folder.name}` });
+            // Load comments for each photo
+            console.log('[App] Loading comments for folder photos...');
+            const photosWithComments = await Promise.all(
+                photos.map(async (photo) => {
+                    try {
+                        const comments = await CommentService.getPhotoComments(Number(photo.id));
+                        return { ...photo, comments };
+                    } catch (error) {
+                        console.error(`[App] Failed to load comments for photo ${photo.id}:`, error);
+                        return photo;
+                    }
+                })
+            );
+            
+            setGalleryContent({ photos: photosWithComments, title: `${currentAlbum!.title} - ${folder.name}` });
             setPage('gallery');
         } catch (error) {
             console.error('[App] Failed to fetch folder photos:', error);
@@ -954,10 +986,24 @@ const App: React.FC = () => {
                 comments: []
             }));
             
-            setGalleryContent({ photos, title: currentAlbum!.title });
+            // Load comments for each photo
+            console.log('[App] Loading comments for all photos...');
+            const photosWithComments = await Promise.all(
+                photos.map(async (photo) => {
+                    try {
+                        const comments = await CommentService.getPhotoComments(Number(photo.id));
+                        return { ...photo, comments };
+                    } catch (error) {
+                        console.error(`[App] Failed to load comments for photo ${photo.id}:`, error);
+                        return photo;
+                    }
+                })
+            );
+            
+            setGalleryContent({ photos: photosWithComments, title: currentAlbum!.title });
             
             // Update album cover photo if we have photos
-            if (photos.length > 0 && (!currentAlbum!.coverPhotoSrc || currentAlbum!.coverPhotoSrc.startsWith('blob:'))) {
+            if (photosWithComments.length > 0 && (!currentAlbum!.coverPhotoSrc || currentAlbum!.coverPhotoSrc.startsWith('blob:'))) {
                 const updatedAlbum = {
                     ...currentAlbum!,
                     coverPhotoSrc: photos[0].src
@@ -990,87 +1036,94 @@ const App: React.FC = () => {
         );
     };
 
-    const addComment = (photoId: string, commentText: string, parentId?: number) => {
+    // Load comments for a photo on-demand
+    const loadPhotoComments = async (photoId: string): Promise<void> => {
+        if (!galleryContent) return;
+        
+        try {
+            console.log(`[App] Loading comments for photo ${photoId}...`);
+            const comments = await CommentService.getPhotoComments(Number(photoId));
+            
+            // Update galleryContent with loaded comments
+            const updatedPhotos = galleryContent.photos.map(photo => {
+                if (photo.id === photoId) {
+                    return { ...photo, comments };
+                }
+                return photo;
+            });
+            
+            setGalleryContent({ ...galleryContent, photos: updatedPhotos });
+            console.log(`[App] ✅ Loaded ${comments.length} comments for photo ${photoId}`);
+        } catch (error) {
+            console.error(`[App] Failed to load comments for photo ${photoId}:`, error);
+        }
+    };
+
+    const addComment = async (photoId: string, commentText: string, parentId?: number) => {
         if (!currentAlbum) return;
         
-        const newAlbums = allAlbums.map(album => {
-            if (album.id !== currentAlbum.id) return album;
+        try {
+            console.log('[App] Adding comment via backend API', { photoId, parentId });
+            
+            // Call backend API to create comment
+            const backendComment = await CommentService.createComment(
+                Number(photoId),
+                commentText,
+                parentId,
+                parentId // replyToId same as parentId for now
+            );
+            
+            console.log('[App] Comment created successfully:', backendComment);
+            
+            // Reload comments for this photo to get the complete updated tree
+            const updatedComments = await CommentService.getPhotoComments(Number(photoId));
+            
+            // Update local state with new comments
+            const newAlbums = allAlbums.map(album => {
+                if (album.id !== currentAlbum.id) return album;
 
-            const photosSource = album.photos || album.folders?.flatMap(f => f.photos);
-            if (!photosSource) return album;
+                const photosSource = album.photos || album.folders?.flatMap(f => f.photos);
+                if (!photosSource) return album;
 
-            const newPhotos = photosSource.map(photo => {
-                if (photo.id !== photoId) return photo;
+                const newPhotos = photosSource.map(photo => {
+                    if (photo.id !== photoId) return photo;
+                    return { ...photo, comments: updatedComments };
+                });
 
-                const newComment: {id: number, author: 'Client' | 'Studio', text: string, timestamp: string, replyToId?: number, replies?: any[]} = {
-                    id: Date.now(),
-                    author: isStudioUser() ? 'Studio' : 'Client',
-                    text: commentText,
-                    timestamp: 'Just now',
-                    replyToId: parentId // Store which message this is replying to
-                };
-                
-                if (parentId) {
-                    // Find the top-level parent comment
-                    const findTopLevelParent = (comments: any[], targetId: number): number | null => {
-                        for (const comment of comments) {
-                            if (comment.id === targetId) {
-                                // This is a top-level comment
-                                return comment.id;
-                            }
-                            if (comment.replies) {
-                                for (const reply of comment.replies) {
-                                    if (reply.id === targetId) {
-                                        // Found in replies, return the parent comment id
-                                        return comment.id;
-                                    }
-                                }
-                            }
-                        }
-                        return null;
-                    };
-                    
-                    const topLevelParentId = findTopLevelParent(photo.comments, parentId) || parentId;
-                    
-                    // Add reply to the top-level parent only
-                    const addReply = (comments: any[]): any[] => {
-                       return comments.map(c => {
-                           if (c.id === topLevelParentId) {
-                               return { ...c, replies: [...(c.replies || []), newComment] };
-                           }
-                           return c;
-                       });
-                    }
-                    return { ...photo, comments: addReply(photo.comments) };
+                if (album.folders) {
+                    const newFolders = album.folders.map(folder => ({
+                        ...folder,
+                        photos: folder.photos.map(p => newPhotos.find(np => np.id === p.id) || p)
+                    }));
+                    return { ...album, folders: newFolders };
                 }
 
-                return { ...photo, comments: [...photo.comments, newComment] };
+                return { ...album, photos: newPhotos };
             });
-
-            if (album.folders) {
-                 const newFolders = album.folders.map(folder => ({
-                    ...folder,
-                    photos: folder.photos.map(p => newPhotos.find(np => np.id === p.id) || p)
-                 }));
-                 return { ...album, folders: newFolders };
-            }
-
-            return { ...album, photos: newPhotos };
-        });
-        
-        setAllAlbums(newAlbums);
-        const updatedAlbum = newAlbums.find(a => a.id === currentAlbum.id);
-        if (updatedAlbum) {
-            setCurrentAlbum(updatedAlbum);
             
-            // Update galleryContent with the new photos
-            if (galleryContent) {
-                const updatedPhotos = updatedAlbum.photos || updatedAlbum.folders?.flatMap(f => f.photos) || [];
-                const currentPhotos = galleryContent.photos.map(photo => 
-                    updatedPhotos.find(p => p.id === photo.id) || photo
-                );
-                setGalleryContent({ ...galleryContent, photos: currentPhotos });
+            setAllAlbums(newAlbums);
+            const updatedAlbum = newAlbums.find(a => a.id === currentAlbum.id);
+            if (updatedAlbum) {
+                setCurrentAlbum(updatedAlbum);
             }
+            
+            // CRITICAL: Update galleryContent directly with the new comments
+            // This is what the Lightbox component displays
+            if (galleryContent) {
+                const updatedGalleryPhotos = galleryContent.photos.map(photo => {
+                    if (photo.id === photoId) {
+                        return { ...photo, comments: updatedComments };
+                    }
+                    return photo;
+                });
+                setGalleryContent({ ...galleryContent, photos: updatedGalleryPhotos });
+                console.log('[App] ✅ Updated galleryContent with new comments');
+            }
+            
+            toast.success('Comment added successfully');
+        } catch (error: any) {
+            console.error('[App] Failed to add comment:', error);
+            toast.error(error.message || 'Failed to add comment');
         }
     };
     
@@ -1245,6 +1298,7 @@ const App: React.FC = () => {
                         toggleFavorite={toggleFavorite}
                         toggleSelection={toggleSelection}
                         onAddComment={addComment}
+                        onLoadComments={loadPhotoComments}
                         onNavigateToStore={() => setPage('store')}
                         isStudioPreview={isStudioUser()}
                         userRole={userRole}
