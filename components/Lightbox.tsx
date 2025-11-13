@@ -336,7 +336,10 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
             <img src={currentPhoto.src} alt={currentPhoto.alt} className="w-auto h-auto max-w-full max-h-[85vh] object-contain" />
         </div>
         
-        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/50 to-transparent flex justify-between items-center px-4 text-white">
+        <div 
+          className="absolute top-0 left-0 h-16 bg-gradient-to-b from-black/50 to-transparent flex justify-between items-center px-4 text-white transition-all duration-300"
+          style={{ right: showComments ? '320px' : '0' }}
+        >
           <span className="text-sm font-medium">{currentIndex + 1} of {photos.length}</span>
           <div className="flex items-center gap-2 sm:gap-4">
              <button onClick={() => setSlideshowActive(!isSlideshowActive)} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label={isSlideshowActive ? "Pause slideshow" : "Play slideshow"}>

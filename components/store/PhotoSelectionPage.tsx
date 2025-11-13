@@ -6,13 +6,19 @@ import { ArrowLeftIcon } from '../icons';
 
 interface PhotoSelectionPageProps {
   albums: Album[];
+  currentAlbum?: Album | null;
+  galleryPhotos?: Photo[];
   onPhotosSelect: (photos: Photo[]) => void;
   onBack: () => void;
   productName: string;
 }
 
-const PhotoSelectionPage: React.FC<PhotoSelectionPageProps> = ({ albums, onPhotosSelect, onBack, productName }) => {
-  const allPhotos = albums.flatMap(album => album.photos);
+const PhotoSelectionPage: React.FC<PhotoSelectionPageProps> = ({ albums, currentAlbum, galleryPhotos, onPhotosSelect, onBack, productName }) => {
+  // Show only photos from current album/project if available, otherwise all photos
+  const allPhotos = galleryPhotos 
+    ? galleryPhotos 
+    : currentAlbum?.photos || currentAlbum?.folders?.flatMap(f => f.photos) || albums.flatMap(album => album.photos || []);
+  
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
 
   const togglePhotoSelection = (photo: Photo) => {

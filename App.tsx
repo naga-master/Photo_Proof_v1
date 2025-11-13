@@ -1370,7 +1370,9 @@ const App: React.FC = () => {
                      component = <StorePage onSelectProduct={handleSelectProduct} />;
                 } else {
                      component = <PhotoSelectionPage 
-                        albums={visibleAlbums} 
+                        albums={visibleAlbums}
+                        currentAlbum={currentAlbum}
+                        galleryPhotos={galleryContent?.photos}
                         onPhotosSelect={handlePhotosSelected}
                         onBack={() => setPage('productDetail')}
                         productName={currentProduct.name}
