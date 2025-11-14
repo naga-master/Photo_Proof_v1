@@ -119,7 +119,7 @@ class VersionService {
     if (search) params.search = search;
     
     return apiClient.get<GetOriginalPhotosResponse>(
-      `/api/v2/photos/projects/${projectId}/photos/original`,
+      `/v2/photos/projects/${projectId}/photos/original`,
       params
     );
   }
@@ -131,7 +131,7 @@ class VersionService {
     projectId: string | number,
     filenames: string[]
   ): Promise<MatchFilenamesResponse> {
-    return apiClient.post<MatchFilenamesResponse>('/api/v2/photos/versions/match', {
+    return apiClient.post<MatchFilenamesResponse>('/v2/photos/photos/versions/match', {
       project_id: projectId,
       filenames
     });
@@ -145,7 +145,7 @@ class VersionService {
     mappings: { mappings: VersionMapping[] }
   ): Promise<CreateVersionsBatchResponse> {
     return apiClient.post<CreateVersionsBatchResponse>(
-      '/api/v2/photos/versions/batch',
+      '/v2/photos/photos/versions/batch',
       mappings
     );
   }
@@ -154,7 +154,7 @@ class VersionService {
    * Get version history for a photo (studio users only)
    */
   async getVersionHistory(photoId: number): Promise<VersionHistoryResponse> {
-    return apiClient.get<VersionHistoryResponse>(`/api/v2/photos/${photoId}/versions`);
+    return apiClient.get<VersionHistoryResponse>(`/v2/photos/photos/${photoId}/versions`);
   }
 
   /**
@@ -165,7 +165,7 @@ class VersionService {
     versionId: number
   ): Promise<SetActiveVersionResponse> {
     return apiClient.patch<SetActiveVersionResponse>(
-      `/api/v2/photos/${photoId}/versions/${versionId}/activate`
+      `/v2/photos/photos/${photoId}/versions/${versionId}/activate`
     );
   }
 
