@@ -95,6 +95,8 @@ export type DashboardView =
   | 'tools'
   | 'notifications'
   | 'upload'
+  | 'editedUpload'
+  | 'uploadEdited'
   | 'projectDetails'
   | 'clientDetails';
 

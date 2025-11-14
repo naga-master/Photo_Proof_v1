@@ -13,6 +13,7 @@ import ServicesPage from './services/ServicesPage';
 import StudioToolsPage from './tools/StudioToolsPage';
 import NotificationsPage from './NotificationsPage';
 import UploadWizard from './upload/UploadWizard';
+import EditedUploadWizard from './editedUpload/EditedUploadWizard';
 import ProjectDetailsPage from './ProjectDetailsPage';
 import ClientDetailsPage from './ClientDetailsPage';
 import CommandPalette from './CommandPalette';
@@ -77,6 +78,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [uploadExistingProjectId, setUploadExistingProjectId] = useState<string | undefined>();
     const [uploadInitialStep, setUploadInitialStep] = useState<number>(0);
     const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
+    const [editedUploadProject, setEditedUploadProject] = useState<Album | null>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -223,6 +225,11 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setView('invoiceEditor');
     };
 
+    const handleUploadEditedPhotos = (album: Album) => {
+        setEditedUploadProject(album);
+        setView('editedUpload');
+    };
+
     const handleProjectCreated = (projectDetails: Partial<ProjectDetails>, queue: UploadFile[], coverPhotoIndex?: number, backendProjectId?: string): Album => {
         // Create new photos from the upload queue
         const newPhotos = queue
@@ -336,7 +343,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'tools': return <StudioToolsPage />;
             case 'notifications': return <NotificationsPage />;
             case 'upload': return <UploadWizard clients={props.clients} packages={props.packages} defaultLayoutId={props.branding.defaultLayoutId} initialClientId={uploadInitialClientId} existingProjectId={uploadExistingProjectId} initialStep={uploadInitialStep} onExit={() => { setView('projects'); setUploadInitialClientId(undefined); setUploadExistingProjectId(undefined); setUploadInitialStep(0); }} onProjectCreated={handleProjectCreated} onViewGallery={onNavigateToGallery} showToast={(msg: string) => toast.success(msg)} />;
-            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={handleBackFromProjectDetails} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} onGenerateInvoice={handleGenerateInvoice} />;
+            case 'editedUpload': return editedUploadProject && <EditedUploadWizard projectId={editedUploadProject.id} projectTitle={editedUploadProject.title} onExit={() => { setView('projectDetails'); setEditedUploadProject(null); }} showToast={(msg: string) => toast.success(msg)} />;
+            case 'projectDetails': return managingProject && <ProjectDetailsPage project={managingProject} clients={props.clients} onBack={handleBackFromProjectDetails} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onViewGallery={onNavigateToGallery} onAddPhotos={() => { setUploadExistingProjectId(managingProject.id); setUploadInitialStep(2); setView('upload'); }} onUploadEditedPhotos={handleUploadEditedPhotos} onGenerateInvoice={handleGenerateInvoice} />;
             case 'clientDetails': return managingClient && <ClientDetailsPage client={managingClient} albums={props.albums} invoices={props.invoices} packages={props.packages} onBack={() => handleSetView('clients')} onUpdateClient={handleUpdateClient} onCreateProject={handleCreateProjectForClient} onCreateInvoice={handleCreateInvoiceForProject} onPreviewInvoice={setViewingInvoice} onViewProject={handleManageProject} />;
             default: return <StudioOverview albums={props.albums} setView={handleSetView} />;
         }
