@@ -64,32 +64,14 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
   };
   
   const handleDownload = async (photoSrc: string, photoAlt: string) => {
-      try {
-          // Fetch the image as a blob to trigger proper download across all browsers
-          const response = await fetch(photoSrc);
-          if (!response.ok) throw new Error('Failed to fetch image');
-          
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          
-          // Create temporary link element for download
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = photoAlt.replace(/\s+/g, '-') + '.jpg';
-          document.body.appendChild(link);
-          link.click();
-          
-          // Cleanup
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          
-          toast.success('Photo downloaded successfully');
-      } catch (error) {
-          console.error('Download failed:', error);
-          toast.error('Failed to download photo');
-          // Fallback: open in new tab
-          window.open(photoSrc, '_blank');
-      }
+      const { handlePhotoDownload } = await import('../utils/downloadHelper');
+      await handlePhotoDownload(photoSrc, photoAlt, (message, type) => {
+          if (type === 'success') {
+              toast.success(message);
+          } else {
+              toast.error(message);
+          }
+      });
   };
 
   const toggleCompare = (photo: Photo) => {

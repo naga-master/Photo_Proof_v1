@@ -1024,16 +1024,80 @@ const App: React.FC = () => {
         }
     };
 
-    const toggleFavorite = (photoId: string) => {
-        setFavorites(prev =>
-            prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
-        );
+    const toggleFavorite = async (photoId: string) => {
+        try {
+            const isFavorited = favorites.includes(photoId);
+            
+            // Optimistic update
+            setFavorites(prev =>
+                isFavorited ? prev.filter(id => id !== photoId) : [...prev, photoId]
+            );
+            
+            // Call backend API
+            if (isFavorited) {
+                await photoService.updatePhoto(photoId, { is_favorite: false });
+            } else {
+                await photoService.updatePhoto(photoId, { is_favorite: true });
+            }
+            
+            console.log(`[App] ✅ Toggled favorite for photo ${photoId}: ${!isFavorited}`);
+            
+            // Invalidate cache to force refresh on next load
+            if (typeof window !== 'undefined' && (window as any).__indexedDB) {
+                const cacheKey = `photos_project_`;
+                const keys = await (window as any).__indexedDB.keys();
+                for (const key of keys) {
+                    if (key.startsWith(cacheKey)) {
+                        await (window as any).__indexedDB.delete(key);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[App] Failed to toggle favorite:', error);
+            // Revert optimistic update on error
+            setFavorites(prev =>
+                prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
+            );
+            toast.error('Failed to update favorite status');
+        }
     };
 
-    const toggleSelection = (photoId: string) => {
-        setSelections(prev =>
-            prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
-        );
+    const toggleSelection = async (photoId: string) => {
+        try {
+            const isSelected = selections.includes(photoId);
+            
+            // Optimistic update
+            setSelections(prev =>
+                isSelected ? prev.filter(id => id !== photoId) : [...prev, photoId]
+            );
+            
+            // Call backend API
+            if (isSelected) {
+                await photoService.updatePhoto(photoId, { is_selected: false });
+            } else {
+                await photoService.updatePhoto(photoId, { is_selected: true });
+            }
+            
+            console.log(`[App] ✅ Toggled selection for photo ${photoId}: ${!isSelected}`);
+            
+            // Invalidate cache to force refresh on next load
+            if (typeof window !== 'undefined' && (window as any).__indexedDB) {
+                const cacheKey = `photos_project_`;
+                const keys = await (window as any).__indexedDB.keys();
+                for (const key of keys) {
+                    if (key.startsWith(cacheKey)) {
+                        await (window as any).__indexedDB.delete(key);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[App] Failed to toggle selection:', error);
+            // Revert optimistic update on error
+            setSelections(prev =>
+                prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
+            );
+            toast.error('Failed to update selection status');
+        }
     };
 
     // Load comments for a photo on-demand
@@ -1455,7 +1519,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="h-full">
+        <div className="h-full overflow-auto">
             {page !== 'login' && page !== 'dashboard' && (
                 <TopNavBar 
                     onNavigate={handleNavigate} 

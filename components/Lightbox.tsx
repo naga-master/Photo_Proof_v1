@@ -342,25 +342,25 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
         >
           <span className="text-sm font-medium">{currentIndex + 1} of {photos.length}</span>
           <div className="flex items-center gap-2 sm:gap-4">
-             <button onClick={() => setSlideshowActive(!isSlideshowActive)} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label={isSlideshowActive ? "Pause slideshow" : "Play slideshow"}>
+             <button onClick={() => setSlideshowActive(!isSlideshowActive)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label={isSlideshowActive ? "Pause slideshow" : "Play slideshow"}>
                 {isSlideshowActive ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
              </button>
-             <button onClick={() => toggleSelection(currentPhoto.id)} className={`p-2 rounded-full hover:bg-white/20 transition-colors ${isSelection ? 'bg-blue-600/50' : ''}`} aria-label="Select">
+             <button onClick={() => toggleSelection(currentPhoto.id)} className={`p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0 ${isSelection ? 'bg-blue-600/50' : ''}`} style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Select">
                 <CheckIcon className="w-6 h-6" />
              </button>
-             <button onClick={() => toggleFavorite(currentPhoto.id)} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Favorite">
+             <button onClick={() => toggleFavorite(currentPhoto.id)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-0 active:outline-none active:ring-0 border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Favorite">
                 {isFavorite ? <HeartFilledIcon className="w-6 h-6 text-red-500" /> : <HeartIcon className="w-6 h-6" />}
              </button>
-             <button onClick={() => onDownload(currentPhoto.src, currentPhoto.alt)} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Download">
+             <button onClick={() => onDownload(currentPhoto.src, currentPhoto.alt)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Download">
                 <DownloadIcon className="w-6 h-6" />
              </button>
-             <button onClick={() => setShowComments(!showComments)} className="p-2 rounded-full hover:bg-white/20 transition-colors relative" aria-label="Comments">
+             <button onClick={() => setShowComments(!showComments)} className="p-2 rounded-full hover:bg-white/20 transition-colors relative focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Comments">
                 <ChatBubbleIcon className="w-6 h-6" />
                 {currentPhoto.comments && currentPhoto.comments.length > 0 && (
                   <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-blue-500 border-2 border-black/50"></span>
                 )}
              </button>
-             <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Close">
+             <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Close">
                 <CloseIcon className="w-6 h-6" />
              </button>
           </div>
