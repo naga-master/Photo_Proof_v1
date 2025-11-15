@@ -52,19 +52,18 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
     });
   }, [step, state.uploadQueue.length, state.isUploading]);
 
-  // Auto-skip manual mapping step if all files are matched - DISABLED FOR NOW
-  // The auto-advance from Step2 is causing issues
-  // React.useEffect(() => {
-  //   if (step === 2 && state.unmatchedFiles.length === 0 && state.matchedPairs.length > 0) {
-  //     // All files matched - skip to review
-  //     console.log('[EditedUploadWizard] Auto-skipping manual mapping - all files matched');
-  //     const timer = setTimeout(() => {
-  //       setDirection(1);
-  //       nextStep();
-  //     }, 300);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [step, state.unmatchedFiles.length, state.matchedPairs.length]);
+  // Auto-skip manual mapping step if all files are matched
+  React.useEffect(() => {
+    if (step === 2 && state.unmatchedFiles.length === 0 && state.matchedPairs.length > 0) {
+      // All files matched - skip to review
+      console.log('[EditedUploadWizard] Auto-skipping manual mapping - all files matched');
+      const timer = setTimeout(() => {
+        setDirection(1);
+        nextStep();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, state.unmatchedFiles.length, state.matchedPairs.length, nextStep]);
 
   const handleNext = async () => {
     console.log('[EditedUploadWizard] handleNext called', { 

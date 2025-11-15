@@ -55,3 +55,5 @@
 30. find how industries are show in the cover photo , make the same changes in the projects also, currently cover photo is big
 
 31. the editted photos are updating the photos i think, for ddfdfgdsf project, initially project image count is 101, after i added multiple editted photos, the total image count is 115, it should be replace the existing images using editted image right, that's why we are mapping it right, backend should maintain in the version hierachy right. can you check the backend and frontend plan for fix in industries best practice
+
+32. what is the use of this <span class="text-sm font-bold text-slate-800">0 files</span>, it always stays zero find the reason fix it, otherwise remove it
