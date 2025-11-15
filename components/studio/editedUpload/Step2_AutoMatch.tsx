@@ -1,19 +1,48 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useEditedUpload } from './EditedUploadContext';
 import { versionService } from '../../../services/versionService';
 import { matchFilenames, getConfidenceBadgeColor, getConfidenceBadgeText } from './MatchingAlgorithm';
 import { CheckCircleIcon, XCircleIcon, CameraIcon, StarIcon } from '../../icons';
 
-const Step2_AutoMatch: React.FC = () => {
+interface Step2_AutoMatchProps {
+  showToast: (message: string) => void;
+  nextStep: () => void;
+}
+
+const Step2_AutoMatch: React.FC<Step2_AutoMatchProps> = ({ showToast, nextStep }) => {
   const { state, setMatchedPairs, setUnmatchedFiles } = useEditedUpload();
   const [isMatching, setIsMatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasAutoAdvancedRef = useRef(false);
+  const hasMatchedRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        console.log('[Step2_AutoMatch] Cleaning up timer on unmount');
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const performMatching = async () => {
-      if (state.editedFiles.length === 0) return;
-      if (state.matchedPairs.length > 0) return; // Already matched
+      console.log('[Step2_AutoMatch] useEffect triggered', {
+        editedFilesCount: state.editedFiles.length,
+        matchedPairsCount: state.matchedPairs.length,
+        isMatching,
+        hasMatched: hasMatchedRef.current,
+        hasAutoAdvanced: hasAutoAdvancedRef.current
+      });
 
+      if (state.editedFiles.length === 0) return;
+      if (hasMatchedRef.current) return; // Already matched this session
+      if (isMatching) return; // Prevent duplicate calls
+
+      hasMatchedRef.current = true;
       setIsMatching(true);
       setError(null);
 
@@ -39,16 +68,43 @@ const Step2_AutoMatch: React.FC = () => {
 
         setMatchedPairs(matched);
         setUnmatchedFiles(unmatched);
+
+        console.log('[Step2_AutoMatch] Matching complete', {
+          matched: matched.length,
+          unmatched: unmatched.length,
+          hasAutoAdvanced: hasAutoAdvancedRef.current
+        });
+
+        // Auto-advance if there are unmatched files (after 3 seconds) - ONLY ONCE
+        if (unmatched.length > 0 && !hasAutoAdvancedRef.current) {
+          hasAutoAdvancedRef.current = true;
+          console.log('[Step2_AutoMatch] Setting up auto-advance timer');
+          
+          // Store timer reference for cleanup
+          const toastTimer = setTimeout(() => {
+            console.log('[Step2_AutoMatch] Showing toast');
+            showToast(`${matched.length} matched, ${unmatched.length} need manual mapping`);
+            
+            timerRef.current = setTimeout(() => {
+              console.log('[Step2_AutoMatch] Auto-advancing to manual mapping');
+              nextStep();
+              timerRef.current = null;
+            }, 3000) as unknown as number;
+          }, 500);
+          
+          // Don't store the toast timer, only the nextStep timer matters
+        }
       } catch (err: any) {
         console.error('[Step2_AutoMatch] Matching failed:', err);
         setError(err.message || 'Failed to match files');
+        hasMatchedRef.current = false; // Allow retry on error
       } finally {
         setIsMatching(false);
       }
     };
 
     performMatching();
-  }, [state.editedFiles, state.projectId, state.matchedPairs.length, setMatchedPairs, setUnmatchedFiles]);
+  }, [state.editedFiles.length, state.projectId]);
 
   if (isMatching) {
     return (

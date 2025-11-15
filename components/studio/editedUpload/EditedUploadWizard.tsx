@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditedUploadProvider, useEditedUpload } from './EditedUploadContext';
 import { ArrowLeftIcon } from '../../icons';
@@ -30,29 +30,41 @@ interface EditedUploadWizardProps {
   projectId: string;
   projectTitle: string;
   onExit: () => void;
+  onViewGallery: () => void;
   showToast: (message: string) => void;
 }
 
 const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({ 
-  onExit, 
+  onExit,
+  onViewGallery,
   showToast 
 }) => {
   const { state, nextStep, prevStep, reset } = useEditedUpload();
   const { step } = state;
   const [direction, setDirection] = useState(0);
 
-  // Auto-skip manual mapping step if all files are matched
-  React.useEffect(() => {
-    if (step === 2 && state.unmatchedFiles.length === 0 && state.matchedPairs.length > 0) {
-      // All files matched - skip to review
-      console.log('[EditedUploadWizard] Auto-skipping manual mapping - all files matched');
-      const timer = setTimeout(() => {
-        setDirection(1);
-        nextStep();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [step, state.unmatchedFiles.length, state.matchedPairs.length]);
+  // Log step changes
+  useEffect(() => {
+    console.log('[EditedUploadWizard] Step changed to:', step, {
+      stepName: steps[step],
+      uploadQueueLength: state.uploadQueue.length,
+      isUploading: state.isUploading
+    });
+  }, [step, state.uploadQueue.length, state.isUploading]);
+
+  // Auto-skip manual mapping step if all files are matched - DISABLED FOR NOW
+  // The auto-advance from Step2 is causing issues
+  // React.useEffect(() => {
+  //   if (step === 2 && state.unmatchedFiles.length === 0 && state.matchedPairs.length > 0) {
+  //     // All files matched - skip to review
+  //     console.log('[EditedUploadWizard] Auto-skipping manual mapping - all files matched');
+  //     const timer = setTimeout(() => {
+  //       setDirection(1);
+  //       nextStep();
+  //     }, 300);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [step, state.unmatchedFiles.length, state.matchedPairs.length]);
 
   const handleNext = async () => {
     console.log('[EditedUploadWizard] handleNext called', { 
@@ -106,11 +118,22 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
   };
 
   const renderStep = () => {
+    console.log('[EditedUploadWizard] Rendering step', { 
+      step, 
+      unmatchedCount: state.unmatchedFiles.length,
+      manualMappingsCount: state.manualMappings.size,
+      skippedCount: state.skippedFiles.size
+    });
+    
     switch (step) {
       case 0:
         return <Step1_SelectFiles />;
       case 1:
-        return <Step2_AutoMatch />;
+        return <Step2_AutoMatch showToast={showToast} nextStep={() => { 
+          console.log('[EditedUploadWizard] Step2 auto-advance called');
+          setDirection(1); 
+          nextStep(); 
+        }} />;
       case 2:
         return <Step3_ManualMap />;
       case 3:
@@ -118,7 +141,7 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
       case 4:
         return <Step5_Upload />;
       case 5:
-        return <Step6_Complete onClose={onExit} onViewGallery={onExit} />;
+        return <Step6_Complete onClose={onExit} onViewGallery={onViewGallery} />;
       default:
         return null;
     }
@@ -135,12 +158,18 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
              );
     }
     if (step === 3) return state.matchedPairs.length > 0 || state.manualMappings.size > 0;
-    if (step === 4) return false; // Can't continue during upload
+    if (step === 4) {
+      // Step 5 (Upload): can continue when all uploads complete
+      const totalCount = state.uploadQueue.length;
+      const successCount = state.uploadQueue.filter(f => f.status === 'success').length;
+      const failedCount = state.uploadQueue.filter(f => f.status === 'failed').length;
+      return totalCount > 0 && (successCount + failedCount === totalCount);
+    }
     if (step === 5) return false; // Final step
     return false;
   };
 
-  const isUploadingOrComplete = step >= 4;
+  const isUploadingOrComplete = step >= 5; // Only hide buttons on step 6 (final step)
 
   return (
     <div className="flex flex-col h-full bg-slate-50 animate-fade-in">
@@ -189,7 +218,7 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
                 }`}
                 title={!canContinue() ? 'Please complete the current step' : ''}
               >
-                {step === 3 ? 'Start Upload' : 'Continue'}
+                {step === 3 ? 'Start Upload' : 'Next'}
               </button>
             )}
             {step === 5 && (

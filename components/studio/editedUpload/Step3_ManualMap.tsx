@@ -3,6 +3,64 @@ import { useEditedUpload } from './EditedUploadContext';
 import { versionService } from '../../../services/versionService';
 import { CameraIcon, EyeIcon, CheckIcon, CloseIcon } from '../../icons';
 import type { Photo } from '../../../types';
+import { memoryCacheManager } from '../../../src/services/cache/MemoryCacheManager';
+import { indexedDBManager } from '../../../src/services/cache/IndexedDBManager';
+import { configLoader } from '../../../src/services/ConfigLoader';
+import type { GetOriginalPhotosResponse } from '../../../services/versionService';
+
+// Cache key generator
+const getCacheKey = (projectId: string): string => {
+  return `original-photos:project-${projectId}`;
+};
+
+// Check memory cache
+const getFromMemoryCache = (cacheKey: string): GetOriginalPhotosResponse | null => {
+  if (!configLoader.isFeatureEnabled('memoryCache')) return null;
+  
+  const cached = memoryCacheManager.get<GetOriginalPhotosResponse>(cacheKey);
+  if (cached) {
+    console.log('[Step3_ManualMap] ✅ Memory cache HIT:', cacheKey);
+    return cached;
+  }
+  
+  console.log('[Step3_ManualMap] ❌ Memory cache MISS:', cacheKey);
+  return null;
+};
+
+// Check IndexedDB cache
+const getFromIndexedDBCache = async (cacheKey: string): Promise<GetOriginalPhotosResponse | null> => {
+  if (!configLoader.isFeatureEnabled('indexedDBCache')) return null;
+  
+  const cached = await indexedDBManager.get<GetOriginalPhotosResponse>(cacheKey);
+  if (cached) {
+    console.log('[Step3_ManualMap] ✅ IndexedDB cache HIT:', cacheKey);
+    
+    // Populate memory cache for next access
+    if (configLoader.isFeatureEnabled('memoryCache')) {
+      memoryCacheManager.set(cacheKey, cached);
+    }
+    
+    return cached;
+  }
+  
+  console.log('[Step3_ManualMap] ❌ IndexedDB cache MISS:', cacheKey);
+  return null;
+};
+
+// Store in caches
+const storeInCache = async (cacheKey: string, data: GetOriginalPhotosResponse): Promise<void> => {
+  // Memory cache
+  if (configLoader.isFeatureEnabled('memoryCache')) {
+    memoryCacheManager.set(cacheKey, data);
+    console.log('[Step3_ManualMap] ✅ Stored in memory cache:', cacheKey);
+  }
+  
+  // IndexedDB cache
+  if (configLoader.isFeatureEnabled('indexedDBCache')) {
+    await indexedDBManager.set(cacheKey, data);
+    console.log('[Step3_ManualMap] ✅ Stored in IndexedDB:', cacheKey);
+  }
+};
 
 const Step3_ManualMap: React.FC = () => {
   const { state, addManualMapping, skipFile, unskipFile } = useEditedUpload();
@@ -11,22 +69,62 @@ const Step3_ManualMap: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [hoveredPhotoId, setHoveredPhotoId] = useState<number | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     const loadPhotos = async () => {
+      if (hasLoaded) return; // Prevent multiple loads
+      if (originalPhotos.length > 0) return; // Already loaded
+
       setIsLoading(true);
+      setHasLoaded(true);
+
       try {
-        const response = await versionService.getOriginalPhotos(state.projectId);
+        const cacheKey = getCacheKey(state.projectId);
+        console.log('[Step3_ManualMap] Loading photos with cache key:', cacheKey);
+        
+        // 1. Check memory cache
+        let response = getFromMemoryCache(cacheKey);
+        
+        // 2. Check IndexedDB cache if memory miss
+        if (!response) {
+          response = await getFromIndexedDBCache(cacheKey);
+        }
+        
+        // 3. Fetch from API if both caches miss
+        if (!response) {
+          console.log('[Step3_ManualMap] ⚠️ Cache MISS, fetching from API');
+          response = await versionService.getOriginalPhotos(state.projectId);
+          
+          // Store in caches
+          await storeInCache(cacheKey, response);
+        }
+        
+        // Get API base URL to construct absolute image URLs
+        const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
+        
+        console.log('[Step3_ManualMap] Loaded photos:', response.photos.length, 'API Base:', API_BASE_URL);
+        
         // Map OriginalPhoto to Photo type for display
-        const mappedPhotos = response.photos.map(p => ({
-          id: String(p.id),
-          src: p.src,
-          alt: p.original_filename,
-          width: 800,
-          height: 600,
-          comments: [],
-          thumbnails: p.thumbnail_path ? { small: p.thumbnail_path } : undefined,
-        }));
+        const mappedPhotos = response.photos.map(p => {
+          // Convert relative src to absolute URL
+          const absoluteSrc = p.src.startsWith('http') ? p.src : `${API_BASE_URL}${p.src}`;
+          const absoluteThumbnail = p.thumbnail_path 
+            ? (p.thumbnail_path.startsWith('http') ? p.thumbnail_path : `${API_BASE_URL}${p.thumbnail_path}`)
+            : undefined;
+          
+          return {
+            id: String(p.id),
+            src: absoluteSrc,
+            alt: p.original_filename,
+            width: 800,
+            height: 600,
+            comments: [],
+            thumbnails: absoluteThumbnail ? { small: absoluteThumbnail } : undefined,
+          };
+        });
+        
         setOriginalPhotos(mappedPhotos);
         
         // Auto-select first unmatched file
@@ -35,18 +133,24 @@ const Step3_ManualMap: React.FC = () => {
         }
       } catch (error) {
         console.error('[Step3_ManualMap] Failed to load photos:', error);
+        setHasLoaded(false); // Allow retry on error
       } finally {
         setIsLoading(false);
       }
     };
 
     loadPhotos();
-  }, [state.projectId, state.unmatchedFiles]);
+  }, [state.projectId]);
 
   const filteredPhotos = originalPhotos.filter(photo => {
     const filename = photo.alt || photo.src.split('/').pop() || '';
     return filename.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  const handleImageError = (photoId: string) => {
+    console.log('[Step3_ManualMap] Image failed to load:', photoId);
+    setImageErrors(prev => new Set(prev).add(photoId));
+  };
 
   const handlePhotoSelect = (photoId: number) => {
     if (!selectedFile) {
@@ -185,13 +289,21 @@ const Step3_ManualMap: React.FC = () => {
                       ? 'border-blue-500 shadow-lg'
                       : 'border-slate-200'
                   }`}
-                  title={photo.src}
+                  title={`${photo.alt}\nID: ${photo.id}`}
                 >
-                  <img
-                    src={photo.thumbnails?.small || photo.src}
-                    alt={photo.src}
-                    className="w-full h-full object-cover"
-                  />
+                  {imageErrors.has(photo.id) ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+                      <CameraIcon className="w-10 h-10 text-slate-400 mb-2" />
+                      <p className="text-xs text-slate-500 px-2 text-center">{photo.alt}</p>
+                    </div>
+                  ) : (
+                    <img
+                      src={photo.src}
+                      alt={photo.alt}
+                      className="w-full h-full object-cover"
+                      onError={() => handleImageError(photo.id)}
+                    />
+                  )}
                   {hoveredPhotoId === Number(photo.id) && selectedFile && (
                     <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
                       <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
@@ -199,8 +311,13 @@ const Step3_ManualMap: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1">
-                    <p className="text-xs text-white truncate">{photo.src.split('/').pop()}</p>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                    <p className="text-xs text-white truncate font-medium">
+                      {photo.alt}
+                    </p>
+                    <p className="text-[10px] text-white/70 truncate">
+                      ID: {photo.id}
+                    </p>
                   </div>
                 </button>
               ))}

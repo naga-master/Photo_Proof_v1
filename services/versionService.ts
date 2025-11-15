@@ -192,24 +192,52 @@ class VersionService {
       }
 
       xhr.addEventListener('load', () => {
+        console.log('[versionService] Upload response:', {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          response: xhr.responseText
+        });
+        
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve();
         } else {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
+          reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
         }
       });
 
       xhr.addEventListener('error', () => {
-        reject(new Error('Upload failed'));
+        console.error('[versionService] Upload error event');
+        reject(new Error('Upload failed - network error'));
       });
 
       xhr.addEventListener('abort', () => {
+        console.error('[versionService] Upload aborted');
         reject(new Error('Upload aborted'));
       });
 
-      xhr.open('PUT', uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.send(file);
+      // Convert relative URL to absolute if needed
+      // Use API base URL, not window.location.origin (which is frontend URL)
+      const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
+      const fullUrl = uploadUrl.startsWith('http') 
+        ? uploadUrl 
+        : `${API_BASE_URL}${uploadUrl}`;
+      
+      console.log('[versionService] Starting upload:', {
+        originalUrl: uploadUrl,
+        fullUrl,
+        apiBaseUrl: API_BASE_URL,
+        fileName: file.name,
+        fileSize: file.size,
+        contentType: file.type
+      });
+
+      // Backend expects multipart/form-data with 'file' field, not raw binary
+      const formData = new FormData();
+      formData.append('file', file);
+
+      xhr.open('PUT', fullUrl);
+      // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
+      xhr.send(formData);
     });
   }
 }
