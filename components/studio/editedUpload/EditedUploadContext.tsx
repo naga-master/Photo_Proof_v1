@@ -9,6 +9,15 @@ export interface MatchedPair {
   matchReason: string;
 }
 
+export interface MappingDetails {
+  filename: string;
+  photoId: number;
+  photoName: string;
+  photoSrc: string;
+  editedThumbnail: string;
+  timestamp: Date;
+}
+
 export interface EditedUploadState {
   step: 0 | 1 | 2 | 3 | 4 | 5;
   projectId: string;
@@ -23,7 +32,9 @@ export interface EditedUploadState {
   
   // Step 3: Manual mapping
   manualMappings: Map<string, number>;  // filename -> photo_id
+  mappingDetails: Map<string, MappingDetails>;  // filename -> mapping details
   skippedFiles: Set<string>;  // filenames that user chose to skip
+  lastMapping: MappingDetails | null;  // for undo toast
   
   // Version labels (optional)
   versionLabels: Map<string, string>;  // filename -> label
@@ -48,8 +59,9 @@ type EditedUploadAction =
   | { type: 'ADD_EDITED_FILES'; payload: File[] }
   | { type: 'SET_MATCHED_PAIRS'; payload: MatchedPair[] }
   | { type: 'SET_UNMATCHED_FILES'; payload: File[] }
-  | { type: 'ADD_MANUAL_MAPPING'; payload: { filename: string; photoId: number } }
+  | { type: 'ADD_MANUAL_MAPPING'; payload: { filename: string; photoId: number; details: MappingDetails } }
   | { type: 'REMOVE_MANUAL_MAPPING'; payload: string }
+  | { type: 'CLEAR_LAST_MAPPING' }
   | { type: 'SKIP_FILE'; payload: string }
   | { type: 'UNSKIP_FILE'; payload: string }
   | { type: 'SET_VERSION_LABEL'; payload: { filename: string; label: string } }
@@ -70,7 +82,9 @@ const getInitialState = (projectId: string, projectTitle: string): EditedUploadS
   matchedPairs: [],
   unmatchedFiles: [],
   manualMappings: new Map(),
+  mappingDetails: new Map(),
   skippedFiles: new Set(),
+  lastMapping: null,
   versionLabels: new Map(),
   uploadQueue: [],
   isUploading: false,
@@ -132,21 +146,39 @@ const editedUploadReducer = (state: EditedUploadState, action: EditedUploadActio
     case 'ADD_MANUAL_MAPPING': {
       const newMappings = new Map(state.manualMappings);
       newMappings.set(action.payload.filename, action.payload.photoId);
+      const newDetails = new Map(state.mappingDetails);
+      newDetails.set(action.payload.filename, action.payload.details);
       // Remove from unmatched list
       const newUnmatched = state.unmatchedFiles.filter(f => f.name !== action.payload.filename);
-      return { ...state, manualMappings: newMappings, unmatchedFiles: newUnmatched };
+      return { 
+        ...state, 
+        manualMappings: newMappings, 
+        mappingDetails: newDetails,
+        unmatchedFiles: newUnmatched,
+        lastMapping: action.payload.details
+      };
     }
     
     case 'REMOVE_MANUAL_MAPPING': {
       const newMappings = new Map(state.manualMappings);
       newMappings.delete(action.payload);
+      const newDetails = new Map(state.mappingDetails);
+      newDetails.delete(action.payload);
       // Add back to unmatched if the file still exists
       const file = state.editedFiles.find(f => f.name === action.payload);
       const newUnmatched = file && !state.unmatchedFiles.some(f => f.name === action.payload)
         ? [...state.unmatchedFiles, file]
         : state.unmatchedFiles;
-      return { ...state, manualMappings: newMappings, unmatchedFiles: newUnmatched };
+      return { 
+        ...state, 
+        manualMappings: newMappings, 
+        mappingDetails: newDetails,
+        unmatchedFiles: newUnmatched 
+      };
     }
+    
+    case 'CLEAR_LAST_MAPPING':
+      return { ...state, lastMapping: null };
     
     case 'SKIP_FILE': {
       const newSkippedFiles = new Set(state.skippedFiles);
@@ -319,12 +351,16 @@ export const useEditedUpload = () => {
     dispatch({ type: 'SET_UNMATCHED_FILES', payload: files });
   }, [dispatch]);
   
-  const addManualMapping = useCallback((filename: string, photoId: number) => {
-    dispatch({ type: 'ADD_MANUAL_MAPPING', payload: { filename, photoId } });
+  const addManualMapping = useCallback((filename: string, photoId: number, details: MappingDetails) => {
+    dispatch({ type: 'ADD_MANUAL_MAPPING', payload: { filename, photoId, details } });
   }, [dispatch]);
   
   const removeManualMapping = useCallback((filename: string) => {
     dispatch({ type: 'REMOVE_MANUAL_MAPPING', payload: filename });
+  }, [dispatch]);
+  
+  const clearLastMapping = useCallback(() => {
+    dispatch({ type: 'CLEAR_LAST_MAPPING' });
   }, [dispatch]);
   
   const skipFile = useCallback((filename: string) => {
@@ -372,6 +408,7 @@ export const useEditedUpload = () => {
     setUnmatchedFiles,
     addManualMapping,
     removeManualMapping,
+    clearLastMapping,
     skipFile,
     unskipFile,
     setVersionLabel,

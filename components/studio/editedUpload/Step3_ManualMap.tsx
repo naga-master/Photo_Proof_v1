@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useEditedUpload } from './EditedUploadContext';
+import type { MappingDetails } from './EditedUploadContext';
 import { versionService } from '../../../services/versionService';
 import { CameraIcon, EyeIcon, CheckIcon, CloseIcon } from '../../icons';
 import type { Photo } from '../../../types';
@@ -7,6 +8,7 @@ import { memoryCacheManager } from '../../../src/services/cache/MemoryCacheManag
 import { indexedDBManager } from '../../../src/services/cache/IndexedDBManager';
 import { configLoader } from '../../../src/services/ConfigLoader';
 import type { GetOriginalPhotosResponse } from '../../../services/versionService';
+import { Toast } from '../../common/Toast';
 
 // Cache key generator
 const getCacheKey = (projectId: string): string => {
@@ -63,7 +65,7 @@ const storeInCache = async (cacheKey: string, data: GetOriginalPhotosResponse): 
 };
 
 const Step3_ManualMap: React.FC = () => {
-  const { state, addManualMapping, skipFile, unskipFile } = useEditedUpload();
+  const { state, addManualMapping, removeManualMapping, clearLastMapping, skipFile } = useEditedUpload();
   const [originalPhotos, setOriginalPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +73,7 @@ const Step3_ManualMap: React.FC = () => {
   const [hoveredPhotoId, setHoveredPhotoId] = useState<number | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -152,9 +155,15 @@ const Step3_ManualMap: React.FC = () => {
     setImageErrors(prev => new Set(prev).add(photoId));
   };
 
-  const handlePhotoSelect = (photoId: number) => {
+  const handlePhotoSelect = async (photoId: number) => {
     if (!selectedFile) {
       console.log('[Step3_ManualMap] No file selected');
+      return;
+    }
+
+    const photo = originalPhotos.find(p => Number(p.id) === photoId);
+    if (!photo) {
+      console.error('[Step3_ManualMap] Photo not found:', photoId);
       return;
     }
 
@@ -165,7 +174,23 @@ const Step3_ManualMap: React.FC = () => {
       unmatchedCount: state.unmatchedFiles.length
     });
 
-    addManualMapping(selectedFile.name, photoId);
+    // Create thumbnail for edited file
+    const editedThumbnail = await createThumbnail(selectedFile);
+
+    // Create mapping details
+    const details: MappingDetails = {
+      filename: selectedFile.name,
+      photoId,
+      photoName: photo.alt,
+      photoSrc: photo.src,
+      editedThumbnail,
+      timestamp: new Date(),
+    };
+
+    addManualMapping(selectedFile.name, photoId, details);
+    
+    // Show toast notification
+    setShowToast(true);
     
     // Select next unmatched file
     const currentIndex = state.unmatchedFiles.findIndex(f => f.name === selectedFile.name);
@@ -176,6 +201,47 @@ const Step3_ManualMap: React.FC = () => {
     }
     
     setSearchQuery('');
+  };
+
+  const handleRemoveMapping = (filename: string) => {
+    removeManualMapping(filename);
+    // Re-select the file that was just unmapped
+    const file = state.editedFiles.find(f => f.name === filename);
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleChangeMapping = (filename: string) => {
+    // Remove current mapping and re-select the file
+    removeManualMapping(filename);
+    const file = state.editedFiles.find(f => f.name === filename);
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUndoLastMapping = () => {
+    if (state.lastMapping) {
+      removeManualMapping(state.lastMapping.filename);
+      setShowToast(false);
+    }
+  };
+
+  const handleToastDismiss = () => {
+    setShowToast(false);
+    clearLastMapping();
+  };
+
+  // Helper function to create thumbnail from File
+  const createThumbnail = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleSkip = (file: File) => {
@@ -214,125 +280,166 @@ const Step3_ManualMap: React.FC = () => {
   });
 
   return (
-    <div className="w-full max-w-6xl">
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Manual Mapping</h2>
-        <p className="text-slate-600 mb-6">
-          Select a file below, then click on the original photo it should replace
-        </p>
+    <>
+      <div className="w-full max-w-7xl">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Manual Mapping</h2>
+          <p className="text-slate-600 mb-6">
+            Select a file below, then click on the original photo it should replace
+          </p>
 
-        {/* Progress */}
-        <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-slate-700">Remaining Files</span>
-            <span className="text-sm font-bold text-slate-800">{remainingCount} files</span>
+          {/* Progress */}
+          <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-slate-700">Progress</span>
+              <span className="text-sm font-bold text-slate-800">
+                {mappedCount} mapped • {remainingCount} remaining • {skippedCount} skipped
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-4 text-xs text-slate-600 mt-2">
-            {mappedCount > 0 && <span className="text-green-600">✓ {mappedCount} mapped</span>}
-            {skippedCount > 0 && <span className="text-amber-600">⊘ {skippedCount} skipped</span>}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          {/* Left: Unmatched Files */}
-          <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-3">Files to Map</h3>
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {state.unmatchedFiles.map((file, index) => (
-                <UnmatchedFileCard
-                  key={`${file.name}-${index}`}
-                  file={file}
-                  isSelected={selectedFile?.name === file.name}
-                  onSelect={() => setSelectedFile(file)}
-                  onSkip={() => handleSkip(file)}
-                />
-              ))}
-              {state.unmatchedFiles.length === 0 && (
+          {/* Three-Panel Layout */}
+          <div className="grid grid-cols-[1fr_320px_1fr] gap-4">
+            {/* Left Panel: Unmatched Files */}
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 mb-3">Files to Map</h3>
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                {state.unmatchedFiles.map((file, index) => (
+                  <UnmatchedFileCard
+                    key={`${file.name}-${index}`}
+                    file={file}
+                    isSelected={selectedFile?.name === file.name}
+                    onSelect={() => setSelectedFile(file)}
+                    onSkip={() => handleSkip(file)}
+                  />
+                ))}
+                {state.unmatchedFiles.length === 0 && (
+                  <div className="p-8 text-center text-slate-500">
+                    <CheckIcon className="w-12 h-12 mx-auto mb-2 text-green-600" />
+                    <p className="font-medium">All files mapped!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Middle Panel: Current Mappings */}
+            <div className="border-l border-r border-slate-200 bg-slate-50 px-4 py-2">
+              <h3 className="text-lg font-semibold text-slate-800 mb-3">
+                Current Mappings ({mappedCount})
+              </h3>
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                {Array.from(state.manualMappings).map(([filename, photoId]) => {
+                  const details = state.mappingDetails.get(filename);
+                  if (!details) return null;
+                  
+                  return (
+                    <MappingCard
+                      key={filename}
+                      details={details}
+                      onRemove={() => handleRemoveMapping(filename)}
+                      onChange={() => handleChangeMapping(filename)}
+                    />
+                  );
+                })}
+                
+                {mappedCount === 0 && (
+                  <div className="text-center text-slate-500 py-8 px-2">
+                    <p className="text-sm">No mappings yet</p>
+                    <p className="text-xs mt-1">Select a file, then click a photo</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel: Original Photos Grid */}
+            <div>
+              <div className="mb-3">
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">Select Original Photo</h3>
+                <div className="relative">
+                  <EyeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by filename..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 max-h-[500px] overflow-y-auto p-1">
+                {filteredPhotos.map(photo => (
+                  <button
+                    key={photo.id}
+                    onClick={() => handlePhotoSelect(Number(photo.id))}
+                    onMouseEnter={() => setHoveredPhotoId(Number(photo.id))}
+                    onMouseLeave={() => setHoveredPhotoId(null)}
+                    disabled={!selectedFile}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedFile
+                        ? 'cursor-pointer hover:border-blue-500 hover:scale-105'
+                        : 'cursor-not-allowed opacity-50'
+                    } ${
+                      hoveredPhotoId === Number(photo.id)
+                        ? 'border-blue-500 shadow-lg'
+                        : 'border-slate-200'
+                    }`}
+                    title={`${photo.alt}\nID: ${photo.id}`}
+                  >
+                    {imageErrors.has(photo.id) ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+                        <CameraIcon className="w-10 h-10 text-slate-400 mb-2" />
+                        <p className="text-xs text-slate-500 px-2 text-center">{photo.alt}</p>
+                      </div>
+                    ) : (
+                      <img
+                        src={photo.src}
+                        alt={photo.alt}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError(photo.id)}
+                      />
+                    )}
+                    {hoveredPhotoId === Number(photo.id) && selectedFile && (
+                      <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                          <CheckIcon className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                      <p className="text-xs text-white truncate font-medium">
+                        {photo.alt}
+                      </p>
+                      <p className="text-[10px] text-white/70 truncate">
+                        ID: {photo.id}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {filteredPhotos.length === 0 && (
                 <div className="p-8 text-center text-slate-500">
-                  <CheckIcon className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                  <p className="font-medium">All files mapped!</p>
+                  <CameraIcon className="w-12 h-12 mx-auto mb-2 text-slate-400" />
+                  <p className="text-sm">No photos found</p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Right: Original Photos Grid */}
-          <div>
-            <div className="mb-3">
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Select Original Photo</h3>
-              <div className="relative">
-                <EyeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by filename..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 max-h-[500px] overflow-y-auto p-1">
-              {filteredPhotos.map(photo => (
-                <button
-                  key={photo.id}
-                  onClick={() => handlePhotoSelect(Number(photo.id))}
-                  onMouseEnter={() => setHoveredPhotoId(Number(photo.id))}
-                  onMouseLeave={() => setHoveredPhotoId(null)}
-                  disabled={!selectedFile}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedFile
-                      ? 'cursor-pointer hover:border-blue-500 hover:scale-105'
-                      : 'cursor-not-allowed opacity-50'
-                  } ${
-                    hoveredPhotoId === Number(photo.id)
-                      ? 'border-blue-500 shadow-lg'
-                      : 'border-slate-200'
-                  }`}
-                  title={`${photo.alt}\nID: ${photo.id}`}
-                >
-                  {imageErrors.has(photo.id) ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
-                      <CameraIcon className="w-10 h-10 text-slate-400 mb-2" />
-                      <p className="text-xs text-slate-500 px-2 text-center">{photo.alt}</p>
-                    </div>
-                  ) : (
-                    <img
-                      src={photo.src}
-                      alt={photo.alt}
-                      className="w-full h-full object-cover"
-                      onError={() => handleImageError(photo.id)}
-                    />
-                  )}
-                  {hoveredPhotoId === Number(photo.id) && selectedFile && (
-                    <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                        <CheckIcon className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                    <p className="text-xs text-white truncate font-medium">
-                      {photo.alt}
-                    </p>
-                    <p className="text-[10px] text-white/70 truncate">
-                      ID: {photo.id}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {filteredPhotos.length === 0 && (
-              <div className="p-8 text-center text-slate-500">
-                <CameraIcon className="w-12 h-12 mx-auto mb-2 text-slate-400" />
-                <p className="text-sm">No photos found</p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
-    </div>
+
+      {/* Toast Notification */}
+      {showToast && state.lastMapping && (
+        <Toast
+          message={`Mapped ${state.lastMapping.filename} → Photo #${state.lastMapping.photoId} (${state.lastMapping.photoName})`}
+          duration={5000}
+          onUndo={handleUndoLastMapping}
+          onDismiss={handleToastDismiss}
+          type="success"
+        />
+      )}
+    </>
   );
 };
 
@@ -405,6 +512,73 @@ const UnmatchedFileCard: React.FC<UnmatchedFileCardProps> = ({
           <CheckIcon className="w-4 h-4 text-white" />
         </div>
       )}
+    </div>
+  );
+};
+
+interface MappingCardProps {
+  details: MappingDetails;
+  onRemove: () => void;
+  onChange: () => void;
+}
+
+const MappingCard: React.FC<MappingCardProps> = ({ details, onRemove, onChange }) => {
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+      {/* Edited File Thumbnail */}
+      <div className="flex items-center gap-2 mb-2">
+        <img 
+          src={details.editedThumbnail} 
+          alt={details.filename}
+          className="w-12 h-12 rounded object-cover flex-shrink-0" 
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-slate-800 truncate" title={details.filename}>
+            {details.filename}
+          </p>
+        </div>
+      </div>
+      
+      {/* Arrow */}
+      <div className="text-center my-1">
+        <span className="text-blue-600 font-bold text-lg">↓</span>
+      </div>
+      
+      {/* Original Photo Thumbnail */}
+      <div className="flex items-center gap-2 mb-3">
+        <img 
+          src={details.photoSrc} 
+          alt={details.photoName}
+          className="w-12 h-12 rounded object-cover flex-shrink-0"
+          onError={(e) => {
+            // Fallback to camera icon if image fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-slate-800 truncate" title={details.photoName}>
+            {details.photoName}
+          </p>
+          <p className="text-[10px] text-slate-500">ID: {details.photoId}</p>
+        </div>
+      </div>
+      
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button
+          onClick={onChange}
+          className="flex-1 px-2 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+        >
+          Change
+        </button>
+        <button
+          onClick={onRemove}
+          className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+          title="Remove mapping"
+        >
+          × Remove
+        </button>
+      </div>
     </div>
   );
 };
