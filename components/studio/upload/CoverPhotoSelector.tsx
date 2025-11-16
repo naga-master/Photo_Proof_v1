@@ -15,8 +15,14 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   
   const ITEMS_PER_PAGE = 24; // 4x6 grid
+  
+  // Handle image load
+  const handleImageLoad = (fileId: string) => {
+    setLoadedImages(prev => new Set(prev).add(fileId));
+  };
 
   // Get only successfully uploaded photos
   const successfulPhotos = useMemo(() => {
@@ -83,13 +89,24 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
         className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 relative">
             {selectedPhoto && (
-              <img
-                src={URL.createObjectURL(selectedPhoto.file)}
-                alt="Cover preview"
-                className="w-full h-full object-cover"
-              />
+              <>
+                {/* Skeleton background */}
+                <div className={`absolute inset-0 bg-gray-200 transition-opacity duration-300 ${
+                  loadedImages.has(selectedPhoto.id) ? 'opacity-0' : 'opacity-100'
+                }`} />
+                
+                {/* Actual image */}
+                <img
+                  src={URL.createObjectURL(selectedPhoto.file)}
+                  alt="Cover preview"
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    loadedImages.has(selectedPhoto.id) ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => handleImageLoad(selectedPhoto.id)}
+                />
+              </>
             )}
           </div>
           <div>
@@ -139,16 +156,34 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
                   }`}
                   title={file.file.name}
                 >
+                  {/* Skeleton background with shimmer */}
+                  <div className={`absolute inset-0 bg-gray-200 transition-opacity duration-300 ${
+                    loadedImages.has(file.id) ? 'opacity-0' : 'opacity-100'
+                  }`}>
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+                    </div>
+                  </div>
+                  
+                  {/* Actual image */}
                   <img
                     src={imageUrl}
                     alt={file.file.name}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${
+                      loadedImages.has(file.id) ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    onLoad={() => handleImageLoad(file.id)}
+                    onError={() => console.error('[CoverPhotoSelector] Failed to load:', file.file.name)}
                   />
+                  
+                  {/* Selected overlay */}
                   {isSelected && (
                     <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
                       <CheckCircleIcon className="w-8 h-8 text-blue-600" />
                     </div>
                   )}
+                  
+                  {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                 </button>
               );

@@ -8,7 +8,7 @@ interface FileRowProps {
 }
 
 const FileRow: React.FC<FileRowProps> = ({ file }) => {
-  const { retryFile, resumeUpload, state } = useUpload();
+  const { retryFile, resumeUpload, cancelFile, state } = useUpload();
   const { status, progress, file: fileData, error } = file;
   const { isUploading } = state;
 
@@ -19,17 +19,44 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
     retryFile(file.id);
   }
 
+  const handleCancel = () => {
+    if (window.confirm(`Cancel upload of "${fileData.name}"?`)) {
+      cancelFile(file.id);
+    }
+  }
+
+  // Show retry button for failed uploads or uploads that appear stuck
+  const showRetryButton = status === 'failed' || (status === 'uploading' && progress === 0 && error);
+
   const renderStatus = () => {
     switch (status) {
       case 'success':
         return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
       case 'failed':
         return (
-          <button onClick={handleRetry} className="text-gray-500 hover:text-gray-800 transition-colors" aria-label="Retry upload">
+          <button 
+            onClick={handleRetry} 
+            className="p-1 rounded-md bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors" 
+            aria-label="Retry upload"
+            title="Retry upload"
+          >
             <ArrowPathIcon className="w-5 h-5" />
           </button>
         );
       case 'uploading':
+        // Show retry button if upload is stuck (0% with error)
+        if (showRetryButton) {
+          return (
+            <button 
+              onClick={handleRetry} 
+              className="p-1 rounded-md bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-colors" 
+              aria-label="Retry stuck upload"
+              title="Retry upload"
+            >
+              <ArrowPathIcon className="w-5 h-5" />
+            </button>
+          );
+        }
         return <UploadCloudIcon className="w-5 h-5 text-blue-500 animate-pulse" />;
       default: // queued
         return <FolderIcon className="w-5 h-5 text-gray-400" />;
@@ -37,17 +64,27 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
   };
 
   return (
-    <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+    <div className={`p-3 rounded-md border transition-colors ${
+      status === 'failed' 
+        ? 'bg-red-50 border-red-200' 
+        : 'bg-gray-50 border-gray-200'
+    }`}>
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
-          <FolderIcon className="w-6 h-6 text-gray-500" />
+        <div className={`w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0 ${
+          status === 'failed' ? 'bg-red-100' : 'bg-gray-200'
+        }`}>
+          <FolderIcon className={`w-6 h-6 ${status === 'failed' ? 'text-red-500' : 'text-gray-500'}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800 truncate">{fileData.name}</p>
+          <p className={`text-sm font-medium truncate ${status === 'failed' ? 'text-red-800' : 'text-gray-800'}`}>
+            {fileData.name}
+          </p>
           <p className="text-xs text-gray-500">{(fileData.size / 1024 / 1024).toFixed(2)} MB</p>
         </div>
         <div className="w-24 text-center">
-          <p className={`text-sm font-medium ${status === 'failed' ? 'text-red-500' : 'text-gray-600'}`}>{Math.round(progress)}%</p>
+          <p className={`text-sm font-medium ${status === 'failed' ? 'text-red-600' : 'text-gray-600'}`}>
+            {Math.round(progress)}%
+          </p>
         </div>
         <div className="w-6 flex items-center justify-center">{renderStatus()}</div>
       </div>
@@ -65,7 +102,41 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
             </div>
         </div>
       )}
-      {error && <p className="text-xs text-red-500 mt-1 pl-14">{error}</p>}
+      {error && (
+        <div className="mt-2 pl-14 flex items-center gap-2">
+          <p className="text-xs text-red-600 flex-1">{error}</p>
+          <button
+            onClick={handleRetry}
+            className="text-xs font-medium text-red-600 hover:text-red-700 underline whitespace-nowrap"
+          >
+            Retry
+          </button>
+          <button
+            onClick={handleCancel}
+            className="text-xs font-medium text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+      {/* Show cancel button for failed uploads without error message */}
+      {status === 'failed' && !error && (
+        <div className="mt-2 pl-14 flex items-center gap-2">
+          <p className="text-xs text-red-600 flex-1">Upload failed</p>
+          <button
+            onClick={handleRetry}
+            className="text-xs font-medium text-red-600 hover:text-red-700 underline whitespace-nowrap"
+          >
+            Retry
+          </button>
+          <button
+            onClick={handleCancel}
+            className="text-xs font-medium text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+          >
+            Remove
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -64,6 +64,61 @@ Phase 1 implements resilient file uploads by splitting large files into chunks. 
 
 ---
 
+## Hybrid Mode (Auto-Switching)
+
+Phase 1 intelligently chooses between standard and chunked upload based on file size.
+
+### Upload Method Selection
+
+| File Size | Upload Method | Reason |
+|-----------|---------------|--------|
+| < 10MB | **Standard Upload** | Efficient batch presigned URLs, low API overhead |
+| ≥ 10MB | **Chunked Upload** | Resilient, resumable, retry per chunk |
+
+### How It Works
+
+When uploading multiple files, the system automatically:
+1. **Splits files by size** BEFORE fetching presigned URLs
+2. **Standard files** → Get batch presigned URLs (1 API call for 50 files)
+3. **Large files** → Use chunked upload (init → chunks → finalize)
+
+### Benefits
+
+✅ **No wasted API calls** - Only fetch presigned URLs for files that need them  
+✅ **Best of both worlds** - Fast batch upload for small files + resilient chunked upload for large files  
+✅ **Automatic** - No code changes in upload UI, works transparently  
+✅ **Configurable** - Easy to adjust threshold based on your needs  
+
+### Example: 101 File Upload
+
+**Scenario:** User uploads 101 files
+- 50 files @ 3-8 MB each (small)
+- 51 files @ 15-50 MB each (large)
+
+**Automatic Flow:**
+```
+[UploadQueueManager] 📊 Split 101 files:
+  📤 Standard upload: 50 files (<10MB)
+  🔀 Chunked upload: 51 files (≥10MB)
+
+STANDARD FILES (50):
+→ POST /v2/upload/batch/presigned (1 call for 50 files)
+→ PUT /v2/upload/{token} × 50 files
+
+CHUNKED FILES (51):
+→ POST /v2/upload/chunked/init × 51
+→ PUT /v2/upload/chunked/{sessionId}/{chunk} × (51 × N chunks)
+→ POST /v2/upload/chunked/{sessionId}/finalize × 51
+```
+
+**Result:**
+- ✅ No wasted presigned URLs for large files
+- ✅ Efficient batch upload for small files
+- ✅ Resilient chunked upload for large files
+- ✅ Total bandwidth savings from using both methods optimally
+
+---
+
 ## Configuration
 
 ### Enable/Disable
@@ -76,6 +131,11 @@ features: {
 
 chunkedUpload: {
   enabled: true,
+  
+  // Hybrid mode - auto-switching
+  useHybridMode: true,          // Enable auto-switching based on file size
+  fileSizeThresholdMB: 10,      // Files ≥10MB use chunked upload
+  
   defaultChunkSizeMB: 2,
   maxRetries: 5,
   exponentialBackoff: true,
@@ -85,10 +145,17 @@ chunkedUpload: {
 
 ### Key Settings
 
+**Hybrid Mode:**
+- `useHybridMode`: true (automatically choose upload method based on file size)
+- `fileSizeThresholdMB`: 10 MB (files ≥10MB use chunked upload)
+
+**Chunking:**
 - `defaultChunkSizeMB`: 2 MB (default chunk size)
 - `minChunkSizeMB`: 0.5 MB (minimum)
 - `maxChunkSizeMB`: 5 MB (maximum)
 - `adaptiveChunking`: true (adjust based on network)
+
+**Reliability:**
 - `maxRetries`: 5 (retry attempts per chunk)
 - `retryDelayMs`: 1000 (base delay, 1 second)
 - `exponentialBackoff`: true

@@ -20,6 +20,8 @@
  */
 
 import { uploadService, type PhotoResponse, type UploadProgressCallback } from './uploadService';
+import { chunkedUploadService } from './chunkedUploadService';
+import { imageOptimizationConfig } from './imageOptimizationConfigLoader';
 
 export interface QueuedUpload {
   id: string;
@@ -102,7 +104,7 @@ class UploadQueueManager {
 
   /**
    * Process batches of uploads
-   * CRITICAL: Only process one batch at a time to prevent recursive API calls
+   * MODIFIED: Split by upload method BEFORE fetching presigned URLs (hybrid mode)
    */
   private async processBatches(): Promise<void> {
     // Prevent multiple batch processing running simultaneously
@@ -125,29 +127,157 @@ class UploadQueueManager {
     console.log(`[UploadQueueManager] 🚀 Starting batch processing for ${pendingFiles.length} files`);
 
     try {
-      // Process in batches of BATCH_SIZE (50)
-      for (let i = 0; i < pendingFiles.length; i += this.BATCH_SIZE) {
-        const batch = pendingFiles.slice(i, i + this.BATCH_SIZE);
-        this.currentBatchId++;
-        const batchId = this.currentBatchId;
-        
-        console.log(`[UploadQueueManager] 📦 Processing Batch ${batchId}: ${batch.length} files (${i + 1}-${i + batch.length} of ${pendingFiles.length})`);
-        
-        // Assign batch ID to prevent re-processing
-        batch.forEach(upload => {
-          upload.batchId = batchId;
-        });
-
-        // Step 1: Fetch presigned URLs for this batch (1 API call for 50 files)
-        await this.fetchBatchPresignedUrls(batch, batchId);
-
-        // Step 2: Upload files in this batch with concurrency control (50 files, 3 at a time)
-        await this.uploadBatch(batch, batchId);
+      // STEP 1: Split files by upload method (BEFORE fetching URLs)
+      const { standardFiles, chunkedFiles } = this.splitFilesByUploadMethod(pendingFiles);
+      
+      const config = imageOptimizationConfig.getChunkedUploadConfig();
+      console.log(`[UploadQueueManager] 📊 Split ${pendingFiles.length} files:`);
+      console.log(`  📤 Standard upload: ${standardFiles.length} files (<${config.fileSizeThresholdMB}MB)`);
+      console.log(`  🔀 Chunked upload: ${chunkedFiles.length} files (≥${config.fileSizeThresholdMB}MB)`);
+      
+      // STEP 2: Process standard files (with presigned URLs)
+      if (standardFiles.length > 0) {
+        await this.processStandardBatches(standardFiles);
       }
-
+      
+      // STEP 3: Process chunked files (direct chunked upload)
+      if (chunkedFiles.length > 0) {
+        await this.processChunkedFiles(chunkedFiles);
+      }
+      
       console.log('[UploadQueueManager] ✅ All batches processed');
     } finally {
       this.isProcessingBatch = false;
+    }
+  }
+
+  /**
+   * NEW: Split files by upload method based on size
+   */
+  private splitFilesByUploadMethod(files: QueuedUpload[]): {
+    standardFiles: QueuedUpload[];
+    chunkedFiles: QueuedUpload[];
+  } {
+    const config = imageOptimizationConfig.getChunkedUploadConfig();
+    const thresholdBytes = config.fileSizeThresholdMB * 1024 * 1024;
+    
+    const standardFiles: QueuedUpload[] = [];
+    const chunkedFiles: QueuedUpload[] = [];
+    
+    for (const file of files) {
+      const shouldUseChunked = 
+        config.enabled && 
+        config.useHybridMode && 
+        chunkedUploadService.isEnabled() &&
+        file.file.size >= thresholdBytes;
+      
+      if (shouldUseChunked) {
+        chunkedFiles.push(file);
+        console.log(`  🔀 ${file.file.name} → Chunked (${(file.file.size / 1024 / 1024).toFixed(1)}MB)`);
+      } else {
+        standardFiles.push(file);
+        console.log(`  📤 ${file.file.name} → Standard (${(file.file.size / 1024 / 1024).toFixed(1)}MB)`);
+      }
+    }
+    
+    return { standardFiles, chunkedFiles };
+  }
+
+  /**
+   * NEW: Process standard files (existing batch logic)
+   */
+  private async processStandardBatches(files: QueuedUpload[]): Promise<void> {
+    console.log(`[UploadQueueManager] 📤 Processing ${files.length} standard uploads`);
+    
+    // Process in batches of BATCH_SIZE (50)
+    for (let i = 0; i < files.length; i += this.BATCH_SIZE) {
+      const batch = files.slice(i, i + this.BATCH_SIZE);
+      this.currentBatchId++;
+      const batchId = this.currentBatchId;
+      
+      console.log(`[UploadQueueManager] 📦 Standard Batch ${batchId}: ${batch.length} files (${i + 1}-${i + batch.length} of ${files.length})`);
+      
+      batch.forEach(upload => upload.batchId = batchId);
+      
+      // Fetch presigned URLs and upload
+      await this.fetchBatchPresignedUrls(batch, batchId);
+      await this.uploadBatch(batch, batchId);
+    }
+  }
+
+  /**
+   * NEW: Process chunked files (direct chunked upload)
+   */
+  private async processChunkedFiles(files: QueuedUpload[]): Promise<void> {
+    console.log(`[UploadQueueManager] 🔀 Processing ${files.length} chunked uploads`);
+    
+    const maxConcurrent = 2; // Limit concurrent chunked uploads (they're heavier)
+    let index = 0;
+    
+    const uploadNext = async (): Promise<void> => {
+      if (index >= files.length) return;
+      
+      const upload = files[index++];
+      await this.uploadFileWithChunking(upload);
+      await uploadNext();
+    };
+    
+    // Start workers
+    const workers = Array(maxConcurrent).fill(null).map(() => uploadNext());
+    await Promise.all(workers);
+  }
+
+  /**
+   * NEW: Upload single file using chunked service
+   */
+  private async uploadFileWithChunking(upload: QueuedUpload): Promise<void> {
+    upload.status = 'uploading';
+    this.notifyQueueUpdate();
+    
+    try {
+      console.log(`[UploadQueueManager] 🔀 Chunked upload starting: ${upload.file.name} (${(upload.file.size / 1024 / 1024).toFixed(1)}MB)`);
+      
+      const result = await chunkedUploadService.uploadFile(
+        upload.file,
+        upload.projectId,
+        upload.folderId,
+        (progress) => {
+          upload.progress = progress.percentComplete;
+          this.callbacks.onProgress?.(upload.id, progress.percentComplete);
+          this.notifyQueueUpdate();
+        }
+      );
+      
+      upload.status = 'completed';
+      upload.progress = 100;
+      this.callbacks.onSuccess?.(upload.id, result);
+      this.notifyQueueUpdate();
+      
+      console.log(`[UploadQueueManager] ✅ Chunked upload complete: ${upload.file.name}`);
+      
+    } catch (error: any) {
+      console.error(`[UploadQueueManager] ❌ Chunked upload failed for ${upload.file.name}:`, error);
+      
+      // Retry logic for chunked uploads
+      if (upload.retryCount < upload.maxRetries) {
+        upload.retryCount++;
+        upload.status = 'pending';
+        upload.batchId = undefined;
+        
+        const retryDelay = this.calculateRetryDelay(upload.retryCount);
+        console.log(`[UploadQueueManager] 🔄 Will retry ${upload.file.name} in ${retryDelay}ms (attempt ${upload.retryCount}/${upload.maxRetries})`);
+        
+        setTimeout(() => {
+          this.processBatches();
+        }, retryDelay);
+      } else {
+        upload.status = 'failed';
+        upload.error = error.message || 'Chunked upload failed';
+        this.callbacks.onError?.(upload.id, upload.error);
+        this.notifyQueueUpdate();
+        
+        console.error(`[UploadQueueManager] ❌ Max retries reached for ${upload.file.name}`);
+      }
     }
   }
 
@@ -332,7 +462,7 @@ class UploadQueueManager {
   }
 
   /**
-   * Manually retry a specific failed upload
+   * Manually retry a specific failed or stuck upload
    */
   retryUpload(uploadId: string): void {
     const upload = this.queue.find(u => u.id === uploadId);
@@ -342,12 +472,13 @@ class UploadQueueManager {
       return;
     }
 
-    if (upload.status !== 'failed') {
-      console.warn(`[UploadQueueManager] Upload is not in failed state: ${uploadId}`);
+    // Allow retry for failed uploads or stuck uploads (uploading but 0% with error)
+    if (upload.status === 'completed') {
+      console.warn(`[UploadQueueManager] Upload already completed: ${uploadId}`);
       return;
     }
 
-    console.log(`[UploadQueueManager] Manual retry requested for: ${upload.file.name}`);
+    console.log(`[UploadQueueManager] 🔄 Manual retry requested for: ${upload.file.name} (status: ${upload.status})`);
     
     // Reset for retry
     upload.status = 'pending';
@@ -359,6 +490,28 @@ class UploadQueueManager {
     
     this.notifyQueueUpdate();
     this.processBatches(); // Reprocess in new batch
+  }
+
+  /**
+   * Cancel and remove a specific upload from the queue
+   */
+  cancelUpload(uploadId: string): void {
+    const uploadIndex = this.queue.findIndex(u => u.id === uploadId);
+    
+    if (uploadIndex === -1) {
+      console.warn(`[UploadQueueManager] Upload not found: ${uploadId}`);
+      return;
+    }
+
+    const upload = this.queue[uploadIndex];
+    console.log(`[UploadQueueManager] ❌ Cancelling upload: ${upload.file.name}`);
+    
+    // Remove from queue
+    this.queue.splice(uploadIndex, 1);
+    
+    // Notify callbacks
+    this.callbacks.onError?.(uploadId, 'Upload cancelled by user');
+    this.notifyQueueUpdate();
   }
 
   /**

@@ -370,6 +370,10 @@ export const useUpload = () => {
     uploadQueueManager.retryAllFailed();
     dispatch({ type: 'RETRY_FAILED' });
   }, [dispatch]);
+  const cancelFile = useCallback((id: string) => {
+    uploadQueueManager.cancelUpload(id);
+    // File will be removed from queue, no need to dispatch
+  }, []);
 
-  return { state, dispatch, setMode, nextStep, prevStep, setStep, resetUpload, setFiles, updateFolderMap, updateUploadRules, startUpload, pauseUpload, resumeUpload, retryFile, retryFailedUploads };
+  return { state, dispatch, setMode, nextStep, prevStep, setStep, resetUpload, setFiles, updateFolderMap, updateUploadRules, startUpload, pauseUpload, resumeUpload, retryFile, retryFailedUploads, cancelFile };
 };

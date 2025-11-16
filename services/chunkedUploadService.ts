@@ -203,11 +203,16 @@ class ChunkedUploadService {
     folderId: string | undefined,
     totalChunks: number
   ): Promise<{ sessionId: string; photoId: number; totalChunks: number }> {
+    // Convert project_id to number - backend expects integer, not UUID string
+    const projectIdNum = typeof projectId === 'string' 
+      ? parseInt(projectId, 10) 
+      : projectId;
+    
     const response = await apiClient.post('/v2/upload/chunked/init', {
       filename: file.name,
       fileSize: file.size,
       mimeType: file.type,
-      projectId,
+      projectId: projectIdNum,
       folderId,
       totalChunks,
     });

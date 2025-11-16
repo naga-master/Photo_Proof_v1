@@ -406,6 +406,206 @@ def test_chunk_upload_flow(client, test_user):
 
 ---
 
+## Hybrid Mode Tests
+
+### Test 11: Mixed File Sizes (Hybrid Mode)
+
+**Objective:** Verify automatic switching between standard and chunked upload
+
+**Steps:**
+1. Prepare test files:
+   - 10 files @ 3-8 MB each (should use standard upload)
+   - 10 files @ 15-50 MB each (should use chunked upload)
+2. Upload all 20 files at once
+3. Monitor console logs
+
+**Expected Results:**
+- ✅ Log shows split decision: "Standard upload: 10 files" + "Chunked upload: 10 files"
+- ✅ Small files use batch presigned URL (1 API call for all 10 files)
+- ✅ Large files use chunked upload (init → chunks → finalize per file)
+- ✅ No presigned URLs fetched for large files (≥10MB)
+- ✅ All 20 files complete successfully
+- ✅ Upload queue shows both methods working in parallel
+
+**Console Output Example:**
+```
+[UploadQueueManager] 🚀 Starting batch processing for 20 files
+[UploadQueueManager] 📊 Split 20 files:
+  📤 Standard upload: 10 files (<10MB)
+  🔀 Chunked upload: 10 files (≥10MB)
+
+[UploadQueueManager] 📤 Processing 10 standard uploads
+  📤 file1.jpg → Standard (5.2MB)
+  📤 file2.jpg → Standard (7.8MB)
+  ...
+[UploadQueueManager] 🔑 Fetching presigned URLs for 10 files (1 API call)
+[UploadService] Upload progress: 100.00%
+...
+
+[UploadQueueManager] 🔀 Processing 10 chunked uploads
+  🔀 file11.jpg → Chunked (15.3MB)
+  🔀 file12.jpg → Chunked (28.7MB)
+  ...
+[ChunkedUpload] File split into 8 chunks
+[ChunkedUpload] Uploading chunk 1/8
+...
+[UploadQueueManager] ✅ All batches processed
+```
+
+**Validation:**
+```javascript
+// Check network tab in DevTools
+// Standard files:
+// - 1 POST to /v2/upload/batch/presigned
+// - 10 PUT to /v2/upload/{token}
+//
+// Chunked files:
+// - 10 POST to /v2/upload/chunked/init
+// - N PUT to /v2/upload/chunked/{sessionId}/{chunk}
+// - 10 POST to /v2/upload/chunked/{sessionId}/finalize
+//
+// IMPORTANT: No presigned URLs requested for files ≥10MB
+```
+
+---
+
+### Test 12: Threshold Configuration
+
+**Objective:** Verify threshold can be adjusted dynamically
+
+**Steps:**
+1. Set threshold to 5MB in dev config:
+   ```typescript
+   // config/image-optimization.dev.ts
+   chunkedUpload: {
+     useHybridMode: true,
+     fileSizeThresholdMB: 5,  // Lower threshold
+   }
+   ```
+2. Upload an 8MB file
+3. Verify uses chunked upload
+4. Change threshold to 20MB:
+   ```typescript
+   fileSizeThresholdMB: 20,  // Higher threshold
+   ```
+5. Reload page
+6. Upload same 8MB file
+7. Verify uses standard upload
+
+**Expected Results:**
+- ✅ Threshold at 5MB → 8MB file uses chunked upload
+- ✅ Threshold at 20MB → 8MB file uses standard upload
+- ✅ Both uploads complete successfully
+- ✅ Console logs show correct decision based on threshold
+- ✅ Configuration change takes effect after reload
+
+**Console Monitoring:**
+```
+// With threshold = 5MB
+  🔀 file.jpg → Chunked (8.0MB)
+
+// With threshold = 20MB
+  📤 file.jpg → Standard (8.0MB)
+```
+
+---
+
+### Test 13: Disable Hybrid Mode
+
+**Objective:** Verify system works when hybrid mode is disabled
+
+**Steps:**
+1. Disable hybrid mode in config:
+   ```typescript
+   chunkedUpload: {
+     enabled: true,
+     useHybridMode: false,  // Disable auto-switching
+   }
+   ```
+2. Upload a 50MB file
+3. Verify uses standard upload (not chunked)
+
+**Expected Results:**
+- ✅ Large file (50MB) uses standard presigned URL upload
+- ✅ No chunked upload flow triggered
+- ✅ Upload completes successfully
+- ✅ System falls back to traditional batch upload
+
+**Note:** With hybrid mode disabled, only file size matters:
+- Chunked upload only used if `chunkedUpload.enabled = true` AND file meets internal criteria
+- Hybrid mode provides explicit control via threshold
+
+---
+
+### Test 14: Edge Case - Exactly Threshold Size
+
+**Objective:** Verify behavior at exact threshold boundary
+
+**Steps:**
+1. Set threshold to 10MB
+2. Upload files at exactly 10MB (10,485,760 bytes)
+3. Monitor which upload method is used
+
+**Expected Results:**
+- ✅ File at exactly 10MB uses chunked upload (≥ threshold)
+- ✅ File at 10MB - 1 byte uses standard upload (< threshold)
+- ✅ Decision is consistent and deterministic
+- ✅ No edge case errors
+
+**Validation:**
+```javascript
+// 10MB exactly
+const file1 = new File([new Uint8Array(10485760)], 'exactly10mb.jpg');
+// Expected: Chunked upload (file.size >= threshold)
+
+// Just under 10MB
+const file2 = new File([new Uint8Array(10485759)], 'under10mb.jpg');
+// Expected: Standard upload (file.size < threshold)
+```
+
+---
+
+### Test 15: Hybrid Mode with 101 Files (Real-World Scenario)
+
+**Objective:** Test the exact scenario from user bug report
+
+**Steps:**
+1. Prepare 101 mixed files:
+   - 50 files @ 3-9 MB each
+   - 51 files @ 12-40 MB each
+2. Select all 101 files in upload dialog
+3. Click upload
+4. Monitor console logs and network tab
+
+**Expected Results:**
+- ✅ Clear split logged: "Standard: 50, Chunked: 51"
+- ✅ 1 batch presigned URL call for 50 standard files
+- ✅ 51 chunked upload flows (init → chunks → finalize)
+- ✅ No presigned URLs wasted on large files
+- ✅ Both methods complete successfully
+- ✅ Progress tracking works for both types
+- ✅ All 101 photos appear in gallery
+
+**Performance Targets:**
+- Total API calls: ~1 (batch presigned) + ~51×3 (chunked init/finalize) + chunk uploads
+- Time savings: ~50% compared to old approach (no wasted presigned URLs)
+
+**Network Tab Verification:**
+```
+POST /v2/upload/batch/presigned (1 call)
+  → Response: 50 presigned URLs
+
+PUT /v2/upload/{token} × 50
+  → Standard uploads complete
+
+POST /v2/upload/chunked/init × 51
+PUT /v2/upload/chunked/{sessionId}/{chunk} × (51 × N)
+POST /v2/upload/chunked/{sessionId}/finalize × 51
+  → Chunked uploads complete
+```
+
+---
+
 ## Performance Benchmarks
 
 ### Metrics to Collect
@@ -494,6 +694,7 @@ console.table(results);
 
 Phase 1 is successful if ALL tests pass:
 
+**Core Chunked Upload Tests:**
 - ✅ Test 1: Happy path upload
 - ✅ Test 2: Network interruption resume
 - ✅ Test 3: Retry with backoff
@@ -505,12 +706,21 @@ Phase 1 is successful if ALL tests pass:
 - ✅ Test 9: Concurrent uploads
 - ✅ Test 10: Edge cases
 
+**Hybrid Mode Tests:**
+- ✅ Test 11: Mixed file sizes (automatic method selection)
+- ✅ Test 12: Threshold configuration
+- ✅ Test 13: Disable hybrid mode
+- ✅ Test 14: Exact threshold boundary
+- ✅ Test 15: Real-world 101 file scenario
+
 **Performance:** 
 - 100MB file uploads in <15 min on 2G
 - Retry overhead <10%
+- Hybrid mode reduces API calls by ~50% for mixed uploads
 
 **Reliability:**
 - 95%+ success rate including retries
+- No wasted presigned URLs for large files
 
 ---
 

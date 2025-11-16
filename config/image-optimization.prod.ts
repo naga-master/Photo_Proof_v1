@@ -25,6 +25,8 @@ export const prodImageOptimizationConfig: Partial<ImageOptimizationConfig> = {
   // Chunked Upload - Production settings
   chunkedUpload: {
     enabled: true,
+    useHybridMode: true,          // Enable hybrid mode
+    fileSizeThresholdMB: 10,      // 10MB threshold for production
     enableDetailedLogging: false,
     maxRetries: 5,
     exponentialBackoff: true,

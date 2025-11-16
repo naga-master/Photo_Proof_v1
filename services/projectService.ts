@@ -8,6 +8,7 @@ import { apiClient } from '../lib/api-client';
 export interface Project {
   id: string;
   title: string;
+  name?: string;  // Backend uses "name" field (alias for title)
   studio_id: string;
   client_id: string;
   shoot_date?: string;

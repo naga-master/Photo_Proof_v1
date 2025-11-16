@@ -45,6 +45,11 @@ export interface ImageOptimizationConfig {
   // ========================================
   chunkedUpload: {
     enabled: boolean;
+    
+    // Hybrid mode settings - automatically switch between standard and chunked upload
+    useHybridMode: boolean;          // Enable auto-switching based on file size
+    fileSizeThresholdMB: number;     // Switch to chunked for files larger than this (default: 10MB)
+    
     defaultChunkSizeMB: number;
     minChunkSizeMB: number;
     maxChunkSizeMB: number;
@@ -368,6 +373,11 @@ export const defaultImageOptimizationConfig: ImageOptimizationConfig = {
   // Phase 1: Chunked Upload
   chunkedUpload: {
     enabled: false,
+    
+    // Hybrid mode - automatically switch between standard and chunked upload
+    useHybridMode: true,          // Enable auto-switching (default: true)
+    fileSizeThresholdMB: 10,      // Files >10MB use chunked upload
+    
     defaultChunkSizeMB: 2,
     minChunkSizeMB: 0.5,
     maxChunkSizeMB: 5,

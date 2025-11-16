@@ -23,6 +23,8 @@ export const devImageOptimizationConfig: Partial<ImageOptimizationConfig> = {
   // Chunked Upload - More logging in dev
   chunkedUpload: {
     enabled: true,
+    useHybridMode: true,          // Enable hybrid mode
+    fileSizeThresholdMB: 5,       // Lower threshold for dev testing (5MB)
     enableDetailedLogging: true,
   },
   
