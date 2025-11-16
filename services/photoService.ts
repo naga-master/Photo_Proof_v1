@@ -5,7 +5,9 @@
 
 import { apiClient } from '../lib/api-client';
 import { CommentService } from './commentService';
+import { viewportQualityService } from './viewportQualityService';
 import type { Comment } from '../types';
+import type { QualityLevel } from '../config/image-optimization.config';
 
 export interface Photo {
   id: string;
@@ -23,6 +25,28 @@ export interface Photo {
   metadata?: any;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Get variant URL for a photo based on quality level
+ */
+export function getPhotoVariantUrl(photoId: string | number, quality?: QualityLevel): string {
+  const baseUrl = 'http://localhost:8000';
+  
+  // If no quality specified, use viewport-based quality
+  const selectedQuality = quality || viewportQualityService.getOptimalQuality();
+  
+  return `${baseUrl}/v2/photos/${photoId}/variant/${selectedQuality}`;
+}
+
+/**
+ * Get progressive loading URLs (thumbnail -> final quality)
+ */
+export function getProgressiveUrls(photoId: string | number, finalQuality?: QualityLevel): string[] {
+  const quality = finalQuality || viewportQualityService.getOptimalQuality();
+  const sequence = viewportQualityService.getProgressiveSequence(quality);
+  
+  return sequence.map(q => getPhotoVariantUrl(photoId, q));
 }
 
 export interface UploadPhotoRequest {

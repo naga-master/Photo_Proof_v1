@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircleIcon, CloseIcon } from '../icons';
 import type { Album, Photo } from '../../types';
-import { photoService } from '../../services/photoService';
+import { photoService, getPhotoVariantUrl } from '../../services/photoService';
 import { projectService } from '../../services/projectService';
 import { toast } from 'react-toastify';
 
@@ -11,6 +11,21 @@ interface CoverPhotoChangerProps {
   onClose: () => void;
 }
 
+// Shimmer animation styles
+const shimmerStyles = `
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+`;
+
 const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdateCover, onClose }) => {
   const [selectedPhotoSrc, setSelectedPhotoSrc] = useState<string>(project.coverPhotoSrc);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
@@ -18,8 +33,14 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   
   const ITEMS_PER_PAGE = 30; // 5x6 grid
+  
+  // Handle image load
+  const handleImageLoad = (photoId: string) => {
+    setLoadedImages(prev => new Set(prev).add(photoId));
+  };
 
   // Fetch photos when component mounts
   useEffect(() => {
@@ -29,10 +50,10 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
         console.log('[CoverPhotoChanger] Fetching photos for project:', project.id);
         const response = await photoService.getProjectPhotos(project.id);
         
-        // Map backend photos to frontend Photo type
+        // Map backend photos to frontend Photo type with variant URLs
         const mappedPhotos = response.photos.map((photo: any) => ({
           id: String(photo.id),
-          src: `http://localhost:8000${photo.src}`,
+          src: getPhotoVariantUrl(photo.id, 'medium'), // Use medium quality for gallery grid
           alt: photo.original_filename || photo.alt,
           width: photo.width || 800,
           height: photo.height || 1200,
@@ -130,13 +151,15 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Change Cover Photo</h2>
-            <p className="text-sm text-gray-500 mt-1">Select an image to use as the project cover</p>
+    <>
+      <style>{shimmerStyles}</style>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 border-b flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Change Cover Photo</h2>
+              <p className="text-sm text-gray-500 mt-1">Select an image to use as the project cover</p>
           </div>
           <button
             onClick={onClose}
@@ -172,11 +195,25 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
                       }`}
                       title={photo.alt}
                     >
+                      {/* Skeleton background with shimmer */}
+                      <div className={`absolute inset-0 bg-gray-200 transition-opacity duration-300 ${
+                        loadedImages.has(photo.id) ? 'opacity-0' : 'opacity-100'
+                      }`}>
+                        <div className="absolute inset-0 overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+                        </div>
+                      </div>
+                      
+                      {/* Actual image */}
                       <img
                         src={photo.src}
                         alt={photo.alt}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover transition-opacity duration-300 ${
+                          loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onLoad={() => handleImageLoad(photo.id)}
                       />
+                      
                       {isSelected && (
                         <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
                           <CheckCircleIcon className="w-10 h-10 text-blue-600 drop-shadow-lg" />
@@ -285,6 +322,7 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
         </div>
       </div>
     </div>
+    </>
   );
 };
 
