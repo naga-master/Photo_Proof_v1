@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import type { Album, Folder } from '../types';
 import { FolderIcon, CameraIcon } from './icons';
 import { projectService } from '../services/projectService';
+import { getPhotoVariantUrl } from '../services/photoService';
 
 // Request deduplication map - prevents duplicate simultaneous requests
 const inflightRequests = new Map<string, Promise<any>>();
@@ -34,9 +35,9 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
           const response = await inflightRequests.get(cacheKey);
           const fetchedFolders = (response.folders || []).map((folder: any) => ({
             ...folder,
-            coverPhotoSrc: folder.coverPhotoSrc && !folder.coverPhotoSrc.startsWith('http') 
-              ? `http://localhost:8000${folder.coverPhotoSrc}` 
-              : folder.coverPhotoSrc
+            coverPhotoSrc: folder.cover_photo_id 
+              ? getPhotoVariantUrl(folder.cover_photo_id, 'medium')
+              : folder.coverPhotoSrc || '/placeholder-cover.jpg'
           }));
           setFolders(fetchedFolders);
         } catch (error: any) {
@@ -64,10 +65,10 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
         const response = await promise;
         const fetchedFolders = (response.folders || []).map((folder: any) => ({
           ...folder,
-          // Ensure cover photo src has full URL
-          coverPhotoSrc: folder.coverPhotoSrc && !folder.coverPhotoSrc.startsWith('http') 
-            ? `http://localhost:8000${folder.coverPhotoSrc}` 
-            : folder.coverPhotoSrc
+          // Use variant URL for cover photos (245KB instead of 30MB)
+          coverPhotoSrc: folder.cover_photo_id 
+            ? getPhotoVariantUrl(folder.cover_photo_id, 'medium')
+            : folder.coverPhotoSrc || '/placeholder-cover.jpg'
         }));
         setFolders(fetchedFolders);
         

@@ -4,6 +4,8 @@
  */
 
 import { apiClient } from '../lib/api-client';
+import { getPhotoVariantUrl } from './photoService';
+import type { QualityLevel } from '../config/image-optimization.config';
 
 export interface Project {
   id: string;
@@ -52,6 +54,22 @@ export interface UpdateProjectRequest {
 export interface ProjectListResponse {
   projects: Project[];
   total: number;
+}
+
+/**
+ * Get cover photo variant URL for a project
+ * Uses cover_photo_id to fetch optimized variant, falls back to cover_photo_src
+ */
+export function getCoverPhotoVariantUrl(project: Project, quality?: QualityLevel): string {
+  const FALLBACK_IMAGE = '/placeholder-cover.jpg';
+  
+  // Prefer cover_photo_id (use variant API)
+  if (project.cover_photo_id) {
+    return getPhotoVariantUrl(project.cover_photo_id, quality || 'medium');
+  }
+  
+  // Fallback to cover_photo_src (legacy behavior)
+  return project.cover_photo_src || FALLBACK_IMAGE;
 }
 
 class ProjectService {

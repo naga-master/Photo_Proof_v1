@@ -18,6 +18,7 @@ export interface Comment {
 export interface Photo {
   id: string;
   src: string;
+  originalSrc?: string; // Original full-quality URL (for downloads)
   alt: string;
   width: number;
   height: number;

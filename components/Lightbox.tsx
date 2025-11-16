@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import type { Photo, Comment } from '../types';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, HeartIcon, HeartFilledIcon, DownloadIcon, ChatBubbleIcon, CheckIcon, PlayIcon, PauseIcon } from './icons';
+import { getPhotoVariantUrl } from '../services/photoService';
 
 interface LightboxProps {
   photos: Photo[];
@@ -279,6 +280,16 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
   const currentPhoto = photos[currentIndex];
   const [showComments, setShowComments] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  
+  // Upgrade photo quality for lightbox detail view (high quality: 780KB instead of medium: 245KB)
+  const highQualityPhoto = useMemo(() => {
+    if (!currentPhoto) return currentPhoto;
+    return {
+      ...currentPhoto,
+      src: getPhotoVariantUrl(currentPhoto.id, 'high'),
+      originalSrc: currentPhoto.originalSrc || currentPhoto.src, // Preserve original for downloads
+    };
+  }, [currentPhoto]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -333,7 +344,7 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
       <div className="relative w-full h-full flex items-center justify-center transition-all duration-300" onClick={(e) => e.stopPropagation()} style={{ paddingRight: showComments ? '320px' : '0' }}>
         
         <div className="max-w-[90vw] max-h-[85vh] animate-slide-up">
-            <img src={currentPhoto.src} alt={currentPhoto.alt} className="w-auto h-auto max-w-full max-h-[85vh] object-contain" />
+            <img src={highQualityPhoto.src} alt={highQualityPhoto.alt} className="w-auto h-auto max-w-full max-h-[85vh] object-contain" />
         </div>
         
         <div 
@@ -351,7 +362,7 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
              <button onClick={() => toggleFavorite(currentPhoto.id)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-0 active:outline-none active:ring-0 border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Favorite">
                 {isFavorite ? <HeartFilledIcon className="w-6 h-6 text-red-500" /> : <HeartIcon className="w-6 h-6" />}
              </button>
-             <button onClick={() => onDownload(currentPhoto.src, currentPhoto.alt)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Download">
+             <button onClick={() => onDownload(highQualityPhoto.originalSrc || highQualityPhoto.src, highQualityPhoto.alt)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Download">
                 <DownloadIcon className="w-6 h-6" />
              </button>
              <button onClick={() => setShowComments(!showComments)} className="p-2 rounded-full hover:bg-white/20 transition-colors relative focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Comments">

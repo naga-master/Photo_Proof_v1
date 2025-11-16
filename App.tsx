@@ -58,7 +58,7 @@ import CheckoutPage from './components/store/CheckoutPage';
 import OrderConfirmationPage from './components/store/OrderConfirmationPage';
 
 // Import API services
-import { projectService } from './services/projectService';
+import { projectService, getCoverPhotoVariantUrl } from './services/projectService';
 import { clientService } from './services/clientService';
 import { servicePackageService } from './services/servicePackageService';
 import { invoiceService } from './services/invoiceService';
@@ -130,9 +130,7 @@ const mapProjectToAlbum = (project: BackendProject): Album => {
         title: project.title ?? 'Untitled Project',
         clientId: project.client_id ? String(project.client_id) : '',
         shootDate: project.shoot_date ?? project.created_at,
-        coverPhotoSrc: project.cover_photo_src && !project.cover_photo_src.startsWith('http')
-            ? `http://localhost:8000${project.cover_photo_src}`
-            : project.cover_photo_src ?? FALLBACK_COVER_IMAGE,
+        coverPhotoSrc: getCoverPhotoVariantUrl(project, 'medium'),
         photoCount: project.photo_count ?? 0,
         isLocked: project.is_locked ?? false,
         layout: project.layout as LayoutId | undefined,

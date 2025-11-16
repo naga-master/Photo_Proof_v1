@@ -70,12 +70,25 @@ export interface PhotoListResponse {
 class PhotoService {
   /**
    * Get all photos for a project
+   * @param quality - Quality level for variants (default: 'medium')
    */
-  async getProjectPhotos(projectId: string, categoryId?: string): Promise<PhotoListResponse> {
+  async getProjectPhotos(projectId: string, categoryId?: string, quality?: QualityLevel): Promise<PhotoListResponse> {
     const params: Record<string, string> = {};
     if (categoryId) params.folder_id = categoryId; // Backend uses folder_id, not category_id
     
-    return apiClient.get<PhotoListResponse>(`/v2/photos/projects/${projectId}/photos`, params);
+    const response = await apiClient.get<any>(`/v2/photos/projects/${projectId}/photos`, params);
+    
+    // Transform all photo.src to use variants instead of originals
+    const transformedPhotos = response.photos.map((photo: any) => ({
+      ...photo,
+      src: getPhotoVariantUrl(photo.id, quality || 'medium'),
+      originalSrc: photo.src || photo.file_path, // Keep original for downloads
+    }));
+    
+    return {
+      ...response,
+      photos: transformedPhotos
+    };
   }
 
   /**
