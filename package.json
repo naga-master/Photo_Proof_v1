@@ -17,6 +17,7 @@
     "react-dom": "^19.2.0",
     "react-toastify": "^11.0.5",
     "recharts": "^3.3.0",
+    "thumbhash": "^0.1.1",
     "uuid": "^13.0.0",
     "workbox-window": "^7.3.0",
     "zustand": "^5.0.8"
