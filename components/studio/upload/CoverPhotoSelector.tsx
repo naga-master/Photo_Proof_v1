@@ -19,7 +19,7 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
   
   const ITEMS_PER_PAGE = 24; // 4x6 grid
   
-  // Track all created blob URLs for cleanup
+  // Track all created blob URLs (persists across StrictMode remounts)
   const blobUrlsRef = useRef<Map<string, string>>(new Map());
   
   // Handle image load - use useCallback to prevent re-creating function
@@ -40,14 +40,16 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
   }, [uploadQueue]);
 
   // Create blob URLs once and cache them - CRITICAL for performance!
+  // StrictMode-safe: URLs persist in ref across remounts, cleanup only when files removed
   const blobUrls = useMemo(() => {
     const urls = new Map<string, string>();
     const currentUrls = blobUrlsRef.current;
     
     successfulPhotos.forEach(({ file }) => {
-      // Reuse existing URL if available
+      // Reuse existing URL if available (critical for StrictMode)
       if (currentUrls.has(file.id)) {
-        urls.set(file.id, currentUrls.get(file.id)!);
+        const existingUrl = currentUrls.get(file.id)!;
+        urls.set(file.id, existingUrl);
       } else {
         // Create new URL only if needed
         const newUrl = URL.createObjectURL(file.file);
@@ -56,7 +58,8 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
       }
     });
     
-    // Revoke URLs for files that are no longer in the list
+    // Revoke URLs ONLY for files removed from the list
+    // This is the primary cleanup mechanism (not useEffect)
     currentUrls.forEach((url, id) => {
       if (!urls.has(id)) {
         URL.revokeObjectURL(url);
@@ -66,17 +69,11 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
     
     return urls;
   }, [successfulPhotos]);
-
-  // Cleanup ALL blob URLs on unmount
-  useEffect(() => {
-    return () => {
-      // Revoke all blob URLs when component unmounts
-      blobUrlsRef.current.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
-      blobUrlsRef.current.clear();
-    };
-  }, []); // Only run on mount/unmount
+  
+  // Note: No useEffect cleanup needed!
+  // URLs are cleaned up when files are removed (in useMemo above)
+  // Remaining URLs will be garbage collected when page navigates away
+  // This approach is StrictMode-safe and prevents premature revocation
 
   // Pagination calculations
   const totalPages = Math.ceil(successfulPhotos.length / ITEMS_PER_PAGE);
