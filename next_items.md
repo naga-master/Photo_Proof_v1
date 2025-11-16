@@ -57,3 +57,5 @@
 31. the editted photos are updating the photos i think, for ddfdfgdsf project, initially project image count is 101, after i added multiple editted photos, the total image count is 115, it should be replace the existing images using editted image right, that's why we are mapping it right, backend should maintain in the version hierachy right. can you check the backend and frontend plan for fix in industries best practice - (Fixed)
 
 32. what is the use of this <span class="text-sm font-bold text-slate-800">0 files</span>, it always stays zero find the reason fix it, otherwise remove it - (Fixed)
+
+33. when we logged in as studio user and click the back button inside any on photo store , it should go to the store page instead of gallery page. remove back to store button and move functionality to header back button from the page

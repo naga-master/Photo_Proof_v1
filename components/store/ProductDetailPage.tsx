@@ -4,6 +4,8 @@ import type { Product, Photo } from '../../types';
 import { ArrowLeftIcon } from '../icons';
 import WallPreview from './WallPreview';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 interface ProductDetailPageProps {
   product: Product;
   selectedPhoto: Photo | null;
@@ -13,7 +15,12 @@ interface ProductDetailPageProps {
 }
 
 const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, selectedPhoto, onBack, onSelectPhoto, onConfigure }) => {
-  const [activeMockup, setActiveMockup] = useState(product.mockupImages[0]);
+  // Helper function to get full image URL
+  const getImageUrl = (imagePath: string) => {
+    return imagePath.startsWith('data/') ? `${API_URL}/uploads/${imagePath}` : imagePath;
+  };
+  
+  const [activeMockup, setActiveMockup] = useState(getImageUrl(product.mockupImages[0]));
   
   const handleNextStep = () => {
       if (selectedPhoto) {
@@ -42,15 +49,18 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, selected
                 )}
             </div>
             <div className="mt-4 grid grid-cols-4 gap-4">
-                {product.mockupImages.map(src => (
-                    <button key={src} onClick={() => setActiveMockup(src)} className={`aspect-square rounded-md overflow-hidden ring-2 transition-all ${activeMockup === src ? 'ring-blue-500' : 'ring-transparent hover:ring-blue-200'}`}>
-                        {selectedPhoto ? (
-                            <WallPreview photo={selectedPhoto} mockupSrc={src} isThumbnail />
-                        ) : (
-                            <img src={src} alt="thumbnail" className="w-full h-full object-contain"/>
-                        )}
-                    </button>
-                ))}
+                {product.mockupImages.map(src => {
+                    const fullUrl = getImageUrl(src);
+                    return (
+                        <button key={src} onClick={() => setActiveMockup(fullUrl)} className={`aspect-square rounded-md overflow-hidden ring-2 transition-all ${activeMockup === fullUrl ? 'ring-blue-500' : 'ring-transparent hover:ring-blue-200'}`}>
+                            {selectedPhoto ? (
+                                <WallPreview photo={selectedPhoto} mockupSrc={fullUrl} isThumbnail />
+                            ) : (
+                                <img src={fullUrl} alt="thumbnail" className="w-full h-full object-contain"/>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
           </div>
 

@@ -3,6 +3,7 @@ import type { Product } from '../types';
 import { productService } from '../services/productService';
 import type { Product as BackendProduct } from '../services/productService';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const FALLBACK_IMAGE = '/placeholder-image.jpg';
 
 const mapBackendProduct = (product: BackendProduct): Product => {
@@ -93,7 +94,9 @@ const StorePage: React.FC<StorePageProps> = ({ onSelectProduct }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayProducts.map((product) => {
             const priceFrom = product.sizes[0]?.price ?? product.basePrice ?? 0;
-            const coverImage = product.mockupImages[0] ?? FALLBACK_IMAGE;
+            const rawImage = product.mockupImages[0] ?? FALLBACK_IMAGE;
+            // Add API URL prefix if it's a local image path
+            const coverImage = rawImage.startsWith('data/') ? `${API_URL}/uploads/${rawImage}` : rawImage;
             const productType = product.productType ? product.productType.replace(/_/g, ' ') : 'Product';
 
             return (
@@ -106,6 +109,10 @@ const StorePage: React.FC<StorePageProps> = ({ onSelectProduct }) => {
                   src={coverImage}
                   alt={product.name}
                   className="w-full h-80 object-cover transition-transform duration-300 group-hover:scale-110"
+                  onError={(e) => {
+                    // Fallback to placeholder if image fails to load
+                    e.currentTarget.src = FALLBACK_IMAGE;
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6 text-white w-full">
