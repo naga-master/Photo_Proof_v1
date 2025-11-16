@@ -74,6 +74,7 @@ export interface FeatureFlags {
   roleBasedStrategy: boolean;
   prefetching: boolean;
   virtualScrolling: boolean;
+  photoHoverPreview: boolean;
 }
 
 export interface CacheStrategyConfig {
@@ -178,6 +179,7 @@ export const defaultConfig: CacheStrategyConfig = {
     roleBasedStrategy: false,      // Stage 4
     prefetching: false,            // Stage 4
     virtualScrolling: false,       // Stage 4
+    photoHoverPreview: true,       // Manual mapping enhancement
   },
 };
 

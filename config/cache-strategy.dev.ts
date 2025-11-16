@@ -19,6 +19,7 @@ export const devConfig: Partial<CacheStrategyConfig> = {
     roleBasedStrategy: true,      // ✅ Stage 4 ENABLED!
     prefetching: false,           // Stage 4+ (future enhancement)
     virtualScrolling: false,      // Stage 4+ (future enhancement)
+    photoHoverPreview: true,      // Manual mapping enhancement
   },
   
   monitoring: {

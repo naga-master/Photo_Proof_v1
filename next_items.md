@@ -50,10 +50,10 @@
 
 28. there is a dot on the fav button, remove that. (Fixed)
 
-29. In Manual Mapping , once the photo is selected it changes like files mapped and moved to remaingng files, what if user mistakenly selected the wrong image, they have to select the correct one right? how will you design the UI for that, with great UX?, user should know which photo they have selected for which old photo.
+29. In Manual Mapping , once the photo is selected it changes like files mapped and moved to remaingng files, what if user mistakenly selected the wrong image, they have to select the correct one right? how will you design the UI for that, with great UX?, user should know which photo they have selected for which old photo. - (implemented)
 
 30. find how industries are show in the cover photo , make the same changes in the projects also, currently cover photo is big
 
 31. the editted photos are updating the photos i think, for ddfdfgdsf project, initially project image count is 101, after i added multiple editted photos, the total image count is 115, it should be replace the existing images using editted image right, that's why we are mapping it right, backend should maintain in the version hierachy right. can you check the backend and frontend plan for fix in industries best practice - (Fixed)
 
-32. what is the use of this <span class="text-sm font-bold text-slate-800">0 files</span>, it always stays zero find the reason fix it, otherwise remove it
+32. what is the use of this <span class="text-sm font-bold text-slate-800">0 files</span>, it always stays zero find the reason fix it, otherwise remove it - (Fixed)

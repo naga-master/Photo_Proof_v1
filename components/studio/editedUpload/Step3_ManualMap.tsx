@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useEditedUpload } from './EditedUploadContext';
 import type { MappingDetails } from './EditedUploadContext';
 import { versionService } from '../../../services/versionService';
+import type { OriginalPhoto } from '../../../services/versionService';
 import { CameraIcon, EyeIcon, CheckIcon, CloseIcon } from '../../icons';
 import type { Photo } from '../../../types';
 import { memoryCacheManager } from '../../../src/services/cache/MemoryCacheManager';
@@ -9,6 +10,10 @@ import { indexedDBManager } from '../../../src/services/cache/IndexedDBManager';
 import { configLoader } from '../../../src/services/ConfigLoader';
 import type { GetOriginalPhotosResponse } from '../../../services/versionService';
 import { Toast } from '../../common/Toast';
+import { generateEnhancedSuggestions, type PhotoWithExif } from './MatchingAlgorithm';
+import ConfidenceBadge from './ConfidenceBadge';
+import PhotoHoverPreview from './PhotoHoverPreview';
+// import ConnectionLines from './ConnectionLines'; // Disabled per user request
 
 // Cache key generator
 const getCacheKey = (projectId: string): string => {
@@ -67,6 +72,7 @@ const storeInCache = async (cacheKey: string, data: GetOriginalPhotosResponse): 
 const Step3_ManualMap: React.FC = () => {
   const { state, addManualMapping, removeManualMapping, clearLastMapping, skipFile } = useEditedUpload();
   const [originalPhotos, setOriginalPhotos] = useState<Photo[]>([]);
+  const [originalPhotosRaw, setOriginalPhotosRaw] = useState<OriginalPhoto[]>([]); // With EXIF data
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -74,6 +80,56 @@ const Step3_ManualMap: React.FC = () => {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [hasLoaded, setHasLoaded] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  
+  // Smart matching suggestions
+  const [photoSuggestions, setPhotoSuggestions] = useState<Map<number, {
+    confidence: number;
+    matchType: 'filename' | 'date' | 'combined';
+  }>>(new Map());
+  
+  // Hover preview (configurable)
+  const isHoverPreviewEnabled = configLoader.isFeatureEnabled('photoHoverPreview');
+  const [hoverPreview, setHoverPreview] = useState<{
+    photo: Photo;
+    position: { x: number; y: number };
+  } | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Debounced hover handler
+  const handlePhotoHover = useCallback((photo: Photo, event: React.MouseEvent) => {
+    if (!isHoverPreviewEnabled) return;
+    
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    // Set new timeout for 500ms delay
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoverPreview({
+        photo,
+        position: { x: event.clientX, y: event.clientY }
+      });
+    }, 500);
+  }, [isHoverPreviewEnabled]);
+  
+  // Clear hover preview
+  const clearHoverPreview = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoverPreview(null);
+  }, []);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -108,6 +164,9 @@ const Step3_ManualMap: React.FC = () => {
         const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
         
         console.log('[Step3_ManualMap] Loaded photos:', response.photos.length, 'API Base:', API_BASE_URL);
+        
+        // Store raw photos with EXIF data for smart matching
+        setOriginalPhotosRaw(response.photos);
         
         // Map OriginalPhoto to Photo type for display
         const mappedPhotos = response.photos.map(p => {
@@ -145,10 +204,70 @@ const Step3_ManualMap: React.FC = () => {
     loadPhotos();
   }, [state.projectId]);
 
+  // Generate smart suggestions when file is selected
+  useEffect(() => {
+    if (!selectedFile || originalPhotosRaw.length === 0) {
+      setPhotoSuggestions(new Map());
+      return;
+    }
+    
+    console.log('[Step3_ManualMap] Generating suggestions for:', selectedFile.name);
+    
+    // Convert OriginalPhoto[] to PhotoWithExif[]
+    const photosWithExif: PhotoWithExif[] = originalPhotosRaw.map(p => ({
+      id: p.id,
+      original_filename: p.original_filename,
+      captured_at: p.captured_at,
+    }));
+    
+    // Generate enhanced suggestions
+    const suggestions = generateEnhancedSuggestions(
+      selectedFile,
+      photosWithExif,
+      10 // Top 10 suggestions
+    );
+    
+    console.log('[Step3_ManualMap] Generated suggestions:', suggestions.length);
+    
+    // Convert to Map for O(1) lookup
+    const suggestionMap = new Map(
+      suggestions.map(s => [s.photoId, { 
+        confidence: s.confidence, 
+        matchType: s.matchType 
+      }])
+    );
+    
+    setPhotoSuggestions(suggestionMap);
+  }, [selectedFile, originalPhotosRaw]);
+
   const filteredPhotos = originalPhotos.filter(photo => {
     const filename = photo.alt || photo.src.split('/').pop() || '';
     return filename.toLowerCase().includes(searchQuery.toLowerCase());
   });
+  
+  // Sort photos: suggestions first, then rest
+  const sortedPhotos = useMemo(() => {
+    if (!selectedFile) return filteredPhotos;
+    
+    return [...filteredPhotos].sort((a, b) => {
+      const aSuggestion = photoSuggestions.get(Number(a.id));
+      const bSuggestion = photoSuggestions.get(Number(b.id));
+      
+      // Both are suggestions: sort by confidence (highest first)
+      if (aSuggestion && bSuggestion) {
+        return bSuggestion.confidence - aSuggestion.confidence;
+      }
+      
+      // Only a is suggestion: a comes first
+      if (aSuggestion) return -1;
+      
+      // Only b is suggestion: b comes first
+      if (bSuggestion) return 1;
+      
+      // Neither is suggestion: keep original order
+      return 0;
+    });
+  }, [filteredPhotos, photoSuggestions, selectedFile]);
 
   const handleImageError = (photoId: string) => {
     console.log('[Step3_ManualMap] Image failed to load:', photoId);
@@ -368,57 +487,82 @@ const Step3_ManualMap: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-3 gap-2 max-h-[500px] overflow-y-auto p-1">
-                {filteredPhotos.map(photo => (
-                  <button
-                    key={photo.id}
-                    onClick={() => handlePhotoSelect(Number(photo.id))}
-                    onMouseEnter={() => setHoveredPhotoId(Number(photo.id))}
-                    onMouseLeave={() => setHoveredPhotoId(null)}
-                    disabled={!selectedFile}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedFile
-                        ? 'cursor-pointer hover:border-blue-500 hover:scale-105'
-                        : 'cursor-not-allowed opacity-50'
-                    } ${
-                      hoveredPhotoId === Number(photo.id)
-                        ? 'border-blue-500 shadow-lg'
-                        : 'border-slate-200'
-                    }`}
-                    title={`${photo.alt}\nID: ${photo.id}`}
-                  >
-                    {imageErrors.has(photo.id) ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
-                        <CameraIcon className="w-10 h-10 text-slate-400 mb-2" />
-                        <p className="text-xs text-slate-500 px-2 text-center">{photo.alt}</p>
-                      </div>
-                    ) : (
-                      <img
-                        src={photo.src}
-                        alt={photo.alt}
-                        className="w-full h-full object-cover"
-                        onError={() => handleImageError(photo.id)}
-                      />
-                    )}
-                    {hoveredPhotoId === Number(photo.id) && selectedFile && (
-                      <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                          <CheckIcon className="w-5 h-5 text-white" />
+                {sortedPhotos.map(photo => {
+                  const suggestion = photoSuggestions.get(Number(photo.id));
+                  const confidence = suggestion?.confidence || 0;
+                  const matchType = suggestion?.matchType;
+                  
+                  return (
+                    <button
+                      key={photo.id}
+                      onClick={() => handlePhotoSelect(Number(photo.id))}
+                      onMouseEnter={(e) => {
+                        setHoveredPhotoId(Number(photo.id));
+                        handlePhotoHover(photo, e);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredPhotoId(null);
+                        clearHoverPreview();
+                      }}
+                      disabled={!selectedFile}
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedFile
+                          ? 'cursor-pointer hover:border-blue-500 hover:scale-105'
+                          : 'cursor-not-allowed opacity-50'
+                      } ${
+                        hoveredPhotoId === Number(photo.id)
+                          ? 'border-blue-500 shadow-lg'
+                          : suggestion
+                          ? 'border-blue-300'
+                          : 'border-slate-200'
+                      }`}
+                      title={`${photo.alt}\nID: ${photo.id}`}
+                    >
+                      {imageErrors.has(photo.id) ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+                          <CameraIcon className="w-10 h-10 text-slate-400 mb-2" />
+                          <p className="text-xs text-slate-500 px-2 text-center">{photo.alt}</p>
                         </div>
+                      ) : (
+                        <img
+                          src={photo.src}
+                          alt={photo.alt}
+                          className="w-full h-full object-cover"
+                          onError={() => handleImageError(photo.id)}
+                        />
+                      )}
+                      {hoveredPhotoId === Number(photo.id) && selectedFile && (
+                        <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                            <CheckIcon className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Confidence Badge */}
+                      {suggestion && selectedFile && (
+                        <div className="absolute top-2 right-2">
+                          <ConfidenceBadge
+                            confidence={confidence}
+                            matchType={matchType!}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                        <p className="text-xs text-white truncate font-medium">
+                          {photo.alt}
+                        </p>
+                        <p className="text-[10px] text-white/70 truncate">
+                          ID: {photo.id}
+                        </p>
                       </div>
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                      <p className="text-xs text-white truncate font-medium">
-                        {photo.alt}
-                      </p>
-                      <p className="text-[10px] text-white/70 truncate">
-                        ID: {photo.id}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
 
-              {filteredPhotos.length === 0 && (
+              {sortedPhotos.length === 0 && (
                 <div className="p-8 text-center text-slate-500">
                   <CameraIcon className="w-12 h-12 mx-auto mb-2 text-slate-400" />
                   <p className="text-sm">No photos found</p>
@@ -439,6 +583,25 @@ const Step3_ManualMap: React.FC = () => {
           type="success"
         />
       )}
+      
+      {/* Hover Preview (Configurable) */}
+      {isHoverPreviewEnabled && hoverPreview && (
+        <PhotoHoverPreview
+          photo={hoverPreview.photo}
+          position={hoverPreview.position}
+          onClose={clearHoverPreview}
+        />
+      )}
+      
+      {/* Connection Lines - Disabled per user request */}
+      {/* <ConnectionLines
+        selectedFile={selectedFile}
+        hoveredPhotoId={hoveredPhotoId}
+        mappings={state.mappingDetails}
+        leftPanelRef={leftPanelRef}
+        middlePanelRef={middlePanelRef}
+        rightPanelRef={rightPanelRef}
+      /> */}
     </>
   );
 };

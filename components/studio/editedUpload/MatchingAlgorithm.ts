@@ -26,6 +26,10 @@ export interface OriginalPhoto {
   original_filename: string;
 }
 
+export interface PhotoWithExif extends OriginalPhoto {
+  captured_at: string | null; // ISO date string
+}
+
 /**
  * Match edited filenames to original photos using multiple strategies
  */
@@ -261,4 +265,108 @@ export function getConfidenceBadgeText(confidence: number): string {
  */
 export function formatConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
+}
+
+/**
+ * Calculate date/time similarity score based on EXIF captured_at field
+ * Returns 0.0-1.0 based on time proximity between file and photo
+ */
+export function calculateDateSimilarity(
+  editedFile: File,
+  photo: PhotoWithExif
+): number {
+  if (!photo.captured_at) return 0;
+  
+  try {
+    // Get file modification time as proxy for capture time
+    const fileTime = new Date(editedFile.lastModified);
+    const photoTime = new Date(photo.captured_at);
+    
+    // Check for invalid dates
+    if (isNaN(fileTime.getTime()) || isNaN(photoTime.getTime())) {
+      return 0;
+    }
+    
+    const diffMs = Math.abs(fileTime.getTime() - photoTime.getTime());
+    const diffMinutes = diffMs / (1000 * 60);
+    
+    // Score based on time difference
+    // Same day, within 1 hour: 1.0
+    // Same day, within 4 hours: 0.8
+    // Same day (24 hours): 0.6
+    // Same week (7 days): 0.4
+    // Same month (30 days): 0.2
+    // Otherwise: 0.0
+    
+    if (diffMinutes <= 60) return 1.0;
+    if (diffMinutes <= 240) return 0.8;
+    if (diffMinutes <= 1440) return 0.6;  // 24 hours
+    if (diffMinutes <= 10080) return 0.4; // 7 days
+    if (diffMinutes <= 43200) return 0.2; // 30 days
+    
+    return 0.0;
+  } catch (error) {
+    console.error('[MatchingAlgorithm] Error calculating date similarity:', error);
+    return 0;
+  }
+}
+
+/**
+ * Enhanced suggestion generation with EXIF date/time matching
+ * Combines filename similarity with temporal proximity
+ */
+export function generateEnhancedSuggestions(
+  editedFile: File,
+  originalPhotos: PhotoWithExif[],
+  maxSuggestions: number = 5
+): Array<{
+  photoId: number;
+  filename: string;
+  confidence: number;
+  matchType: 'filename' | 'date' | 'combined';
+}> {
+  const suggestions: Array<{
+    photoId: number;
+    filename: string;
+    confidence: number;
+    matchType: 'filename' | 'date' | 'combined';
+  }> = [];
+  
+  const editedBase = getBasename(editedFile.name);
+  
+  for (const photo of originalPhotos) {
+    const origBase = getBasename(photo.original_filename);
+    
+    // Calculate both scores
+    const filenameSimilarity = calculateSimilarity(editedBase, origBase);
+    const dateSimilarity = calculateDateSimilarity(editedFile, photo);
+    
+    // Combined score with weights
+    // Filename: 70%, Date: 30%
+    const combinedScore = (filenameSimilarity * 0.7) + (dateSimilarity * 0.3);
+    
+    // Determine match type based on which score is stronger
+    let matchType: 'filename' | 'date' | 'combined';
+    if (filenameSimilarity > 0.7 && dateSimilarity > 0.7) {
+      matchType = 'combined';
+    } else if (filenameSimilarity > dateSimilarity) {
+      matchType = 'filename';
+    } else {
+      matchType = 'date';
+    }
+    
+    // Only include suggestions above threshold
+    if (combinedScore > 0.3) {
+      suggestions.push({
+        photoId: photo.id,
+        filename: photo.original_filename,
+        confidence: Math.round(combinedScore * 100) / 100,
+        matchType,
+      });
+    }
+  }
+  
+  // Sort by confidence (highest first)
+  suggestions.sort((a, b) => b.confidence - a.confidence);
+  return suggestions.slice(0, maxSuggestions);
 }

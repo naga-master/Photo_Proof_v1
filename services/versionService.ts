@@ -14,6 +14,7 @@ export interface OriginalPhoto {
   folder_name: string | null;
   current_version_filename: string;
   version_count: number;
+  captured_at: string | null; // ISO date string from EXIF
 }
 
 export interface FolderInfo {

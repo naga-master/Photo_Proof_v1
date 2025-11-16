@@ -37,7 +37,7 @@ const AlbumsPage: React.FC<AlbumsPageProps> = ({ albums, onSelectAlbum }) => {
               <img
                 src={album.coverPhotoSrc}
                 alt={`Cover for ${album.title}`}
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-110"
+                className="w-full aspect-[16/9] object-cover transition-transform duration-300 group-hover:scale-110"
                 onError={(e) => {
                   console.error(`[AlbumsPage] Image failed to load for album ${album.id}:`, album.coverPhotoSrc);
                 }}
