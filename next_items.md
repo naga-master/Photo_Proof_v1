@@ -38,7 +38,7 @@
 
 22. When we click the store in the view gallery and select any one prints and click select photos, it is showing some common photos for all the projects view gallery, but it has to show only the photos that is relavant to that particular project, so make that happen, by properly plan and understand the exisiting code, make use of photos from cache, if is not available then take it from backend. - (fixed)
 
-23. when we click the store from view gallery, it is giving some prints cards from the backend, for which it taking the photos from unsplash which is failing, so understand the every products prints in the store, get the relevant photos from the internet proper image and store in the backend and In the frontend get it from the backend. - (Not fixed)
+23. when we click the store from view gallery, it is giving some prints cards from the backend, for which it taking the photos from unsplash which is failing, so understand the every products prints in the store, get the relevant photos from the internet proper image and store in the backend and In the frontend get it from the backend. - (fixed)
 
 24. If we click the download button from the image viewer, the image opens in same page, it has to be downloaded automatically without opning as new page or tab, check all the browser support and plan to do it properly - (http://localhost:8000/uploads/projects/7/20251108_173248_GNHpkbL4_2160C_rear.jpg - CORS error )
 
@@ -50,7 +50,7 @@
 
 28. there is a dot on the fav button, remove that. (Fixed)
 
-29. In Manual Mapping , once the photo is selected it changes like files mapped and moved to remaingng files, what if user mistakenly selected the wrong image, they have to select the correct one right? how will you design the UI for that, with great UX?, user should know which photo they have selected for which old photo. - (implemented)
+29. In Manual Mapping , once the photo is selected it changes like files mapped and moved to remaingng files, what if user mistakenly selected the wrong image, they have to select the correct one right? how will you design the UI for that, with great UX?, user should know which photo they have selected for which old photo. - (Fixed)
 
 30. find how industries are show in the cover photo , make the same changes in the projects also, currently cover photo is big
 

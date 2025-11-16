@@ -11,7 +11,6 @@ export const devImageOptimizationConfig: Partial<ImageOptimizationConfig> = {
   // Enable all features for development testing
   features: {
     chunkedUpload: true,
-    clientSideCompression: true,
     serverSideVariants: true,
     viewportQualitySelection: true,
     opfsCache: true,
@@ -28,18 +27,15 @@ export const devImageOptimizationConfig: Partial<ImageOptimizationConfig> = {
     enableDetailedLogging: true,
   },
   
-  // Compression - Log compression ratios
+  // Backend Image Optimization - Server-side variant generation
   compression: {
-    client: {
-      enabled: true,
-    },
     server: {
       enabled: true,
       generateAsync: false, // Sync in dev for immediate feedback
     },
     thumbhash: {
       enabled: true,
-      generateOnClient: true,
+      generateOnServer: true,
     },
   },
   

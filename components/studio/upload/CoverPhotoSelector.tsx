@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { CheckCircleIcon } from '../../icons';
 import type { UploadFile } from '../../../types';
 
@@ -19,10 +19,18 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
   
   const ITEMS_PER_PAGE = 24; // 4x6 grid
   
-  // Handle image load
-  const handleImageLoad = (fileId: string) => {
-    setLoadedImages(prev => new Set(prev).add(fileId));
-  };
+  // Track all created blob URLs for cleanup
+  const blobUrlsRef = useRef<Map<string, string>>(new Map());
+  
+  // Handle image load - use useCallback to prevent re-creating function
+  const handleImageLoad = useCallback((fileId: string) => {
+    setLoadedImages(prev => {
+      if (prev.has(fileId)) return prev; // Prevent unnecessary state updates
+      const newSet = new Set(prev);
+      newSet.add(fileId);
+      return newSet;
+    });
+  }, []);
 
   // Get only successfully uploaded photos
   const successfulPhotos = useMemo(() => {
@@ -30,6 +38,45 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
       .map((file, index) => ({ file, originalIndex: index }))
       .filter(({ file }) => file.status === 'success');
   }, [uploadQueue]);
+
+  // Create blob URLs once and cache them - CRITICAL for performance!
+  const blobUrls = useMemo(() => {
+    const urls = new Map<string, string>();
+    const currentUrls = blobUrlsRef.current;
+    
+    successfulPhotos.forEach(({ file }) => {
+      // Reuse existing URL if available
+      if (currentUrls.has(file.id)) {
+        urls.set(file.id, currentUrls.get(file.id)!);
+      } else {
+        // Create new URL only if needed
+        const newUrl = URL.createObjectURL(file.file);
+        urls.set(file.id, newUrl);
+        currentUrls.set(file.id, newUrl);
+      }
+    });
+    
+    // Revoke URLs for files that are no longer in the list
+    currentUrls.forEach((url, id) => {
+      if (!urls.has(id)) {
+        URL.revokeObjectURL(url);
+        currentUrls.delete(id);
+      }
+    });
+    
+    return urls;
+  }, [successfulPhotos]);
+
+  // Cleanup ALL blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      // Revoke all blob URLs when component unmounts
+      blobUrlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current.clear();
+    };
+  }, []); // Only run on mount/unmount
 
   // Pagination calculations
   const totalPages = Math.ceil(successfulPhotos.length / ITEMS_PER_PAGE);
@@ -90,16 +137,16 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
       >
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 relative">
-            {selectedPhoto && (
+            {selectedPhoto && blobUrls.has(selectedPhoto.id) && (
               <>
                 {/* Skeleton background */}
                 <div className={`absolute inset-0 bg-gray-200 transition-opacity duration-300 ${
                   loadedImages.has(selectedPhoto.id) ? 'opacity-0' : 'opacity-100'
                 }`} />
                 
-                {/* Actual image */}
+                {/* Actual image - use cached blob URL */}
                 <img
-                  src={URL.createObjectURL(selectedPhoto.file)}
+                  src={blobUrls.get(selectedPhoto.id)}
                   alt="Cover preview"
                   className={`w-full h-full object-cover transition-opacity duration-300 ${
                     loadedImages.has(selectedPhoto.id) ? 'opacity-100' : 'opacity-0'
@@ -145,7 +192,10 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
           <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 max-h-64 overflow-y-auto mb-4">
             {currentPagePhotos.map(({ file, originalIndex }) => {
               const isSelected = selectedCoverIndex === originalIndex;
-              const imageUrl = URL.createObjectURL(file.file);
+              const imageUrl = blobUrls.get(file.id); // Use cached blob URL
+
+              // Skip if blob URL not available
+              if (!imageUrl) return null;
 
               return (
                 <button
@@ -165,7 +215,7 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
                     </div>
                   </div>
                   
-                  {/* Actual image */}
+                  {/* Actual image - use cached blob URL */}
                   <img
                     src={imageUrl}
                     alt={file.file.name}

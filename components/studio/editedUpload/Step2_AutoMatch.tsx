@@ -75,24 +75,18 @@ const Step2_AutoMatch: React.FC<Step2_AutoMatchProps> = ({ showToast, nextStep }
           hasAutoAdvanced: hasAutoAdvancedRef.current
         });
 
-        // Auto-advance if there are unmatched files (after 3 seconds) - ONLY ONCE
+        // Show toast if there are unmatched files, but don't auto-advance
+        // User must click "Next" button to proceed to manual mapping
         if (unmatched.length > 0 && !hasAutoAdvancedRef.current) {
           hasAutoAdvancedRef.current = true;
-          console.log('[Step2_AutoMatch] Setting up auto-advance timer');
+          console.log('[Step2_AutoMatch] Unmatched files found, showing toast');
           
-          // Store timer reference for cleanup
-          const toastTimer = setTimeout(() => {
+          // Just show the toast, don't auto-advance
+          setTimeout(() => {
             console.log('[Step2_AutoMatch] Showing toast');
             showToast(`${matched.length} matched, ${unmatched.length} need manual mapping`);
-            
-            timerRef.current = setTimeout(() => {
-              console.log('[Step2_AutoMatch] Auto-advancing to manual mapping');
-              nextStep();
-              timerRef.current = null;
-            }, 3000) as unknown as number;
+            // User must click "Next" button to proceed
           }, 500);
-          
-          // Don't store the toast timer, only the nextStep timer matters
         }
       } catch (err: any) {
         console.error('[Step2_AutoMatch] Matching failed:', err);

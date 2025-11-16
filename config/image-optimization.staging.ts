@@ -11,7 +11,6 @@ export const stagingImageOptimizationConfig: Partial<ImageOptimizationConfig> = 
   // Enable all features in staging
   features: {
     chunkedUpload: true,
-    clientSideCompression: true,
     serverSideVariants: true,
     viewportQualitySelection: true,
     opfsCache: true,

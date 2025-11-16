@@ -31,7 +31,6 @@ export interface ImageOptimizationConfig {
   // ========================================
   features: {
     chunkedUpload: boolean;
-    clientSideCompression: boolean;
     serverSideVariants: boolean;
     viewportQualitySelection: boolean;
     opfsCache: boolean;
@@ -73,23 +72,9 @@ export interface ImageOptimizationConfig {
   };
   
   // ========================================
-  // PHASE 2: IMAGE COMPRESSION
+  // PHASE 2: BACKEND IMAGE OPTIMIZATION
   // ========================================
   compression: {
-    client: {
-      enabled: boolean;
-      targetSizeMB: number;
-      maxDimensionPx: number;
-      format: 'webp' | 'jpeg';
-      quality: {
-        initial: number;
-        minimum: number;
-        step: number;
-      };
-      maintainAspectRatio: boolean;
-      enableExifPreservation: boolean;
-    };
-    
     server: {
       enabled: boolean;
       variants: {
@@ -109,7 +94,6 @@ export interface ImageOptimizationConfig {
         width: number;
         height: number;
       };
-      generateOnClient: boolean;
       generateOnServer: boolean;
     };
   };

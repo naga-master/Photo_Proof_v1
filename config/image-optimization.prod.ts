@@ -9,11 +9,10 @@
 import { ImageOptimizationConfig } from './image-optimization.config';
 
 export const prodImageOptimizationConfig: Partial<ImageOptimizationConfig> = {
-  // Phase 1 & 2: Core upload and compression enabled
+  // Phase 1 & 2: Core upload and backend optimization enabled
   // Phase 3-5: Disabled until validated in staging
   features: {
     chunkedUpload: true,           // Phase 1: Enabled
-    clientSideCompression: true,    // Phase 2: Enabled
     serverSideVariants: true,       // Phase 2: Enabled
     viewportQualitySelection: true, // Phase 2.5: Enabled
     opfsCache: false,               // Phase 3: DISABLED (enable after validation)
@@ -32,20 +31,15 @@ export const prodImageOptimizationConfig: Partial<ImageOptimizationConfig> = {
     exponentialBackoff: true,
   },
   
-  // Compression - Enabled
+  // Backend Image Optimization - Server-side variant generation
   compression: {
-    client: {
-      enabled: true,
-      targetSizeMB: 5,
-    },
     server: {
       enabled: true,
       generateAsync: true,
     },
     thumbhash: {
       enabled: true,
-      generateOnClient: true,
-      generateOnServer: false,
+      generateOnServer: true,
     },
   },
   

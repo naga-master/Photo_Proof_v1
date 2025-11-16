@@ -134,15 +134,6 @@ class ImageOptimizationConfigLoader {
       errors.push('defaultChunkSizeMB must be <= maxChunkSizeMB');
     }
     
-    // Validate quality values
-    if (config.compression.client.quality.initial > 1 || config.compression.client.quality.initial < 0) {
-      errors.push('compression.client.quality.initial must be between 0 and 1');
-    }
-    
-    if (config.compression.client.quality.minimum > 1 || config.compression.client.quality.minimum < 0) {
-      errors.push('compression.client.quality.minimum must be between 0 and 1');
-    }
-    
     // Validate OPFS quotas
     if (config.opfs.evictionThresholdPercent > 100 || config.opfs.evictionThresholdPercent < 0) {
       errors.push('opfs.evictionThresholdPercent must be between 0 and 100');
@@ -210,10 +201,6 @@ class ImageOptimizationConfigLoader {
   
   isChunkedUploadEnabled(): boolean {
     return this.getConfig().features.chunkedUpload;
-  }
-  
-  isClientCompressionEnabled(): boolean {
-    return this.getConfig().features.clientSideCompression;
   }
   
   isServerVariantsEnabled(): boolean {
