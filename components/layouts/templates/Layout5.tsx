@@ -4,7 +4,7 @@ import PhotoGrid from '../../PhotoGrid';
 import GalleryControls from './GalleryControls';
 
 const Layout5: React.FC<LayoutComponentProps> = (props) => {
-    const { photos, title, openLightbox, ...rest } = props;
+    const { photos, title, openLightbox, isStudioPreview, ...rest } = props;
     
     return (
         <div className="bg-[#FAF0E6] text-gray-800">
@@ -26,7 +26,7 @@ const Layout5: React.FC<LayoutComponentProps> = (props) => {
 
             {/* Photo Grid */}
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <PhotoGrid photos={photos} onImageClick={openLightbox} {...rest} />
+                <PhotoGrid photos={photos} onImageClick={openLightbox} isStudioPreview={isStudioPreview} {...rest} />
             </main>
         </div>
     );

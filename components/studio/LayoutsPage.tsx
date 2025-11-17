@@ -15,15 +15,15 @@ interface LayoutsPageProps {
     onSetTypography: (font: string) => void;
 }
 
-// Create some bogus photo data for previews
+// Create preview photo data using local images
 const mockPhotos: Photo[] = Array.from({ length: 15 }, (_, i) => {
-    const isPortrait = Math.random() > 0.5;
+    const photoNum = String(i + 1).padStart(2, '0');
     return {
-        id: i,
-        src: `https://picsum.photos/seed/${i+50}/${isPortrait ? 600 : 900}/${isPortrait ? 900 : 600}`,
-        alt: `Mock photo ${i}`,
-        width: isPortrait ? 600 : 900,
-        height: isPortrait ? 900 : 600,
+        id: `preview-${photoNum}`,
+        src: `http://localhost:8000/uploads/data/preview/preview-${photoNum}.jpg`,
+        alt: `Preview photo ${i + 1}`,
+        width: 1200,
+        height: 800,
         comments: [],
     }
 });
@@ -173,6 +173,7 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
                            <LayoutRenderer 
                                 album={{...mockAlbum, layout: defaultLayoutId}} 
                                 photos={mockPhotos}
+                                title="Layout Preview"
                                 favorites={[]}
                                 selections={[]}
                                 toggleFavorite={() => {}}

@@ -17,10 +17,10 @@ export interface LayoutComponentProps {
     album: Album;
     photos: Photo[];
     title: string;
-    favorites: number[];
-    selections: number[];
-    toggleFavorite: (photoId: number) => void;
-    toggleSelection: (photoId: number) => void;
+    favorites: number[] | string[];
+    selections: number[] | string[];
+    toggleFavorite: (photoId: number | string) => void;
+    toggleSelection: (photoId: number | string) => void;
     onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
     onDownload: (photoSrc: string, photoAlt: string) => void;
     openLightbox: (index: number) => void;

@@ -15,6 +15,7 @@ interface PhotoItemProps {
   isInCompareList: boolean;
   isCompareMode: boolean;
   isSelectable?: boolean;
+  isStudioPreview?: boolean;
 }
 
 const useOnScreen = (options: IntersectionObserverInit) => {
@@ -41,8 +42,14 @@ const useOnScreen = (options: IntersectionObserverInit) => {
     return [ref, isIntersecting] as const;
 };
 
-const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSelection, toggleFavorite, toggleSelection, onDownload, isInCompareList, isCompareMode, isSelectable = false }) => {
+const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSelection, toggleFavorite, toggleSelection, onDownload, isInCompareList, isCompareMode, isSelectable = false, isStudioPreview = false }) => {
   const hasComments = photo.comments && photo.comments.length > 0;
+  
+  // Debug: Log studio preview mode [v3 - Force reload]
+  console.log('[PhotoItem DEBUG] Photo:', photo.id, 'isStudioPreview:', isStudioPreview, 'Type:', typeof isStudioPreview);
+  if (photo.id.toString().startsWith('preview')) {
+    console.log('[PhotoItem] PREVIEW DETECTED! isStudioPreview:', isStudioPreview);
+  }
   
   const [ref, isVisible] = useOnScreen({ rootMargin: '200px' });
   
@@ -63,13 +70,21 @@ const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSel
     >
       {isVisible && (
         <>
-            <AuthenticatedImage
-                photoId={photo.id}
-                quality="medium"
-                alt={photo.alt}
-                className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 animate-fade-in"
-                colorVariant="auto"
-            />
+            {isStudioPreview ? (
+                <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 animate-fade-in"
+                />
+            ) : (
+                <AuthenticatedImage
+                    photoId={photo.id}
+                    quality="medium"
+                    alt={photo.alt}
+                    className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 animate-fade-in"
+                    colorVariant="auto"
+                />
+            )}
             <div 
                 className={`absolute inset-0 transition-all duration-300 ring-4 ring-inset ${isSelected ? 'ring-sky-500' : 'ring-transparent'} ${isCompareMode ? '' : 'bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100'}`}
             ></div>
