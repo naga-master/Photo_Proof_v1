@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Album, Comment, Photo, DashboardView } from '../../types';
 import { PlusIcon } from '../icons';
+import { AuthenticatedImage } from '../common/AuthenticatedImage';
+import { ImagePlaceholder } from '../common/ImagePlaceholder';
 
 interface StudioOverviewProps {
   albums: Album[];
@@ -65,7 +67,14 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
                         {recentComments.map(comment => (
                                 <li key={comment.id} className="p-4 hover:bg-slate-50 transition-colors">
                                     <div className="flex items-start gap-4">
-                                        <img src={comment.photo.src} alt={comment.photo.alt} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                        <AuthenticatedImage
+                                            photoId={comment.photo.id}
+                                            quality="thumbnail"
+                                            alt={comment.photo.alt}
+                                            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                                            aspectRatio="1/1"
+                                            colorVariant="auto"
+                                        />
                                         <div className="flex-1">
                                             <p className="text-sm text-slate-800">
                                                 <span className={`font-semibold ${comment.author === 'Client' ? 'text-sky-600' : 'text-purple-600'}`}>{comment.author}</span> commented on a photo in <span className="font-semibold">{comment.album.title}</span>
@@ -98,7 +107,22 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
                         <div className="mt-4 space-y-3">
                             {albums.slice(0, 3).map(album => (
                                 <div key={album.id} className="p-3 bg-white border border-slate-200 rounded-lg flex items-center gap-4 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { /* Navigate to project */}}>
-                                    <img src={album.coverPhotoSrc} alt={album.title} className="w-14 h-14 rounded-md object-cover"/>
+                                    {album.coverPhotoId ? (
+                                        <AuthenticatedImage
+                                            photoId={album.coverPhotoId}
+                                            quality="thumbnail"
+                                            alt={album.title}
+                                            className="w-14 h-14 rounded-md object-cover"
+                                            aspectRatio="1/1"
+                                            colorVariant="auto"
+                                        />
+                                    ) : (
+                                        <ImagePlaceholder
+                                            aspectRatio="1/1"
+                                            showShimmer={false}
+                                            className="w-14 h-14 rounded-md"
+                                        />
+                                    )}
                                     <div className="flex-1">
                                         <p className="font-semibold text-sm text-slate-800">{album.title}</p>
                                         <p className="text-xs text-slate-500">{album.photoCount} photos</p>

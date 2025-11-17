@@ -200,7 +200,7 @@ class CommentService {
         console.log(`[CommentService] ⚠️ Cache miss, fetching from API`);
         
         const data = await apiClient.get<BackendCommentListResponse>(
-            `/v2/comments/api/comments/photos/${photoId}`
+            `/api/comments/photos/${photoId}`
         );
         
         const comments = data.comments.map(mapBackendComment);
@@ -234,7 +234,7 @@ class CommentService {
         }
         
         const data = await apiClient.post<BackendCommentCreateResponse>(
-            `/v2/comments/api/comments/`,
+            `/api/comments/`,
             {
                 photo_id: photoId,
                 text: text,
@@ -257,7 +257,7 @@ class CommentService {
         console.log(`[CommentService] Updating comment ${commentId}`);
         
         const data = await apiClient.patch<BackendCommentCreateResponse>(
-            `/v2/comments/api/comments/${commentId}`,
+            `/api/comments/${commentId}`,
             { text }
         );
         
@@ -273,7 +273,7 @@ class CommentService {
     static async deleteComment(commentId: number, photoId: number): Promise<void> {
         console.log(`[CommentService] Deleting comment ${commentId}`);
         
-        await apiClient.delete<void>(`/v2/comments/api/comments/${commentId}`);
+        await apiClient.delete<void>(`/api/comments/${commentId}`);
         
         // Invalidate cache
         await invalidateCache(photoId);

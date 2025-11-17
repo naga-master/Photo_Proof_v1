@@ -57,6 +57,28 @@ export interface ProjectListResponse {
 }
 
 /**
+ * Extract photo ID from storage path
+ * Example: "/uploads/projects/12/originals/photo_808.jpg" -> "808"
+ */
+function extractPhotoIdFromPath(path: string): string | null {
+  if (!path) return null;
+  
+  // Try to extract photo ID from filename (e.g., "photo_808.jpg" -> "808")
+  const filenameMatch = path.match(/\/(\d+)\.[^/]+$/);
+  if (filenameMatch) {
+    return filenameMatch[1];
+  }
+  
+  // Try alternative patterns (photo_808.jpg, 808.jpg, etc.)
+  const altMatch = path.match(/_(\d+)\.[^/]+$/);
+  if (altMatch) {
+    return altMatch[1];
+  }
+  
+  return null;
+}
+
+/**
  * Get cover photo variant URL for a project
  * Uses cover_photo_id to fetch optimized variant, falls back to cover_photo_src
  */
@@ -68,8 +90,21 @@ export function getCoverPhotoVariantUrl(project: Project, quality?: QualityLevel
     return getPhotoVariantUrl(project.cover_photo_id, quality || 'medium');
   }
   
-  // Fallback to cover_photo_src (legacy behavior)
-  return project.cover_photo_src || FALLBACK_IMAGE;
+  // Try to extract photo ID from cover_photo_src path
+  if (project.cover_photo_src) {
+    const photoId = extractPhotoIdFromPath(project.cover_photo_src);
+    if (photoId) {
+      return getPhotoVariantUrl(photoId, quality || 'medium');
+    }
+    
+    // If we can't extract ID, use the original src with base URL
+    if (project.cover_photo_src.startsWith('http')) {
+      return project.cover_photo_src;
+    }
+    return `http://localhost:8000${project.cover_photo_src}`;
+  }
+  
+  return FALLBACK_IMAGE;
 }
 
 class ProjectService {

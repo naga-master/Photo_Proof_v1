@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Album } from '../types';
 import { LockClosedIcon } from './icons';
+import { AuthenticatedImage } from './common/AuthenticatedImage';
+import { ImagePlaceholder } from './common/ImagePlaceholder';
 
 interface AlbumsPageProps {
   albums: Album[];
@@ -34,14 +36,22 @@ const AlbumsPage: React.FC<AlbumsPageProps> = ({ albums, onSelectAlbum }) => {
               onClick={() => onSelectAlbum(album)}
               className="group relative cursor-pointer overflow-hidden rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
             >
-              <img
-                src={album.coverPhotoSrc}
-                alt={`Cover for ${album.title}`}
-                className="w-full aspect-[16/9] object-cover transition-transform duration-300 group-hover:scale-110"
-                onError={(e) => {
-                  console.error(`[AlbumsPage] Image failed to load for album ${album.id}:`, album.coverPhotoSrc);
-                }}
-              />
+              {album.coverPhotoId ? (
+                <AuthenticatedImage
+                  photoId={album.coverPhotoId}
+                  quality="medium"
+                  alt={`Cover for ${album.title}`}
+                  className="w-full aspect-[16/9] object-cover transition-transform duration-300 group-hover:scale-110"
+                  aspectRatio="16/9"
+                  colorVariant="auto"
+                />
+              ) : (
+                <ImagePlaceholder
+                  title={album.title}
+                  subtitle={`${album.photoCount} photos`}
+                  aspectRatio="16/9"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
               <div className="absolute bottom-0 left-0 p-6 text-white w-full">
                 {album.isLocked && (

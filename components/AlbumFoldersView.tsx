@@ -3,7 +3,8 @@ import { toast } from 'react-toastify';
 import type { Album, Folder } from '../types';
 import { FolderIcon, CameraIcon } from './icons';
 import { projectService } from '../services/projectService';
-import { getPhotoVariantUrl } from '../services/photoService';
+import { AuthenticatedImage } from './common/AuthenticatedImage';
+import { ImagePlaceholder } from './common/ImagePlaceholder';
 
 // Request deduplication map - prevents duplicate simultaneous requests
 const inflightRequests = new Map<string, Promise<any>>();
@@ -33,12 +34,17 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
         console.log('[AlbumFoldersView] ⚡ Deduplicating request - using in-flight promise');
         try {
           const response = await inflightRequests.get(cacheKey);
-          const fetchedFolders = (response.folders || []).map((folder: any) => ({
-            ...folder,
-            coverPhotoSrc: folder.cover_photo_id 
-              ? getPhotoVariantUrl(folder.cover_photo_id, 'medium')
-              : folder.coverPhotoSrc || '/placeholder-cover.jpg'
-          }));
+          
+          const fetchedFolders = (response.folders || []).map((folder: any) => {
+            // Backend returns camelCase (coverPhotoId), check both for compatibility
+            const photoId = folder.coverPhotoId || folder.cover_photo_id;
+            const coverPhotoId = photoId ? String(photoId) : null;
+            
+            return {
+              ...folder,
+              coverPhotoId
+            };
+          });
           setFolders(fetchedFolders);
         } catch (error: any) {
           console.error('[AlbumFoldersView] Failed to fetch folders (deduplicated):', error);
@@ -63,19 +69,17 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
         inflightRequests.set(cacheKey, promise);
         
         const response = await promise;
-        const fetchedFolders = (response.folders || []).map((folder: any) => ({
-          ...folder,
-          // Use variant URL for cover photos (245KB instead of 30MB)
-          coverPhotoSrc: folder.cover_photo_id 
-            ? getPhotoVariantUrl(folder.cover_photo_id, 'medium')
-            : folder.coverPhotoSrc || '/placeholder-cover.jpg'
-        }));
-        setFolders(fetchedFolders);
-        
-        console.log('[AlbumFoldersView] Fetched folders:', {
-          count: fetchedFolders.length,
-          folders: fetchedFolders.map((f: any) => ({ name: f.name, photoCount: f.photoCount, hasCover: !!f.coverPhotoSrc }))
+        const fetchedFolders = (response.folders || []).map((folder: any) => {
+          // Backend returns camelCase (coverPhotoId), check both for compatibility
+          const photoId = folder.coverPhotoId || folder.cover_photo_id;
+          const coverPhotoId = photoId ? String(photoId) : null;
+          
+          return {
+            ...folder,
+            coverPhotoId
+          };
         });
+        setFolders(fetchedFolders);
         
         // Note: No auto-redirect here - parent component handles navigation
         // based on folder count before we even get here
@@ -159,11 +163,14 @@ const AlbumFoldersView: React.FC<AlbumFoldersViewProps> = ({
                 >
                   {/* Folder Cover */}
                   <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
-                    {folder.coverPhotoSrc ? (
-                      <img
-                        src={folder.coverPhotoSrc}
+                    {folder.coverPhotoId ? (
+                      <AuthenticatedImage
+                        photoId={folder.coverPhotoId}
+                        quality="medium"
                         alt={folder.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        aspectRatio="4/3"
+                        colorVariant="auto"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

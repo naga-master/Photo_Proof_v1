@@ -130,6 +130,7 @@ const mapProjectToAlbum = (project: BackendProject): Album => {
         title: project.title ?? 'Untitled Project',
         clientId: project.client_id ? String(project.client_id) : '',
         shootDate: project.shoot_date ?? project.created_at,
+        coverPhotoId: project.cover_photo_id ? String(project.cover_photo_id) : null,
         coverPhotoSrc: getCoverPhotoVariantUrl(project, 'medium'),
         photoCount: project.photo_count ?? 0,
         isLocked: project.is_locked ?? false,

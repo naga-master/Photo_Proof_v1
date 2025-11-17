@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Album, Folder } from '../types';
 import { ArrowLeftIcon } from './icons';
+import { AuthenticatedImage } from './common/AuthenticatedImage';
+import { ImagePlaceholder } from './common/ImagePlaceholder';
 
 interface GalleryFoldersPageProps {
   album: Album;
@@ -23,11 +25,22 @@ const GalleryFoldersPage: React.FC<GalleryFoldersPageProps> = ({ album, onSelect
               onClick={() => onSelectFolder(folder)}
               className="group relative cursor-pointer overflow-hidden rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
             >
-              <img
-                src={folder.coverPhotoSrc}
-                alt={`Cover for ${folder.name}`}
-                className="w-full aspect-[16/9] object-cover transition-transform duration-300 group-hover:scale-110"
-              />
+              {folder.coverPhotoId ? (
+                <AuthenticatedImage
+                  photoId={folder.coverPhotoId}
+                  quality="medium"
+                  alt={`Cover for ${folder.name}`}
+                  className="w-full aspect-[16/9] object-cover transition-transform duration-300 group-hover:scale-110"
+                  aspectRatio="16/9"
+                  colorVariant="auto"
+                />
+              ) : (
+                <ImagePlaceholder
+                  title={folder.name}
+                  subtitle={`${folder.photoCount} photos`}
+                  aspectRatio="16/9"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
               <div className="absolute bottom-0 left-0 p-6 text-white w-full">
                 <h2 className="text-2xl font-semibold tracking-wide">{folder.name}</h2>

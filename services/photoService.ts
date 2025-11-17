@@ -36,7 +36,14 @@ export function getPhotoVariantUrl(photoId: string | number, quality?: QualityLe
   // If no quality specified, use viewport-based quality
   const selectedQuality = quality || viewportQualityService.getOptimalQuality();
   
-  return `${baseUrl}/v2/photos/${photoId}/variant/${selectedQuality}`;
+  const url = `${baseUrl}/v2/photos/${photoId}/variant/${selectedQuality}`;
+  
+  // Debug logging (can be removed after testing)
+  if (Math.random() < 0.1) { // Log 10% of requests to avoid spam
+    console.log('[getPhotoVariantUrl]', { photoId, quality, selectedQuality, url });
+  }
+  
+  return url;
 }
 
 /**
@@ -47,6 +54,71 @@ export function getProgressiveUrls(photoId: string | number, finalQuality?: Qual
   const sequence = viewportQualityService.getProgressiveSequence(quality);
   
   return sequence.map(q => getPhotoVariantUrl(photoId, q));
+}
+
+/**
+ * Fetch authenticated photo variant as blob URL
+ * This allows us to send auth headers which <img> tags cannot do
+ */
+export async function fetchPhotoVariantBlob(photoId: string | number, quality?: QualityLevel): Promise<string> {
+  const variantUrl = getPhotoVariantUrl(photoId, quality);
+  
+  // Extract path from full URL for apiClient
+  const path = variantUrl.replace('http://localhost:8000', '');
+  
+  // Fetch with authentication
+  const response = await apiClient.getRaw(path);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch photo ${photoId}: ${response.status} ${response.statusText}`);
+  }
+  
+  // Convert to blob and create object URL
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  
+  console.log('[photoService] Created blob URL:', { photoId, quality, blobUrl: blobUrl.substring(0, 50) + '...' });
+  
+  return blobUrl;
+}
+
+/**
+ * Cache for blob URLs to avoid refetching
+ */
+const blobUrlCache = new Map<string, string>();
+
+/**
+ * Get cached photo variant as blob URL
+ * Fetches and caches on first call, returns cached URL on subsequent calls
+ */
+export async function getCachedPhotoVariant(photoId: string | number, quality?: QualityLevel): Promise<string> {
+  const selectedQuality = quality || viewportQualityService.getOptimalQuality();
+  const cacheKey = `${photoId}-${selectedQuality}`;
+  
+  if (blobUrlCache.has(cacheKey)) {
+    console.log('[photoService] Using cached blob URL:', cacheKey);
+    return blobUrlCache.get(cacheKey)!;
+  }
+  
+  console.log('[photoService] Fetching new blob URL:', cacheKey);
+  const blobUrl = await fetchPhotoVariantBlob(photoId, selectedQuality);
+  blobUrlCache.set(cacheKey, blobUrl);
+  
+  return blobUrl;
+}
+
+/**
+ * Clear blob URL cache (call on logout or when needed)
+ */
+export function clearBlobCache() {
+  console.log('[photoService] Clearing blob URL cache:', blobUrlCache.size, 'entries');
+  
+  // Revoke all blob URLs to free memory
+  blobUrlCache.forEach((blobUrl) => {
+    URL.revokeObjectURL(blobUrl);
+  });
+  
+  blobUrlCache.clear();
 }
 
 export interface UploadPhotoRequest {
@@ -78,12 +150,37 @@ class PhotoService {
     
     const response = await apiClient.get<any>(`/v2/photos/projects/${projectId}/photos`, params);
     
+    console.log('[photoService] Fetched photos from backend:', {
+      projectId,
+      count: response.photos?.length || 0,
+      samplePhoto: response.photos?.[0] ? {
+        id: response.photos[0].id,
+        filename: response.photos[0].original_filename,
+        src: response.photos[0].src,
+        storage_path: response.photos[0].storage_path
+      } : null
+    });
+    
     // Transform all photo.src to use variants instead of originals
-    const transformedPhotos = response.photos.map((photo: any) => ({
-      ...photo,
-      src: getPhotoVariantUrl(photo.id, quality || 'medium'),
-      originalSrc: photo.src || photo.file_path, // Keep original for downloads
-    }));
+    const transformedPhotos = response.photos.map((photo: any) => {
+      const variantUrl = getPhotoVariantUrl(photo.id, quality || 'medium');
+      const originalSrc = photo.src || photo.storage_path || photo.file_path;
+      
+      return {
+        ...photo,
+        src: variantUrl,
+        originalSrc: originalSrc, // Keep original for downloads
+      };
+    });
+    
+    console.log('[photoService] Transformed photos to use variants:', {
+      count: transformedPhotos.length,
+      samplePhoto: transformedPhotos[0] ? {
+        id: transformedPhotos[0].id,
+        src: transformedPhotos[0].src,
+        originalSrc: transformedPhotos[0].originalSrc
+      } : null
+    });
     
     return {
       ...response,

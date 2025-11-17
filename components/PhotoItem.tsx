@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Photo } from '../types';
 import { HeartIcon, HeartFilledIcon, DownloadIcon, ChatBubbleIcon, CheckIcon } from './icons';
+import { AuthenticatedImage } from './common/AuthenticatedImage';
 
 interface PhotoItemProps {
   photo: Photo;
@@ -62,11 +63,12 @@ const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSel
     >
       {isVisible && (
         <>
-            <img
-                src={photo.src}
+            <AuthenticatedImage
+                photoId={photo.id}
+                quality="medium"
                 alt={photo.alt}
                 className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 animate-fade-in"
-                loading="lazy"
+                colorVariant="auto"
             />
             <div 
                 className={`absolute inset-0 transition-all duration-300 ring-4 ring-inset ${isSelected ? 'ring-sky-500' : 'ring-transparent'} ${isCompareMode ? '' : 'bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100'}`}

@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import type { Album, DashboardView, Client, ServicePackage } from '../../types';
 import { PlusIcon } from '../icons';
+import { AuthenticatedImage } from '../common/AuthenticatedImage';
+import { ImagePlaceholder } from '../common/ImagePlaceholder';
 
 interface StudioProjectsProps {
   albums: Album[];
@@ -138,14 +140,22 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <img 
-                              className="h-10 w-10 rounded-md object-cover" 
-                              src={album.coverPhotoSrc} 
-                              alt={album.title}
-                              onError={(e) => {
-                                console.error(`[StudioProjects] Image failed to load for project ${album.id}:`, album.coverPhotoSrc);
-                              }}
-                            />
+                            {album.coverPhotoId ? (
+                              <AuthenticatedImage
+                                photoId={album.coverPhotoId}
+                                quality="thumbnail"
+                                alt={album.title}
+                                className="h-10 w-10 rounded-md object-cover"
+                                aspectRatio="1/1"
+                                colorVariant="auto"
+                              />
+                            ) : (
+                              <ImagePlaceholder
+                                aspectRatio="1/1"
+                                showShimmer={false}
+                                className="h-10 w-10 rounded-md"
+                              />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{album.title}</div>

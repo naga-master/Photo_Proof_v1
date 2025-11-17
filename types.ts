@@ -39,6 +39,7 @@ export type LayoutId =
 export interface Folder {
   id: string;
   name: string;
+  coverPhotoId?: string | null;  // Photo ID for authenticated image loading
   coverPhotoSrc: string;
   photoCount: number;
   photos: Photo[];
@@ -49,6 +50,7 @@ export interface Album {
   title: string;
   clientId: string;
   shootDate?: string;
+  coverPhotoId?: string | null;  // Photo ID for authenticated image loading
   coverPhotoSrc?: string;
   photoCount: number;
   isLocked: boolean;

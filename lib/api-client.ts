@@ -287,6 +287,49 @@ export class ApiClient {
 
     return this.handleResponse(response);
   }
+
+  /**
+   * Get raw Response for blob/binary data (like images)
+   * Includes authentication headers
+   */
+  async getRaw(endpoint: string): Promise<Response> {
+    const token = localStorage.getItem('auth_token');
+    
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'GET',
+      headers,
+      credentials: 'include', // Send cookies
+    });
+    
+    // Check for 401 and attempt token refresh
+    if (!response.ok && response.status === 401) {
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        const newToken = await this.refreshAccessToken();
+        this.isRefreshing = false;
+        
+        if (newToken) {
+          // Retry with new token
+          const retryHeaders: HeadersInit = {
+            'Authorization': `Bearer ${newToken}`
+          };
+          
+          return fetch(`${this.baseUrl}${endpoint}`, {
+            method: 'GET',
+            headers: retryHeaders,
+            credentials: 'include',
+          });
+        }
+      }
+    }
+    
+    return response;
+  }
 }
 
 // Singleton instance

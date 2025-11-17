@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import type { Photo, Comment } from '../types';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, HeartIcon, HeartFilledIcon, DownloadIcon, ChatBubbleIcon, CheckIcon, PlayIcon, PauseIcon } from './icons';
-import { getPhotoVariantUrl } from '../services/photoService';
+import { AuthenticatedImage } from './common/AuthenticatedImage';
 
 interface LightboxProps {
   photos: Photo[];
@@ -281,15 +281,8 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
   const [showComments, setShowComments] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
   
-  // Upgrade photo quality for lightbox detail view (high quality: 780KB instead of medium: 245KB)
-  const highQualityPhoto = useMemo(() => {
-    if (!currentPhoto) return currentPhoto;
-    return {
-      ...currentPhoto,
-      src: getPhotoVariantUrl(currentPhoto.id, 'high'),
-      originalSrc: currentPhoto.originalSrc || currentPhoto.src, // Preserve original for downloads
-    };
-  }, [currentPhoto]);
+  // Use high quality for lightbox (AuthenticatedImage handles the fetching)
+  const highQualityPhoto = currentPhoto;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -344,7 +337,13 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
       <div className="relative w-full h-full flex items-center justify-center transition-all duration-300" onClick={(e) => e.stopPropagation()} style={{ paddingRight: showComments ? '320px' : '0' }}>
         
         <div className="max-w-[90vw] max-h-[85vh] animate-slide-up">
-            <img src={highQualityPhoto.src} alt={highQualityPhoto.alt} className="w-auto h-auto max-w-full max-h-[85vh] object-contain" />
+            <AuthenticatedImage
+              photoId={highQualityPhoto.id}
+              quality="high"
+              alt={highQualityPhoto.alt}
+              className="w-auto h-auto max-w-full max-h-[85vh] object-contain"
+              colorVariant="auto"
+            />
         </div>
         
         <div 
