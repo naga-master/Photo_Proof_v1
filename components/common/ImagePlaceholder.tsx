@@ -31,10 +31,15 @@ export const ImagePlaceholder: React.FC<ImagePlaceholderProps> = ({
 }) => {
   const colors = COLOR_VARIANTS[colorVariant];
   
+  // If className includes 'absolute', remove 'relative' positioning and don't use aspectRatio
+  const hasAbsolutePositioning = className.includes('absolute');
+  const positionClass = hasAbsolutePositioning ? '' : 'relative';
+  const aspectRatioStyle = hasAbsolutePositioning ? undefined : { aspectRatio };
+  
   return (
     <div 
-      className={`relative bg-gradient-to-br ${colors.from} ${colors.to} overflow-hidden ${className}`}
-      style={{ aspectRatio }}
+      className={`${positionClass} bg-gradient-to-br ${colors.from} ${colors.to} overflow-hidden ${className}`}
+      style={aspectRatioStyle}
     >
       {/* Shimmer animation */}
       {showShimmer && (
