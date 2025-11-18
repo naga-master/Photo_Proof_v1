@@ -22,13 +22,17 @@ function getNetworkIP(): string {
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const networkIP = getNetworkIP();
-    const backendTarget = `http://${networkIP}:8000`;
+    
+    // Use localhost for proxy since frontend and backend run on same machine
+    // networkIP is only for showing mobile device access URLs
+    const backendTarget = 'http://localhost:8000';
     
     console.log('\n🌐 Network Access:');
     console.log(`   Frontend - Local:   http://localhost:3001`);
     console.log(`   Frontend - Network: http://${networkIP}:3001`);
     console.log(`   Backend  - Local:   http://localhost:8000`);
-    console.log(`   Backend  - Network: http://${networkIP}:8000\n`);
+    console.log(`   Backend  - Network: http://${networkIP}:8000`);
+    console.log(`   Proxy Target:       ${backendTarget}\n`);
     
     return {
       server: {
