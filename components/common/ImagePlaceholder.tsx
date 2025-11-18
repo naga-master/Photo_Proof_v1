@@ -86,7 +86,7 @@ export const ImagePlaceholder: React.FC<ImagePlaceholderProps> = ({
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
       
-      <style jsx>{`
+      <style>{`
         @keyframes shimmer {
           0% {
             transform: translateX(-100%);

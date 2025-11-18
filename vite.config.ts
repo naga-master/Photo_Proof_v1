@@ -1,17 +1,43 @@
 import path from 'path';
+import os from 'os';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Get local network IP address
+function getNetworkIP(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    const iface = interfaces[name];
+    if (!iface) continue;
+    
+    for (const alias of iface) {
+      if (alias.family === 'IPv4' && !alias.internal) {
+        return alias.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const networkIP = getNetworkIP();
+    const backendTarget = `http://${networkIP}:8000`;
+    
+    console.log('\n🌐 Network Access:');
+    console.log(`   Frontend - Local:   http://localhost:3001`);
+    console.log(`   Frontend - Network: http://${networkIP}:3001`);
+    console.log(`   Backend  - Local:   http://localhost:8000`);
+    console.log(`   Backend  - Network: http://${networkIP}:8000\n`);
+    
     return {
       server: {
-        port: 3001, // Changed to 3001 to avoid conflict with main app on 5173
-        host: '0.0.0.0',
-        open: true, // Automatically open browser
+        port: 3001,
+        host: '0.0.0.0', // Listen on all interfaces for network access
+        open: true,
         proxy: {
           '/api': {
-            target: 'http://localhost:8000',
+            target: backendTarget,
             changeOrigin: true,
             secure: false,
           },
