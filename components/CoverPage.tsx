@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Album } from '../types';
 import { ArrowRightIcon } from './icons';
+import AuthenticatedBackgroundImage from './AuthenticatedBackgroundImage';
 
 interface CoverPageProps {
   album: Album;
@@ -25,10 +26,14 @@ const CoverPage: React.FC<CoverPageProps> = ({ album, onOpenGallery }) => {
 
   return (
     <div className="relative h-screen w-full flex items-center justify-center text-white overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center z-0 animate-ken-burns"
-        style={{ backgroundImage: `url(${album.coverPhotoSrc})` }}
-      ></div>
+      <AuthenticatedBackgroundImage
+        photoId={album.coverPhotoId}
+        quality="medium"
+        className="absolute inset-0 z-0 animate-ken-burns"
+        fallbackSrc={album.coverPhotoSrc}
+      >
+        <div></div>
+      </AuthenticatedBackgroundImage>
       <div className="absolute inset-0 bg-black/50 z-10"></div>
       
       <div className="relative z-20 text-center animate-fade-in p-4">

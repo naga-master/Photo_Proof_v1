@@ -103,6 +103,7 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
         setActiveFilter={setActiveFilter}
         onDownload={handleDownload}
         toggleCompare={toggleCompare}
+        isStudioPreview={false}
       />
 
       {lightboxIndex !== null && (
@@ -121,6 +122,7 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
           toggleFavorite={props.toggleFavorite}
           toggleSelection={props.toggleSelection}
           onDownload={handleDownload}
+          isStudioPreview={false}
         />
       )}
       

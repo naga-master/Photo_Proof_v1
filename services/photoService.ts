@@ -57,35 +57,76 @@ export function getProgressiveUrls(photoId: string | number, finalQuality?: Qual
 }
 
 /**
- * Fetch authenticated photo variant as blob URL
+ * Fetch authenticated photo variant as blob URL with retry logic
  * This allows us to send auth headers which <img> tags cannot do
  */
-export async function fetchPhotoVariantBlob(photoId: string | number, quality?: QualityLevel): Promise<string> {
+export async function fetchPhotoVariantBlob(photoId: string | number, quality?: QualityLevel, retryCount = 0): Promise<string> {
   const variantUrl = getPhotoVariantUrl(photoId, quality);
   
   // Extract path from full URL for apiClient
   const path = variantUrl.replace('http://localhost:8000', '');
   
-  // Fetch with authentication
-  const response = await apiClient.getRaw(path);
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch photo ${photoId}: ${response.status} ${response.statusText}`);
+  try {
+    // Fetch with authentication
+    const response = await apiClient.getRaw(path);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch photo ${photoId}: ${response.status} ${response.statusText}`);
+    }
+    
+    // Convert to blob and create object URL
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    console.log('[photoService] Created blob URL:', { photoId, quality, blobUrl: blobUrl.substring(0, 50) + '...' });
+    
+    return blobUrl;
+  } catch (error) {
+    // Retry up to 3 times with exponential backoff
+    if (retryCount < 3) {
+      const delay = Math.pow(2, retryCount) * 100; // 100ms, 200ms, 400ms
+      console.log(`[photoService] Retrying photo ${photoId} after ${delay}ms (attempt ${retryCount + 1}/3)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchPhotoVariantBlob(photoId, quality, retryCount + 1);
+    }
+    throw error;
   }
-  
-  // Convert to blob and create object URL
-  const blob = await response.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  
-  console.log('[photoService] Created blob URL:', { photoId, quality, blobUrl: blobUrl.substring(0, 50) + '...' });
-  
-  return blobUrl;
 }
 
 /**
  * Cache for blob URLs to avoid refetching
  */
 const blobUrlCache = new Map<string, string>();
+
+/**
+ * Request queue to limit concurrent photo fetches
+ */
+let activeRequests = 0;
+const MAX_CONCURRENT_REQUESTS = 3;
+const requestQueue: Array<() => void> = [];
+
+async function waitForSlot(): Promise<void> {
+  if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+    activeRequests++;
+    return;
+  }
+  
+  // Wait in queue
+  return new Promise<void>((resolve) => {
+    requestQueue.push(() => {
+      activeRequests++;
+      resolve();
+    });
+  });
+}
+
+function releaseSlot(): void {
+  activeRequests--;
+  const next = requestQueue.shift();
+  if (next) {
+    next();
+  }
+}
 
 /**
  * Get cached photo variant as blob URL
@@ -100,11 +141,17 @@ export async function getCachedPhotoVariant(photoId: string | number, quality?: 
     return blobUrlCache.get(cacheKey)!;
   }
   
-  console.log('[photoService] Fetching new blob URL:', cacheKey);
-  const blobUrl = await fetchPhotoVariantBlob(photoId, selectedQuality);
-  blobUrlCache.set(cacheKey, blobUrl);
+  // Wait for available slot
+  await waitForSlot();
   
-  return blobUrl;
+  try {
+    console.log('[photoService] Fetching new blob URL:', cacheKey);
+    const blobUrl = await fetchPhotoVariantBlob(photoId, selectedQuality);
+    blobUrlCache.set(cacheKey, blobUrl);
+    return blobUrl;
+  } finally {
+    releaseSlot();
+  }
 }
 
 /**

@@ -26,7 +26,19 @@ const Layout5: React.FC<LayoutComponentProps> = (props) => {
 
             {/* Photo Grid */}
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <PhotoGrid photos={photos} onImageClick={openLightbox} isStudioPreview={isStudioPreview} {...rest} />
+                <PhotoGrid 
+                    photos={photos} 
+                    onImageClick={openLightbox}
+                    favorites={rest.favorites}
+                    selections={rest.selections}
+                    toggleFavorite={rest.toggleFavorite}
+                    toggleSelection={rest.toggleSelection}
+                    onDownload={rest.onDownload}
+                    compareList={rest.compareList}
+                    isCompareMode={rest.isCompareMode}
+                    toggleCompare={rest.toggleCompare}
+                    isStudioPreview={isStudioPreview}
+                />
             </main>
         </div>
     );

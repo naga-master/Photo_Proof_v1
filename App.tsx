@@ -878,7 +878,9 @@ const App: React.FC = () => {
                 // Map cached photos and use them
                 const photos = cachedResponse.photos.map((photo: any) => ({
                     id: String(photo.id),
-                    src: `http://localhost:8000${photo.src}`,
+                    src: photo.src && !photo.src.startsWith('http')
+                        ? `http://localhost:8000${photo.src}`
+                        : photo.src || '',
                     alt: photo.original_filename || photo.alt,
                     width: photo.width || 800,
                     height: photo.height || 1200,
@@ -898,7 +900,9 @@ const App: React.FC = () => {
                 // Map cached photos
                 const photos = cachedResponse.photos.map((photo: any) => ({
                     id: String(photo.id),
-                    src: `http://localhost:8000${photo.src}`,
+                    src: photo.src && !photo.src.startsWith('http')
+                        ? `http://localhost:8000${photo.src}`
+                        : photo.src || '',
                     alt: photo.original_filename || photo.alt,
                     width: photo.width || 800,
                     height: photo.height || 1200,
@@ -935,7 +939,9 @@ const App: React.FC = () => {
             // Map backend photos to frontend Photo type
             const photos = response.photos.map((photo: any) => ({
                 id: String(photo.id),
-                src: `http://localhost:8000${photo.src}`,
+                src: photo.src && !photo.src.startsWith('http')
+                    ? `http://localhost:8000${photo.src}`
+                    : photo.src || '',
                 alt: photo.original_filename || photo.alt,
                 width: photo.width || 800,
                 height: photo.height || 1200,
@@ -978,7 +984,9 @@ const App: React.FC = () => {
             // Map backend photos to frontend Photo type
             const photos = response.photos.map((photo: any) => ({
                 id: String(photo.id),
-                src: `http://localhost:8000${photo.src}`,
+                src: photo.src && !photo.src.startsWith('http')
+                    ? `http://localhost:8000${photo.src}`
+                    : photo.src || '',
                 alt: photo.original_filename || photo.alt,
                 width: photo.width || 800,
                 height: photo.height || 1200,

@@ -4,20 +4,26 @@ import React from 'react';
 import { LayoutComponentProps } from '../LayoutRenderer';
 import PhotoItem from '../../PhotoItem';
 import GalleryControls from './GalleryControls';
+import AuthenticatedBackgroundImage from '../../AuthenticatedBackgroundImage';
 
 const Layout8: React.FC<LayoutComponentProps> = (props) => {
-    const { album, photos, title, openLightbox, ...rest } = props;
+    const { album, photos, title, openLightbox, isStudioPreview, ...rest } = props;
     const { toggleCompare = () => {} } = rest;
     
     return (
         <div className="bg-black text-white">
             {/* Cover Header */}
-            <div className="h-[70vh] flex items-center justify-center text-white bg-cover bg-center" style={{ backgroundImage: `url(${album.coverPhotoSrc})`}}>
+            <AuthenticatedBackgroundImage
+                photoId={album.coverPhotoId}
+                quality="medium"
+                className="h-[70vh] flex items-center justify-center text-white"
+                fallbackSrc={album.coverPhotoSrc}
+            >
                 <div className="text-center bg-black/30 p-8 rounded">
                     <h1 className="text-5xl font-serif">{title}</h1>
                     <p className="text-lg mt-2">{photos.length} photos</p>
                 </div>
-            </div>
+            </AuthenticatedBackgroundImage>
 
             {/* Controls */}
             <header className="sticky top-16 z-30 bg-black/80 backdrop-blur-sm border-b border-gray-700">
@@ -47,6 +53,7 @@ const Layout8: React.FC<LayoutComponentProps> = (props) => {
                             toggleSelection={rest.toggleSelection}
                             onDownload={rest.onDownload}
                             isCompareMode={rest.isCompareMode}
+                            isStudioPreview={isStudioPreview}
                         />
                     ))}
                 </div>

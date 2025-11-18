@@ -6,7 +6,7 @@ import PhotoItem from '../../PhotoItem';
 import GalleryControls from './GalleryControls';
 
 const Layout9: React.FC<LayoutComponentProps> = (props) => {
-    const { photos, title, openLightbox, ...rest } = props;
+    const { photos, title, openLightbox, isStudioPreview, ...rest } = props;
     const { toggleCompare = () => {} } = rest;
     
     return (
@@ -42,6 +42,7 @@ const Layout9: React.FC<LayoutComponentProps> = (props) => {
                             toggleSelection={rest.toggleSelection}
                             onDownload={rest.onDownload}
                             isCompareMode={rest.isCompareMode}
+                            isStudioPreview={isStudioPreview}
                         />
                     ))}
                 </div>

@@ -44,14 +44,17 @@ const useOnScreen = (options: IntersectionObserverInit) => {
 
 const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSelection, toggleFavorite, toggleSelection, onDownload, isInCompareList, isCompareMode, isSelectable = false, isStudioPreview = false }) => {
   const hasComments = photo.comments && photo.comments.length > 0;
-  
-  // Debug: Log studio preview mode [v3 - Force reload]
-  console.log('[PhotoItem DEBUG] Photo:', photo.id, 'isStudioPreview:', isStudioPreview, 'Type:', typeof isStudioPreview);
-  if (photo.id.toString().startsWith('preview')) {
-    console.log('[PhotoItem] PREVIEW DETECTED! isStudioPreview:', isStudioPreview);
-  }
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const [ref, isVisible] = useOnScreen({ rootMargin: '200px' });
+  
+  // Debug logging
+  console.log('[PhotoItem] Rendering:', { photoId: photo.id, isStudioPreview, src: photo.src?.substring(0, 50) });
+  
+  // Reset imageLoaded when photo changes
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [photo.id, photo.src]);
   
   const handleButtonClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -70,11 +73,19 @@ const PhotoItem: React.FC<PhotoItemProps> = ({ photo, onClick, isFavorite, isSel
     >
       {isVisible && (
         <>
+            {/* Shimmer loading effect */}
+            {!imageLoaded && (
+                <div className="absolute inset-0 overflow-hidden bg-slate-200">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-50 animate-shimmer"></div>
+                </div>
+            )}
+            
             {isStudioPreview ? (
                 <img
                     src={photo.src}
                     alt={photo.alt}
-                    className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 animate-fade-in"
+                    onLoad={() => setImageLoaded(true)}
+                    className={`absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${imageLoaded ? 'animate-fade-in' : 'opacity-0'}`}
                 />
             ) : (
                 <AuthenticatedImage

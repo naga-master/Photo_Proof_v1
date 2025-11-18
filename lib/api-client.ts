@@ -302,6 +302,7 @@ export class ApiClient {
     
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'GET',
+      mode: 'cors',
       headers,
       credentials: 'include', // Send cookies
     });
@@ -321,6 +322,7 @@ export class ApiClient {
           
           return fetch(`${this.baseUrl}${endpoint}`, {
             method: 'GET',
+            mode: 'cors',
             headers: retryHeaders,
             credentials: 'include',
           });

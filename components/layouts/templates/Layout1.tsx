@@ -2,6 +2,7 @@ import React from 'react';
 import { LayoutComponentProps } from '../LayoutRenderer';
 import PhotoGrid from '../../PhotoGrid';
 import GalleryControls from './GalleryControls';
+import AuthenticatedBackgroundImage from '../../AuthenticatedBackgroundImage';
 
 const Layout1: React.FC<LayoutComponentProps> = (props) => {
     const { album, photos, title, openLightbox, isStudioPreview, ...rest } = props;
@@ -9,12 +10,17 @@ const Layout1: React.FC<LayoutComponentProps> = (props) => {
     return (
         <div className="bg-white text-gray-800">
             {/* Cover Header */}
-            <div className="h-[60vh] flex items-center justify-center text-white bg-cover bg-center" style={{ backgroundImage: `url(${album.coverPhotoSrc})`}}>
+            <AuthenticatedBackgroundImage
+                photoId={album.coverPhotoId}
+                quality="medium"
+                className="h-[60vh] flex items-center justify-center text-white"
+                fallbackSrc={album.coverPhotoSrc}
+            >
                 <div className="text-center bg-black/30 p-8 rounded">
                     <h1 className="text-5xl font-serif">{title}</h1>
                     <p className="text-lg mt-2">{photos.length} photos</p>
                 </div>
-            </div>
+            </AuthenticatedBackgroundImage>
 
             {/* Controls */}
             <header className="sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b">
@@ -31,7 +37,19 @@ const Layout1: React.FC<LayoutComponentProps> = (props) => {
 
             {/* Photo Grid */}
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <PhotoGrid photos={photos} onImageClick={openLightbox} isStudioPreview={isStudioPreview} {...rest} />
+                <PhotoGrid 
+                    photos={photos} 
+                    onImageClick={openLightbox} 
+                    favorites={rest.favorites}
+                    selections={rest.selections}
+                    toggleFavorite={rest.toggleFavorite}
+                    toggleSelection={rest.toggleSelection}
+                    onDownload={rest.onDownload}
+                    compareList={rest.compareList}
+                    isCompareMode={rest.isCompareMode}
+                    toggleCompare={rest.toggleCompare}
+                    isStudioPreview={isStudioPreview}
+                />
             </main>
         </div>
     );

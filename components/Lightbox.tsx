@@ -18,6 +18,7 @@ interface LightboxProps {
   toggleFavorite: (photoId: string) => void;
   toggleSelection: (photoId: string) => void;
   onDownload: (photoSrc: string, photoAlt: string) => void;
+  isStudioPreview?: boolean;
 }
 
 const CommentForm: React.FC<{
@@ -276,7 +277,7 @@ const CommentsPanel: React.FC<{ photo: Photo; onAddComment: (photoId: string, co
 };
 
 
-const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNext, onPrev, onAddComment, onLoadComments, isSlideshowActive, setSlideshowActive, favorites, selections, toggleFavorite, toggleSelection, onDownload }) => {
+const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNext, onPrev, onAddComment, onLoadComments, isSlideshowActive, setSlideshowActive, favorites, selections, toggleFavorite, toggleSelection, onDownload, isStudioPreview = false }) => {
   const currentPhoto = photos[currentIndex];
   const [showComments, setShowComments] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -337,13 +338,21 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
       <div className="relative w-full h-full flex items-center justify-center transition-all duration-300" onClick={(e) => e.stopPropagation()} style={{ paddingRight: showComments ? '320px' : '0' }}>
         
         <div className="max-w-[90vw] max-h-[85vh] animate-slide-up">
-            <AuthenticatedImage
-              photoId={highQualityPhoto.id}
-              quality="high"
-              alt={highQualityPhoto.alt}
-              className="w-auto h-auto max-w-full max-h-[85vh] object-contain"
-              colorVariant="auto"
-            />
+            {isStudioPreview ? (
+              <img
+                src={highQualityPhoto.src}
+                alt={highQualityPhoto.alt}
+                className="w-auto h-auto max-w-full max-h-[85vh] object-contain"
+              />
+            ) : (
+              <AuthenticatedImage
+                photoId={highQualityPhoto.id}
+                quality="high"
+                alt={highQualityPhoto.alt}
+                className="w-auto h-auto max-w-full max-h-[85vh] object-contain"
+                colorVariant="auto"
+              />
+            )}
         </div>
         
         <div 

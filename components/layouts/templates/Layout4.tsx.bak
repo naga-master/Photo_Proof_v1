@@ -2,7 +2,6 @@ import React from 'react';
 import { LayoutComponentProps } from '../LayoutRenderer';
 import PhotoGrid from '../../PhotoGrid';
 import GalleryControls from './GalleryControls';
-import AuthenticatedBackgroundImage from '../../AuthenticatedBackgroundImage';
 
 const Layout4: React.FC<LayoutComponentProps> = (props) => {
     const { album, photos, title, openLightbox, isStudioPreview, ...rest } = props;
@@ -10,17 +9,12 @@ const Layout4: React.FC<LayoutComponentProps> = (props) => {
     return (
         <div className="bg-[#FAF0E6] text-gray-800">
             {/* Cover Header */}
-            <AuthenticatedBackgroundImage
-                photoId={album.coverPhotoId}
-                quality="medium"
-                className="h-[60vh] flex items-center justify-center text-white"
-                fallbackSrc={album.coverPhotoSrc}
-            >
+            <div className="h-[60vh] flex items-center justify-center text-white bg-cover bg-center" style={{ backgroundImage: `url(${album.coverPhotoSrc})`}}>
                 <div className="text-center bg-black/30 p-8 rounded">
                     <h1 className="text-5xl font-serif">{album.title}</h1>
                     <p className="text-lg mt-2">{album.photoCount} photos</p>
                 </div>
-            </AuthenticatedBackgroundImage>
+            </div>
 
             {/* Controls */}
             <header className="sticky top-16 z-30 bg-[#FAF0E6]/80 backdrop-blur-sm border-b border-gray-300">
