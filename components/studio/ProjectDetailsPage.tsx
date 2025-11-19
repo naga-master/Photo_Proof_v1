@@ -55,32 +55,31 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
   }
 
   const clientName = clients.find(c => c.id === details.clientId)?.name || 'Unknown Client';
-  const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
 
   return (
-    <div className="p-8 animate-fade-in">
-        <header className="flex items-center gap-4 mb-8">
-            <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100">
+    <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
+        <header className="flex flex-col sm:flex-row items-start gap-4 mb-6 sm:mb-8">
+            <button onClick={onBack} className="p-2 rounded-lg hover:bg-gray-100 min-h-[44px] min-w-[44px]">
                 <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
             </button>
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">{project.title}</h1>
-                <p className="mt-1 text-gray-600">Managing project details and assets for <span className="font-semibold">{clientName}</span>.</p>
+            <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">{project.title}</h1>
+                <p className="mt-1 text-sm sm:text-base text-gray-600">Managing project for <span className="font-semibold">{clientName}</span></p>
             </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
             <div className="lg:col-span-2 space-y-6">
                 {/* Cover Photo Section */}
-                <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-gray-800">Cover Photo</h2>
+                <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Cover Photo</h2>
                         <button
                             onClick={() => setCoverPhotoModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition-colors"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors min-h-[44px]"
                         >
                             <CameraIcon className="w-4 h-4" />
-                            Change Cover
+                            <span>Change Cover</span>
                         </button>
                     </div>
                     <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
@@ -90,63 +89,63 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                             className="w-full h-full object-cover"
                         />
                     </div>
-                    <p className="mt-3 text-sm text-gray-500">
+                    <p className="mt-3 text-xs sm:text-sm text-gray-500">
                         This image represents your project in galleries and project listings.
                     </p>
                 </div>
 
                 {/* Project Metadata Section */}
-                <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-6">Project Metadata</h2>
-                    <form className="space-y-6">
+                <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">Project Metadata</h2>
+                    <form className="space-y-4 sm:space-y-6">
                         <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Project Title</label>
-                            <input type="text" id="title" name="title" value={details.title} onChange={handleChange} className={inputClasses} />
+                            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">Project Title</label>
+                            <input type="text" id="title" name="title" value={details.title} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500" />
                         </div>
                         <div>
-                            <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">Client</label>
-                            <select id="clientId" name="clientId" value={details.clientId} onChange={handleChange} className={inputClasses}>
+                            <label htmlFor="clientId" className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+                            <select id="clientId" name="clientId" value={details.clientId} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] bg-white focus:ring-2 focus:ring-gray-500">
                                 {clients.map(client => (
                                     <option key={client.id} value={client.id}>{client.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="shootDate" className="block text-sm font-medium text-gray-700">Shoot Date</label>
-                            <input type="date" id="shootDate" name="shootDate" value={details.shootDate || ''} onChange={handleChange} className={inputClasses} />
+                            <label htmlFor="shootDate" className="block text-sm font-medium text-gray-700 mb-2">Shoot Date</label>
+                            <input type="date" id="shootDate" name="shootDate" value={details.shootDate || ''} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500" />
                         </div>
                     </form>
                 </div>
             </div>
             <div className="lg:col-span-1 space-y-6">
-                 <div className="bg-white p-6 border border-gray-200 rounded-lg">
+                 <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
                     <h3 className="font-semibold text-gray-800 mb-4">Actions</h3>
                     <div className="space-y-3">
                         <button 
                             onClick={() => onGenerateInvoice(project)} 
-                            className="w-full text-center py-2.5 bg-green-600 text-white rounded-md font-semibold hover:bg-green-700 flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2 min-h-[44px]"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             Generate Invoice
                         </button>
-                        <button onClick={onAddPhotos} className="w-full text-center py-2.5 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">Add Photos</button>
+                        <button onClick={onAddPhotos} className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 min-h-[44px]">Add Photos</button>
                         <button 
                             onClick={() => onUploadEditedPhotos(project)} 
-                            className="w-full text-center py-2.5 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center justify-center gap-2 min-h-[44px]"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
                             Upload Edited Photos
                         </button>
-                        <button onClick={() => onViewGallery(project)} className="w-full text-center py-2.5 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">View Gallery</button>
+                        <button onClick={() => onViewGallery(project)} className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 min-h-[44px]">View Gallery</button>
                     </div>
                  </div>
-                 <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                    <button onClick={handleSaveChanges} className="w-full mb-4 py-2.5 bg-gray-800 text-white rounded-md font-semibold hover:bg-gray-700">Save Changes</button>
-                    <button onClick={() => setDeleteModalOpen(true)} className="w-full text-center text-sm text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-md">Delete Project</button>
+                 <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
+                    <button onClick={handleSaveChanges} className="w-full mb-4 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 min-h-[44px]">Save Changes</button>
+                    <button onClick={() => setDeleteModalOpen(true)} className="w-full py-3 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg font-medium min-h-[44px]">Delete Project</button>
                  </div>
             </div>
         </div>

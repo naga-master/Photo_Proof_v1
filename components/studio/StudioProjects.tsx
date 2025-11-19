@@ -64,31 +64,31 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
   }, [albums, searchTerm, statusFilter, sortBy]);
 
   return (
-    <div className="p-8 animate-fade-in">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-            <p className="mt-1 text-gray-600">Manage all your photography projects and galleries.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projects</h1>
+            <p className="mt-1 text-sm sm:text-base text-gray-600">Manage all your photography projects and galleries.</p>
         </div>
-        <button onClick={() => setView('upload')} className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors">
+        <button onClick={() => setView('upload')} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors min-h-[44px]">
             <PlusIcon className="w-5 h-5" />
             <span>New Project</span>
         </button>
       </header>
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+      <div className="mb-6 flex flex-col gap-3">
           <input 
             type="search"
             placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
+            className="w-full bg-white border border-gray-300 rounded-lg shadow-sm px-4 py-3 text-base sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors min-h-[44px]"
           />
-          <div className="flex gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
+              className="bg-white border border-gray-300 rounded-lg shadow-sm px-4 py-3 text-base sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors min-h-[44px]"
             >
                 <option value="all">All Statuses</option>
                 <option value="published">Published</option>
@@ -98,7 +98,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
              <select 
                value={sortBy}
                onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
-               className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
+               className="bg-white border border-gray-300 rounded-lg shadow-sm px-4 py-3 text-base sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors min-h-[44px]"
              >
                 <option value="date">Sort by Date</option>
                 <option value="name">Sort by Name</option>
@@ -106,7 +106,8 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
           </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -189,6 +190,94 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden grid gap-4">
+        {filteredAndSortedAlbums.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+            <p className="text-base">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'No projects found matching your filters.' 
+                : 'No projects yet. Create your first project!'}
+            </p>
+          </div>
+        ) : (
+          filteredAndSortedAlbums.map((album) => {
+            const commentCount = (album.photos || []).reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
+            return (
+              <div 
+                key={album.id}
+                onClick={() => onManageProject(album)}
+                className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
+              >
+                {/* Cover Image */}
+                <div className="aspect-video relative bg-gray-100">
+                  {album.coverPhotoId ? (
+                    <AuthenticatedImage
+                      photoId={album.coverPhotoId}
+                      quality="medium"
+                      alt={album.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ImagePlaceholder
+                      aspectRatio="16/9"
+                      showShimmer={false}
+                      className="w-full h-full"
+                    />
+                  )}
+                  {/* Status Badge */}
+                  <div className="absolute top-2 right-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full backdrop-blur-sm ${
+                      album.isLocked 
+                        ? 'bg-yellow-500/90 text-yellow-900' 
+                        : 'bg-green-500/90 text-white'
+                    }`}>
+                      {album.isLocked ? 'Private' : 'Published'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Content */}
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-1 truncate">{album.title}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{getClientName(album.clientId)}</p>
+                  
+                  <div className="flex items-center justify-between text-sm mb-3">
+                    <div className="flex items-center gap-4 text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {album.photoCount}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        {commentCount}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      onGenerateInvoice(album); 
+                    }} 
+                    className="w-full py-2.5 bg-green-50 text-green-700 rounded-lg font-medium hover:bg-green-100 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Generate Invoice
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

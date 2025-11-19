@@ -71,16 +71,16 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
     
     return (
         <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Layouts & Branding</h1>
-                <p className="mt-1 text-gray-600">Set the default gallery appearance for new projects.</p>
+            <header className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Layouts & Branding</h1>
+                <p className="mt-1 text-sm sm:text-base text-gray-600">Set the default gallery appearance for new projects.</p>
             </header>
 
             {/* Branding Section */}
-            <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                <h2 className="text-xl font-semibold text-gray-800">Branding</h2>
-                <p className="text-sm text-gray-500 mt-1 mb-6">Customize the look and feel of your galleries to match your brand.</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Branding</h2>
+                <p className="text-sm text-gray-500 mt-1 mb-4 sm:mb-6">Customize the look and feel of your galleries to match your brand.</p>
+                <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Studio Logo</label>
                          <input
@@ -106,9 +106,9 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
                         </div>
                     </div>
                      <div>
-                        <label htmlFor="brandColor" className="block text-sm font-medium text-gray-700">Brand Color</label>
-                        <div className="mt-1 flex items-center gap-2">
-                            <div className="relative w-8 h-8 rounded-md border border-gray-300 overflow-hidden">
+                        <label htmlFor="brandColor" className="block text-sm font-medium text-gray-700 mb-2">Brand Color</label>
+                        <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12 sm:w-10 sm:h-10 rounded-lg border-2 border-gray-300 overflow-hidden flex-shrink-0">
                                 <div className="w-full h-full" style={{ backgroundColor: brandColor }}></div>
                                 <input 
                                     type="color" 
@@ -123,18 +123,19 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
                                 name="brandColor" 
                                 value={brandColor} 
                                 onChange={(e) => onSetBrandColor(e.target.value)}
-                                className="block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors"
+                                className="flex-1 px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] font-mono uppercase focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors"
+                                placeholder="#000000"
                             />
                         </div>
                     </div>
                      <div>
-                        <label htmlFor="typography" className="block text-sm font-medium text-gray-700">Typography</label>
+                        <label htmlFor="typography" className="block text-sm font-medium text-gray-700 mb-2">Typography</label>
                         <select 
                             id="typography" 
                             name="typography"
                             value={typography}
                             onChange={(e) => onSetTypography(e.target.value)}
-                            className="mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm sm:text-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors">
+                            className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] bg-white text-gray-900 focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors">
                             <option>System Default (Inter & Cormorant)</option>
                             <option>Playfair Display & Montserrat</option>
                             <option>Lora & Lato</option>
@@ -145,22 +146,22 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
             </div>
 
             {/* Layouts Section */}
-            <div className="mt-8">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Default Layout</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="mt-6 sm:mt-8">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Default Layout</h2>
+                <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
                     {/* Controls */}
                     <div className="lg:col-span-1 space-y-4">
                         <p className="text-sm text-gray-500">Select a template to be used for all new projects. This can be overridden per project.</p>
                         <select
                             value={defaultLayoutId}
                             onChange={(e) => onSetDefaultLayout(e.target.value as LayoutId)}
-                            className="block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
+                            className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] bg-white text-gray-900 focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors"
                         >
                             {layoutTemplates.map(template => (
                                 <option key={template.id} value={template.id}>{template.name}</option>
                             ))}
                         </select>
-                        <div className="p-4 bg-gray-50 rounded-md border">
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                             <p className="font-semibold text-sm text-gray-800">{selectedLayoutTemplate.name}</p>
                             <p className="text-sm text-gray-600 mt-1">{selectedLayoutTemplate.description}</p>
                         </div>

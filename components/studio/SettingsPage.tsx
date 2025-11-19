@@ -606,7 +606,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     };
 
     const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
-    const tabButtonClasses = (tab: SettingsTab) => `px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-200'}`;
+    const tabButtonClasses = (tab: SettingsTab) => `px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center ${activeTab === tab ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-200'}`;
 
     const renderContent = () => {
         switch (activeTab) {
@@ -1301,25 +1301,28 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     }
 
     return (
-        <div className="p-8 animate-fade-in">
-            <header className="flex justify-between items-center mb-8">
+        <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Studio Settings</h1>
-                    <p className="mt-1 text-gray-600">Configure your studio preferences and integrations.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Studio Settings</h1>
+                    <p className="mt-1 text-sm sm:text-base text-gray-600">Configure your studio preferences and integrations.</p>
                 </div>
-                <button onClick={handleSaveChanges} className="px-5 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700">
+                <button onClick={handleSaveChanges} className="w-full sm:w-auto px-5 py-3 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 min-h-[44px]">
                     Save Changes
                 </button>
             </header>
 
-            <div className="flex gap-4 border-b mb-8">
-                <button className={tabButtonClasses('general')} onClick={() => setActiveTab('general')}>General</button>
-                <button className={tabButtonClasses('communication')} onClick={() => setActiveTab('communication')}>Communication</button>
-                <button className={tabButtonClasses('administration')} onClick={() => setActiveTab('administration')}>Administration</button>
-                <button className={tabButtonClasses('billing')} onClick={() => setActiveTab('billing')}>Billing</button>
+            {/* Mobile: Horizontal scrolling tabs */}
+            <div className="overflow-x-auto -mx-4 sm:mx-0 mb-6 sm:mb-8">
+                <div className="flex gap-2 sm:gap-4 border-b px-4 sm:px-0 min-w-max sm:min-w-0">
+                    <button className={tabButtonClasses('general')} onClick={() => setActiveTab('general')}>General</button>
+                    <button className={tabButtonClasses('communication')} onClick={() => setActiveTab('communication')}>Communication</button>
+                    <button className={tabButtonClasses('administration')} onClick={() => setActiveTab('administration')}>Administration</button>
+                    <button className={tabButtonClasses('billing')} onClick={() => setActiveTab('billing')}>Billing</button>
+                </div>
             </div>
             
-            <div className={activeTab === 'administration' ? 'max-w-full' : 'max-w-3xl'}>
+            <div className={activeTab === 'administration' ? 'w-full' : 'w-full sm:max-w-3xl'}>
                 {renderContent()}
             </div>
             
