@@ -5,6 +5,11 @@ import { motion, AnimatePresence, Transition } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
 import { useAuth } from './contexts/AuthContext';
 
+// Multi-tenant imports
+import { StudioThemeProvider, useStudioTheme } from './src/providers/StudioThemeProvider';
+import { StudioLoadingSkeleton } from './src/components/StudioLoadingSkeleton';
+import { MultiTenantDebug } from './src/components/MultiTenantDebug';
+
 // Initialize Stage 1: Foundation
 import './src/services/ConfigLoader'; // Auto-loads configuration
 import './src/services/cache-events/DevModeLogger'; // Auto-starts dev logger
@@ -203,9 +208,12 @@ const mapInvoiceResponse = (invoice: BackendInvoice): Invoice => ({
     updatedAt: invoice.updated_at,
 });
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
     // Get authentication state from AuthContext
     const { user, isAuthenticated, isLoading: authLoading, logout: authLogout } = useAuth();
+    
+    // Get studio theme context
+    const { theme, loading: themeLoading, error: themeError } = useStudioTheme();
     
     // State
     const [page, setPage] = useState<Page>('login');
@@ -1525,8 +1533,49 @@ const App: React.FC = () => {
         return false;
     };
 
+    // Show loading skeleton while theme is loading
+    if (themeLoading) {
+        return <StudioLoadingSkeleton />;
+    }
+    
+    // In development, show a warning banner but continue if theme fails
+    // In production, show error screen
+    if (themeError && !theme) {
+        // Development mode: Show warning banner but continue with app
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('[App] Theme failed to load, continuing with default styling:', themeError);
+            // Continue rendering the app with a warning banner
+        } else {
+            // Production mode: Show error screen
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div className="text-center p-8">
+                        <h1 className="text-2xl font-bold text-gray-800 mb-2">Unable to Load Studio Theme</h1>
+                        <p className="text-gray-600 mb-4">{themeError}</p>
+                        <p className="text-sm text-gray-500">
+                            Please ensure you're accessing the application through a valid studio domain.
+                        </p>
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+    }
+    
     return (
         <div className="h-full overflow-auto">
+            {/* Development warning banner for missing theme */}
+            {process.env.NODE_ENV === 'development' && themeError && !theme && (
+                <div className="bg-yellow-500 text-black px-4 py-2 text-sm text-center">
+                    ⚠️ Development Mode: Theme not loaded ({themeError}). Using default styling.
+                </div>
+            )}
+            
             {page !== 'login' && page !== 'dashboard' && (
                 <TopNavBar 
                     onNavigate={handleNavigate} 
@@ -1553,7 +1602,18 @@ const App: React.FC = () => {
                 theme="dark"
                 aria-label="Notifications"
             />
+            {/* Multi-tenant debug panel (development only) */}
+            {process.env.NODE_ENV === 'development' && <MultiTenantDebug />}
         </div>
+    );
+};
+
+// Main App component that wraps AppContent with providers
+const App: React.FC = () => {
+    return (
+        <StudioThemeProvider>
+            <AppContent />
+        </StudioThemeProvider>
     );
 };
 

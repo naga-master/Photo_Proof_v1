@@ -39,11 +39,24 @@ export default defineConfig(({ mode }) => {
         port: 3001,
         host: '0.0.0.0', // Listen on all interfaces for network access
         open: true,
+        // Allow multi-tenant studio domains
+        allowedHosts: [
+          'localhost',
+          '.photoapp.local',  // Allows *.photoapp.local
+          'demo.photoapp.local',
+          'alpha.photoapp.local',
+          'beta.photoapp.local',
+          'gamma.photoapp.local',
+        ],
         proxy: {
           '/api': {
             target: backendTarget,
             changeOrigin: true,
             secure: false,
+            // Preserve the Host header for tenant detection
+            headers: {
+              'X-Forwarded-Host': '$host',
+            },
           },
         },
       },

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { UserRole } from '../types';
 import { ShoppingCartIcon, ArrowLeftOnRectangleIcon } from './icons';
+import { useStudioTheme } from '../src/providers/StudioThemeProvider';
 
 type Page = 'albums' | 'store' | 'about' | 'cart';
 
@@ -15,6 +16,7 @@ interface TopNavBarProps {
 
 const TopNavBar: React.FC<TopNavBarProps> = ({ onNavigate, cartCount, userRole, onLogout, showBackButton, onBack }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { theme } = useStudioTheme();
 
     const navLinks: { label: string, page: Page }[] = [
         { label: 'Gallery', page: 'albums' },
@@ -50,14 +52,27 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ onNavigate, cartCount, userRole, 
                             </button>
                         )}
                         
-                        {/* Brand name - always visible */}
+                        {/* Brand name or logo - always visible */}
                         <div className="flex-shrink-0">
-                            <span 
-                                onClick={() => onNavigate('albums')} 
-                                className="text-2xl font-serif tracking-widest uppercase cursor-pointer text-slate-800"
-                            >
-                                NAPSTER's Photo Lab
-                            </span>
+                            {theme?.logo_url ? (
+                                <img 
+                                    src={theme.logo_url}
+                                    alt={theme.name}
+                                    className="h-12 cursor-pointer studio-logo"
+                                    onClick={() => onNavigate('albums')}
+                                />
+                            ) : (
+                                <span 
+                                    onClick={() => onNavigate('albums')} 
+                                    className="text-2xl font-serif tracking-widest uppercase cursor-pointer studio-brand-text"
+                                    style={{ 
+                                        color: theme?.brand_color || '#1e293b',
+                                        fontFamily: theme?.typography?.includes('Inter') ? undefined : 'inherit'
+                                    }}
+                                >
+                                    {theme?.name || "NAPSTER's Photo Lab"}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <div className="hidden md:block">

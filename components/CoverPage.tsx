@@ -2,6 +2,7 @@ import React from 'react';
 import type { Album } from '../types';
 import { ArrowRightIcon } from './icons';
 import AuthenticatedBackgroundImage from './AuthenticatedBackgroundImage';
+import { useStudioTheme } from '../src/providers/StudioThemeProvider';
 
 interface CoverPageProps {
   album: Album;
@@ -9,6 +10,8 @@ interface CoverPageProps {
 }
 
 const CoverPage: React.FC<CoverPageProps> = ({ album, onOpenGallery }) => {
+  const { theme } = useStudioTheme();
+  
   if (!album) {
     return (
         <div className="relative h-screen w-full flex items-center justify-center text-white overflow-hidden bg-slate-900">
@@ -45,12 +48,41 @@ const CoverPage: React.FC<CoverPageProps> = ({ album, onOpenGallery }) => {
         </p>
         <button
           onClick={onOpenGallery}
-          className="mt-8 inline-flex items-center gap-3 px-8 py-3 bg-white text-slate-900 text-base font-semibold uppercase tracking-widest hover:bg-slate-200 transition-all duration-300 rounded shadow-lg transform hover:scale-105"
+          className="mt-8 inline-flex items-center gap-3 px-8 py-3 text-white text-base font-semibold uppercase tracking-widest transition-all duration-300 rounded shadow-lg transform hover:scale-105"
+          style={{
+            backgroundColor: theme?.brand_color || '#6366f1',
+            borderColor: theme?.brand_color || '#6366f1',
+          }}
+          onMouseEnter={(e) => {
+            if (theme?.brand_color) {
+              e.currentTarget.style.filter = 'brightness(1.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = 'brightness(1)';
+          }}
         >
           View Gallery
           <ArrowRightIcon className="w-5 h-5" />
         </button>
       </div>
+      
+      {/* Studio branding at bottom */}
+      {theme && (
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+          {theme.logo_url ? (
+            <img 
+              src={theme.logo_url}
+              alt={theme.name}
+              className="h-10 opacity-80 studio-logo"
+            />
+          ) : (
+            <span className="text-white/80 text-sm uppercase tracking-widest">
+              {theme.name}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

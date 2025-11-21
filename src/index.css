@@ -1,5 +1,87 @@
 @import "tailwindcss";
 
+/* Multi-Tenant CSS Variables - These are dynamically set by StudioThemeProvider */
+:root {
+  /* Brand Colors - Overridden by studio theme */
+  --brand-primary: #6366f1;
+  --brand-primary-rgb: 99, 102, 241;
+  --brand-secondary: #4f46e5;
+  --brand-secondary-rgb: 79, 70, 229;
+  
+  /* Typography - Overridden by studio theme */
+  --font-family: 'Inter', system-ui, sans-serif;
+  --font-family-display: 'Cormorant Garamond', serif;
+  
+  /* Dynamic theme colors that adapt to brand */
+  --theme-bg-primary: var(--brand-primary);
+  --theme-text-primary: var(--brand-primary);
+  --theme-border-primary: var(--brand-primary);
+  --theme-hover-primary: var(--brand-secondary);
+}
+
+/* Studio-specific styles */
+.studio-brand-bg {
+  background-color: var(--brand-primary);
+}
+
+.studio-brand-text {
+  color: var(--brand-primary);
+}
+
+.studio-brand-border {
+  border-color: var(--brand-primary);
+}
+
+.studio-brand-hover:hover {
+  background-color: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
+/* Button styles using brand colors */
+.btn-primary {
+  background-color: var(--brand-primary);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--brand-secondary);
+}
+
+.btn-outline-primary {
+  border: 2px solid var(--brand-primary);
+  color: var(--brand-primary);
+  background-color: transparent;
+  transition: all 0.2s;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--brand-primary);
+  color: white;
+}
+
+/* Studio logo styles */
+.studio-logo {
+  max-height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.studio-logo-large {
+  max-height: 80px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Override body font with dynamic font family */
+body {
+  font-family: var(--font-family);
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-family-display);
+}
+
 @theme {
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Cormorant Garamond', serif;
