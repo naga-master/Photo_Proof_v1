@@ -185,11 +185,24 @@ class UnifiedCacheManager {
       return;
     }
     
-    // Fetch from network
+    // Fetch from network WITH AUTHENTICATION
     const url = `/v2/photos/${photoId}/variant/${quality}`;
     
     try {
-      const response = await fetch(url);
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_token');
+      
+      // Add Authorization header
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(url, {
+        headers,
+        credentials: 'include', // Include cookies
+      });
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
