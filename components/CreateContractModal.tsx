@@ -48,9 +48,11 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
       
       if (response.ok) {
         const data = await response.json();
-        setClients(data.clients || []);
+        // Backend returns array directly, not wrapped in object
+        setClients(Array.isArray(data) ? data : data.clients || []);
+        console.log('[CreateContractModal] Loaded clients:', Array.isArray(data) ? data.length : 'invalid format');
       } else {
-        console.error('Failed to load clients');
+        console.error('Failed to load clients:', response.status);
       }
     } catch (err) {
       console.error('Error loading clients:', err);

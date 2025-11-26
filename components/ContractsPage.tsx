@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { contractService, Contract, ContractStats } from '../services/contractService';
 import CreateContractModal from './CreateContractModal';
+import SendContractModal from './SendContractModal';
+import StatusBadge from './StatusBadge';
 
 interface ContractsPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -14,6 +17,8 @@ export default function ContractsPage({ onNavigate }: ContractsPageProps) {
   const [filter, setFilter] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   useEffect(() => {
     loadData();
@@ -39,6 +44,59 @@ export default function ContractsPage({ onNavigate }: ContractsPageProps) {
       setError(err.response?.data?.detail || 'Failed to load contracts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendContract = async (contract: Contract) => {
+    // If we don't have client email, try to fetch it
+    if (!contract.client_name) {
+      toast.info('Loading client details...');
+      // For now, just show modal - email will need to be entered manually
+    }
+    setSelectedContract(contract);
+    setShowSendModal(true);
+  };
+
+  const handleSend = async (email: string) => {
+    if (!selectedContract) return;
+    
+    try {
+      await contractService.sendContract(selectedContract.id, email);
+      toast.success(`Contract sent to ${email}!`);
+      loadData(); // Refresh to show updated status
+    } catch (error: any) {
+      console.error('Failed to send contract:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteContract = async (contract: Contract, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    // Check if contract can be deleted
+    const { canDelete, reason } = contractService.canDeleteContract(contract);
+    
+    if (!canDelete) {
+      toast.error(reason);
+      return;
+    }
+
+    // Show warning if contract was viewed
+    if (reason) {
+      const confirmed = window.confirm(`${reason}\n\nAre you sure you want to delete this contract?`);
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm(`Delete contract "${contract.title}"?\n\nThis action cannot be undone.`);
+      if (!confirmed) return;
+    }
+
+    try {
+      await contractService.deleteContract(contract.id);
+      toast.success('Contract deleted successfully');
+      loadData(); // Refresh list
+    } catch (error: any) {
+      console.error('Failed to delete contract:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete contract');
     }
   };
 
@@ -83,34 +141,67 @@ export default function ContractsPage({ onNavigate }: ContractsPageProps) {
     </motion.div>
   );
 
-  const ContractCard = ({ contract }: { contract: Contract }) => (
-    <motion.div
-      whileHover={{ scale: 1.01 }}
-      onClick={() => onNavigate('contractView', { contractId: contract.id })}
-      className="bg-white rounded-xl shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow"
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{contract.title}</h3>
-          <p className="text-sm text-gray-500 mb-1">Contract # {contract.contract_number}</p>
-          {contract.client_name && (
-            <p className="text-sm text-gray-600">Client: {contract.client_name}</p>
-          )}
-          {contract.project_name && (
-            <p className="text-sm text-gray-600">Project: {contract.project_name}</p>
-          )}
+  const ContractCard = ({ contract }: { contract: Contract }) => {
+    const { canDelete } = contractService.canDeleteContract(contract);
+    
+    return (
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+      >
+        <div className="flex justify-between items-start">
+          <div 
+            className="flex-1 cursor-pointer" 
+            onClick={() => onNavigate('contractView', { contractId: contract.id })}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{contract.title}</h3>
+            <p className="text-sm text-gray-500 mb-1">Contract # {contract.contract_number}</p>
+            {contract.client_name && (
+              <p className="text-sm text-gray-600">Client: {contract.client_name}</p>
+            )}
+            {contract.project_name && (
+              <p className="text-sm text-gray-600">Project: {contract.project_name}</p>
+            )}
+            <p className="text-xs text-gray-400 mt-2">
+              Created: {new Date(contract.created_at).toLocaleDateString()}
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-end gap-2">
+            <StatusBadge status={contract.status as any} size="sm" />
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {/* Send Button - for draft, sent, viewed */}
+              {['draft', 'sent', 'viewed'].includes(contract.status) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSendContract(contract);
+                  }}
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  title={contract.status === 'draft' ? 'Send to Client' : 'Resend Contract'}
+                >
+                  {contract.status === 'draft' ? '📤 Send' : '🔄 Resend'}
+                </button>
+              )}
+              
+              {/* Delete Button - only if allowed */}
+              {canDelete && (
+                <button
+                  onClick={(e) => handleDeleteContract(contract, e)}
+                  className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                  title="Delete Contract"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col items-end">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(contract.status)}`}>
-            {getStatusIcon(contract.status)} {contract.status.toUpperCase()}
-          </span>
-          <p className="text-xs text-gray-400 mt-2">
-            {new Date(contract.created_at).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   if (loading && contracts.length === 0) {
     return (
@@ -215,6 +306,21 @@ export default function ContractsPage({ onNavigate }: ContractsPageProps) {
           loadData(); // Reload contracts after creation
         }}
       />
+
+      {/* Send Contract Modal */}
+      {selectedContract && (
+        <SendContractModal
+          isOpen={showSendModal}
+          onClose={() => {
+            setShowSendModal(false);
+            setSelectedContract(null);
+          }}
+          onSend={handleSend}
+          contractTitle={selectedContract.title}
+          defaultEmail={selectedContract.client_name || ''}
+          clientName={selectedContract.client_name}
+        />
+      )}
     </div>
   );
 }

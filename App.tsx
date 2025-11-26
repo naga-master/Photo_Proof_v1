@@ -62,6 +62,7 @@ import ShoppingCartPage from './components/store/ShoppingCartPage';
 import CheckoutPage from './components/store/CheckoutPage';
 import OrderConfirmationPage from './components/store/OrderConfirmationPage';
 import ContractsPage from './components/ContractsPage';
+import ClientContractsPage from './components/ClientContractsPage';
 import ContractViewerPage from './components/ContractViewerPage';
 import ConsentScreen from './src/components/ConsentScreen';
 import PrivacyPolicy from './src/pages/PrivacyPolicy';
@@ -1518,7 +1519,13 @@ const AppContent: React.FC = () => {
                 />;
                 break;
             case 'contracts':
-                component = <ContractsPage onNavigate={handleNavigate} />;
+                // Show different contract pages based on user role
+                if (userRole === 'client') {
+                    component = <ClientContractsPage onNavigate={handleNavigate} />;
+                } else {
+                    // Studio owners and photographers see full management interface
+                    component = <ContractsPage onNavigate={handleNavigate} />;
+                }
                 break;
             case 'contractView':
                 component = <ContractViewerPage 

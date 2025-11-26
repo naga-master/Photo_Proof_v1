@@ -188,10 +188,41 @@ class ContractService {
   }
 
   async getContractStats(): Promise<ContractStats> {
-    const response = await axios.get(`${API_BASE_URL}/v2/contracts/stats`, {
-      headers: this.getHeaders(),
-    });
-    return response.data;
+    try {
+      // Check if user is a client - if so, compute stats from contracts list
+      // This avoids 403 errors since stats endpoint is studio-only
+      const userRole = localStorage.getItem('user_role');
+      
+      if (userRole === 'client') {
+        // Clients: compute simple stats from their contract list
+        const contractsData = await this.getContracts({ limit: 100 });
+        const contracts = contractsData.contracts;
+        
+        return {
+          total: contracts.length,
+          draft: 0, // Clients don't see drafts
+          pending: contracts.filter(c => c.status === 'sent' || c.status === 'viewed').length,
+          signed: contracts.filter(c => c.status === 'signed').length,
+          expiring: 0, // Simplified for clients
+        };
+      }
+      
+      // Studio users: get full stats from API
+      const response = await axios.get(`${API_BASE_URL}/v2/contracts/stats`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching contract stats:', error);
+      // If stats fail, return zeros to prevent UI crashes
+      return {
+        total: 0,
+        draft: 0,
+        pending: 0,
+        signed: 0,
+        expiring: 0,
+      };
+    }
   }
 
   async getContractActivities(id: string): Promise<ContractActivity[]> {
@@ -217,6 +248,31 @@ class ContractService {
       return `${API_BASE_URL}${pdfUrl}`;
     }
     return pdfUrl;
+  }
+
+  // Check if contract can be deleted (business rules based on Indian legal requirements)
+  canDeleteContract(contract: Contract): { canDelete: boolean; reason?: string } {
+    // Signed contracts: CANNOT delete (legal requirement - must retain for 7 years per DPDPA)
+    if (contract.status === 'signed') {
+      return {
+        canDelete: false,
+        reason: 'Signed contracts cannot be deleted. Legal requirement: must retain for 7 years (DPDPA 2023).'
+      };
+    }
+
+    // Viewed contracts: RISKY but technically allowed
+    if (contract.status === 'viewed') {
+      return {
+        canDelete: true,
+        reason: 'Warning: Client has viewed this contract. Consider cancelling instead of deleting.'
+      };
+    }
+
+    // Draft: OK to delete (not sent yet)
+    // Sent: OK to delete (can resend if needed)
+    // Expired: OK to delete (already invalid)
+    // Cancelled: OK to delete (already voided)
+    return { canDelete: true };
   }
 }
 

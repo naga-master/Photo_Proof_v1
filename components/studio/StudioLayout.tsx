@@ -160,17 +160,47 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         setView('clientDetails');
     };
     
-    const handleCreateClient = (newClientData: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => {
-        const newClient: Client = {
-            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
-            ...newClientData,
-            username: newClientData.email,
-            password: 'password',
-            projects: [],
-            lastActivity: 'Just now',
-            avatarUrl: `https://i.pravatar.cc/150?u=${newClientData.email}`
-        };
-        onUpdateClients([...clients, newClient]);
+    const handleCreateClient = async (newClientData: Omit<Client, 'id' | 'projects' | 'lastActivity' | 'username' | 'password'>) => {
+        try {
+            console.log('[StudioLayout] Creating client:', newClientData.name);
+            
+            // Call backend API to create client
+            const createdClient = await clientService.createClient({
+                name: newClientData.name,
+                email: newClientData.email,
+                phone: newClientData.phone || '',
+                address: newClientData.address || '',
+                whatsapp_opt_in: newClientData.whatsappOptIn || false,
+                email_opt_in: newClientData.emailOptIn !== false, // Default to true
+            });
+            
+            console.log('[StudioLayout] Client created:', createdClient.id);
+            
+            // Convert backend response to UI format
+            const clientForUI: Client = {
+                id: String(createdClient.id),
+                name: createdClient.name,
+                email: createdClient.email,
+                phone: createdClient.phone || '',
+                address: createdClient.address || '',
+                username: createdClient.username || createdClient.email,
+                password: '', // Don't show password in UI
+                projects: [],
+                lastActivity: 'Just now',
+                profilePicture: newClientData.profilePicture,
+                avatarUrl: createdClient.avatar_url || `https://i.pravatar.cc/150?u=${createdClient.email}`,
+                whatsappOptIn: createdClient.whatsapp_opt_in || false,
+                emailOptIn: createdClient.email_opt_in !== false,
+            };
+            
+            onUpdateClients([...clients, clientForUI]);
+            toast.success(`Client ${createdClient.name} created successfully!`);
+        } catch (error: any) {
+            console.error('[StudioLayout] Failed to create client:', error);
+            const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to create client';
+            toast.error(errorMessage);
+            throw error; // Re-throw so modal can handle it
+        }
     };
     
     const handleUpdateClient = async (updatedClient: Client) => {
