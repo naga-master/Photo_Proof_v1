@@ -3,7 +3,7 @@ import type { UserRole } from '../types';
 import { ShoppingCartIcon, ArrowLeftOnRectangleIcon } from './icons';
 import { useStudioTheme } from '../src/providers/StudioThemeProvider';
 
-type Page = 'albums' | 'store' | 'about' | 'cart';
+type Page = 'albums' | 'store' | 'about' | 'cart' | 'contracts';
 
 interface TopNavBarProps {
   onNavigate: (page: Page) => void;
@@ -21,6 +21,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ onNavigate, cartCount, userRole, 
     const navLinks: { label: string, page: Page }[] = [
         { label: 'Gallery', page: 'albums' },
         { label: 'Store', page: 'store' },
+        { label: 'Contracts', page: 'contracts' },
         { label: 'About', page: 'about' },
     ];
     

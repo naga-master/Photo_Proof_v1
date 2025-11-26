@@ -20,6 +20,7 @@ import CommandPalette from './CommandPalette';
 import InvoiceEditor from './InvoicesPage';
 import InvoicesListPage from './invoices/InvoicesPage';
 import InvoicePreviewModal from './invoices/InvoicePreviewModal';
+import ContractsManagementPage from './ContractsManagementPage';
 import { MenuIcon } from '../icons';
 import { projectService } from '../../services/projectService';
 import { clientService } from '../../services/clientService';
@@ -331,6 +332,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             case 'invoices': return <InvoicesListPage {...props} onNewInvoice={() => { setInvoiceInitialData(null); setView('invoiceEditor'); }} onPreviewInvoice={setViewingInvoice} />;
             // Fix: Spread branding props into InvoiceEditor to provide required props.
             case 'invoiceEditor': return <InvoiceEditor {...props} {...props.branding} initialData={invoiceInitialData} clearInitialData={() => setInvoiceInitialData(null)} onSaveInvoice={onSaveInvoice} onSetDefaultTemplate={props.onUpdateBranding.setDefaultTemplateId} onInvoiceSaved={() => setView('invoices')} />;
+            case 'contracts': return <ContractsManagementPage />;
             case 'analytics': return <AnalyticsPage albums={props.albums} clients={props.clients} invoices={props.invoices} packages={props.packages} />;
             case 'settings': return <SettingsPage 
                 settings={communicationSettings} 

@@ -61,6 +61,12 @@ import CartConfigPage from './components/store/CartConfigPage';
 import ShoppingCartPage from './components/store/ShoppingCartPage';
 import CheckoutPage from './components/store/CheckoutPage';
 import OrderConfirmationPage from './components/store/OrderConfirmationPage';
+import ContractsPage from './components/ContractsPage';
+import ContractViewerPage from './components/ContractViewerPage';
+import ConsentScreen from './src/components/ConsentScreen';
+import PrivacyPolicy from './src/pages/PrivacyPolicy';
+import TermsOfService from './src/pages/TermsOfService';
+import PrivacySettings from './src/pages/PrivacySettings';
 
 // Import API services
 import { projectService, getCoverPhotoVariantUrl } from './services/projectService';
@@ -74,7 +80,7 @@ import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
 import type { Invoice as BackendInvoice } from './services/invoiceService';
 
-type Page = 'login' | 'cover' | 'albums' | 'albumFolders' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation';
+type Page = 'login' | 'cover' | 'albums' | 'albumFolders' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation' | 'contracts' | 'contractView' | 'privacyPolicy' | 'termsOfService' | 'privacySettings';
 
 const pageVariants = {
     initial: { opacity: 0 },
@@ -90,6 +96,7 @@ const pageTransition: Transition = {
 };
 
 const FALLBACK_COVER_IMAGE = '/placeholder-image.jpg';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const normalizePaymentStatus = (status?: string | null): Album['paymentStatus'] => {
     if (!status) return undefined;
@@ -215,6 +222,10 @@ const AppContent: React.FC = () => {
     // Get studio theme context
     const { theme, loading: themeLoading, error: themeError } = useStudioTheme();
     
+    // Consent state (DPDPA 2023 compliance)
+    const [needsConsent, setNeedsConsent] = useState(false);
+    const [consentChecked, setConsentChecked] = useState(false);
+    
     // State
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
@@ -238,18 +249,93 @@ const AppContent: React.FC = () => {
         return userRole && (userRole === 'studio' || userRole.startsWith('studio_'));
     };
 
+    // Check if user needs to give consent (DPDPA 2023)
+    useEffect(() => {
+        const checkConsent = async () => {
+            if (!isAuthenticated || authLoading || !user) {
+                setConsentChecked(true);
+                setNeedsConsent(false);
+                return;
+            }
+
+            console.log('[App] Checking consent for user:', user.email);
+
+            // Simple check: if user object has consent_given field, use that
+            // This avoids API call issues with authentication
+            if ('consent_given' in user) {
+                const hasConsented = (user as any).consent_given === true;
+                console.log('[App] User consent_given field:', (user as any).consent_given, '-> needsConsent:', !hasConsented);
+                setNeedsConsent(!hasConsented);
+                setConsentChecked(true);
+                return;
+            }
+
+            // Fallback: Try API check if user object doesn't have consent field
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                console.warn('[App] No token found - assuming consent needed');
+                setNeedsConsent(true);
+                setConsentChecked(true);
+                return;
+            }
+
+            try {
+                // Check if user has given consent via API
+                const response = await fetch(`${API_BASE_URL || 'http://localhost:8000'}/v2/data-rights/consent`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const consents = await response.json();
+                    // If essential consent is not given, show consent screen
+                    const hasEssentialConsent = consents.essential === true;
+                    console.log('[App] Consent check from API - essential:', consents.essential, '-> needsConsent:', !hasEssentialConsent);
+                    setNeedsConsent(!hasEssentialConsent);
+                } else if (response.status === 401) {
+                    // Token invalid - assume needs consent (will get new token after consent)
+                    console.warn('[App] Token invalid during consent check - assuming needs consent');
+                    setNeedsConsent(true);
+                } else if (response.status === 404) {
+                    // No consent records - needs consent
+                    console.log('[App] No consent record found (404) - needs consent');
+                    setNeedsConsent(true);
+                } else {
+                    // Other errors - assume consent needed for safety
+                    console.warn('[App] Consent check failed with status:', response.status, '- assuming needs consent');
+                    setNeedsConsent(true);
+                }
+            } catch (error) {
+                console.error('[App] Error checking consent:', error);
+                // On error, assume consent needed to be safe
+                setNeedsConsent(true);
+            } finally {
+                setConsentChecked(true);
+            }
+        };
+
+        checkConsent();
+    }, [isAuthenticated, authLoading, user]);
+
     // Sync authentication state with AuthContext
     useEffect(() => {
         console.log('[App] Auth state changed:', { isAuthenticated, authLoading, user: user?.email });
         
-        if (authLoading) {
-            console.log('[App] Auth still loading...');
+        if (authLoading || !consentChecked) {
+            console.log('[App] Auth or consent still loading...');
             return;
         }
         
         if (isAuthenticated && user) {
             console.log('[App] ✅ User authenticated:', user.email, 'Role:', user.role);
             setUserRole(user.role as UserRole);
+            
+            // Don't navigate if user needs consent
+            if (needsConsent) {
+                console.log('[App] User needs to give consent first');
+                return;
+            }
             
             // Navigate to appropriate page based on role (only if on login page)
             if (page === 'login') {
@@ -270,7 +356,7 @@ const AppContent: React.FC = () => {
                 setUserRole(null);
             }
         }
-    }, [isAuthenticated, authLoading, user]);
+    }, [isAuthenticated, authLoading, user, consentChecked, needsConsent]);
 
     // Store state
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -1431,6 +1517,15 @@ const AppContent: React.FC = () => {
                     studioDescription={studioDescription}
                 />;
                 break;
+            case 'contracts':
+                component = <ContractsPage onNavigate={handleNavigate} />;
+                break;
+            case 'contractView':
+                component = <ContractViewerPage 
+                    contractId={pageData?.contractId} 
+                    onNavigate={handleNavigate} 
+                />;
+                break;
             case 'productDetail':
                  if (!currentProduct) {
                     component = <StorePage onSelectProduct={handleSelectProduct} />;
@@ -1565,6 +1660,42 @@ const AppContent: React.FC = () => {
                 </div>
             );
         }
+    }
+    
+    // Handle consent completion
+    const handleConsentGiven = () => {
+        console.log('[App] User gave consent');
+        setNeedsConsent(false);
+        
+        // Navigate to appropriate page based on role
+        if (user) {
+            if (user.role === 'client') {
+                setPage('albums');
+                setNavigationStack(['albums']);
+            } else {
+                setPage('dashboard');
+                setNavigationStack([]);
+            }
+        }
+    };
+    
+    // Show consent screen if user is authenticated but hasn't consented yet
+    if (isAuthenticated && needsConsent && consentChecked) {
+        const userType = (user?.role === 'client') ? 'client' : 'studio';
+        return <ConsentScreen userType={userType} onConsent={handleConsentGiven} />;
+    }
+    
+    // Handle privacy policy and terms pages
+    if (page === 'privacyPolicy') {
+        return <PrivacyPolicy />;
+    }
+    
+    if (page === 'termsOfService') {
+        return <TermsOfService />;
+    }
+    
+    if (page === 'privacySettings') {
+        return <PrivacySettings />;
     }
     
     return (

@@ -129,6 +129,10 @@ class AuthService {
    * localStorage is used as fallback for backwards compatibility and client-side checks.
    */
   private storeAuthData(response: AuthResponse): void {
+    console.log('[AuthService] Storing auth data...');
+    console.log('[AuthService] Token received:', response.token ? `${response.token.substring(0, 20)}...` : 'NONE');
+    console.log('[AuthService] User:', response.user.email);
+    
     // Store token in localStorage for backwards compatibility and header-based auth
     localStorage.setItem('auth_token', response.token);
     localStorage.setItem('user_data', JSON.stringify(response.user));
@@ -136,6 +140,11 @@ class AuthService {
     if (response.client_id) {
       localStorage.setItem('client_id', String(response.client_id));
     }
+    
+    // Verify storage
+    const storedToken = localStorage.getItem('auth_token');
+    console.log('[AuthService] Token stored successfully:', storedToken ? `${storedToken.substring(0, 20)}...` : 'FAILED');
+    
     // Note: refresh_token is stored in httpOnly cookie by backend, not in localStorage
   }
 }

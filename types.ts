@@ -92,6 +92,7 @@ export type DashboardView =
   | 'invoices'
   | 'invoiceEditor'
   | 'analytics'
+  | 'contracts'
   | 'settings'
   | 'layouts'
   | 'services'
