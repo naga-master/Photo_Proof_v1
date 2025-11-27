@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import type { Photo, Comment } from '../types';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, HeartIcon, HeartFilledIcon, DownloadIcon, ChatBubbleIcon, CheckIcon, PlayIcon, PauseIcon } from './icons';
 import { AuthenticatedImage } from './common/AuthenticatedImage';
+import { apiClient } from '../lib/api-client';
 
 interface LightboxProps {
   photos: Photo[];
@@ -281,6 +282,7 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
   const currentPhoto = photos[currentIndex];
   const [showComments, setShowComments] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [selectionLimitReached, setSelectionLimitReached] = useState(false);
   
   // Use high quality for lightbox (AuthenticatedImage handles the fetching)
   const highQualityPhoto = currentPhoto;
@@ -332,6 +334,28 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
 
   const isFavorite = favorites.includes(currentPhoto.id);
   const isSelection = selections.includes(currentPhoto.id);
+  
+  // Handle selection with limit check
+  const handleSelection = async () => {
+    // If already selected, allow unselection
+    if (isSelection) {
+      toggleSelection(currentPhoto.id);
+      return;
+    }
+    
+    // If not selected and limit is reached, show error
+    if (selectionLimitReached) {
+      // Error already shown, just prevent action
+      return;
+    }
+    
+    // Try to select
+    try {
+      toggleSelection(currentPhoto.id);
+    } catch (error) {
+      console.error('Selection failed:', error);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
@@ -364,7 +388,14 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
              <button onClick={() => setSlideshowActive(!isSlideshowActive)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label={isSlideshowActive ? "Pause slideshow" : "Play slideshow"}>
                 {isSlideshowActive ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
              </button>
-             <button onClick={() => toggleSelection(currentPhoto.id)} className={`p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0 ${isSelection ? 'bg-blue-600/50' : ''}`} style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Select">
+             <button 
+                onClick={handleSelection} 
+                disabled={!isSelection && selectionLimitReached}
+                className={`p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none border-0 ${isSelection ? 'bg-blue-600/50' : ''} ${!isSelection && selectionLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                style={{ outline: 'none', border: 'none', boxShadow: 'none' }} 
+                aria-label={selectionLimitReached && !isSelection ? "Selection limit reached" : "Select"}
+                title={selectionLimitReached && !isSelection ? "Selection limit reached" : undefined}
+              >
                 <CheckIcon className="w-6 h-6" />
              </button>
              <button onClick={() => toggleFavorite(currentPhoto.id)} className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-0 active:outline-none active:ring-0 border-0" style={{ outline: 'none', border: 'none', boxShadow: 'none' }} aria-label="Favorite">

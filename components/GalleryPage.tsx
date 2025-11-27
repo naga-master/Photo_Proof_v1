@@ -4,6 +4,7 @@ import type { Album, Photo, UserRole } from '../types';
 import Lightbox from './Lightbox';
 import CompareModal from './store/CompareModal';
 import LayoutRenderer from './layouts/LayoutRenderer';
+import SelectionLimitWidget from './client/SelectionLimitWidget';
 
 interface GalleryPageProps {
   album: Album;
@@ -153,6 +154,14 @@ const GalleryPage: React.FC<GalleryPageProps> = (props) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Selection Limit Widget - Only show for clients */}
+      {userRole === 'client' && props.album && props.album.id && (
+        <SelectionLimitWidget 
+          projectId={parseInt(props.album.id)} 
+          className="fixed top-20 right-4 z-40"
+        />
       )}
 
       <LayoutRenderer
