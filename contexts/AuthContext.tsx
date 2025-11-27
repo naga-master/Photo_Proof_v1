@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, User, LoginCredentials, AuthResponse } from '../services/authService';
+import { logAuthDebug } from '../utils/authDebug';
 
 interface AuthContextType {
   user: User | null;
@@ -34,6 +35,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('[AuthContext] Initializing authentication...');
+      
+      // Debug auth state
+      logAuthDebug('AuthContext Init');
+      
       const storedUser = authService.getStoredUser();
       const hasToken = authService.isAuthenticated();
       
@@ -51,8 +56,16 @@ function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error: any) {
           // Session invalid or expired, clear local data
           console.error('[AuthContext] ❌ Session validation failed:', error?.message || error);
+          console.error('[AuthContext] Error details:', error);
+          
+          // Log debug info before clearing
+          logAuthDebug('Before Logout');
+          
           await authService.logout();
           setUser(null);
+          
+          // Log debug info after clearing
+          logAuthDebug('After Logout');
         }
       } else {
         console.log('[AuthContext] ⏭️  Skipping validation (no stored user or token)');
@@ -79,13 +92,29 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginCredentials, isStudio: boolean) => {
     setIsLoading(true);
     try {
+      console.log('[AuthContext] Logging in...');
       const response: AuthResponse = isStudio
         ? await authService.studioLogin(credentials)
         : await authService.clientLogin(credentials);
       
+      console.log('[AuthContext] ✅ Login successful');
       setUser(response.user);
+      
+      // Verify token was stored
+      logAuthDebug('After Login');
+      
+      // Double-check token persistence after a short delay
+      setTimeout(() => {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          console.error('[AuthContext] ⚠️  WARNING: Token disappeared after login!');
+          logAuthDebug('Token Check Failed');
+        } else {
+          console.log('[AuthContext] ✅ Token persisted successfully');
+        }
+      }, 500);
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('[AuthContext] ❌ Login failed:', error);
       throw error;
     } finally {
       setIsLoading(false);

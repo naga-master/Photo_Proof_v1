@@ -115,7 +115,40 @@ class UploadService {
           }
         } else {
           console.error('[UploadService] Upload failed with status:', xhr.status);
-          reject(new Error(`Upload failed: ${xhr.statusText}`));
+          
+          // Parse error response to get detailed message
+          let errorMessage = `Upload failed: ${xhr.statusText}`;
+          let errorDetail = null;
+          
+          try {
+            const errorResponse = JSON.parse(xhr.responseText);
+            console.log('[UploadService] Error response:', errorResponse);
+            
+            if (errorResponse.detail) {
+              errorDetail = errorResponse.detail;
+              
+              // Extract meaningful error message
+              if (errorDetail.message) {
+                errorMessage = errorDetail.message;
+              }
+              
+              // For duplicates, create clear message with both filenames
+              if (errorDetail.error === 'duplicate_detected' && errorDetail.your_file && errorDetail.existing_photo) {
+                errorMessage = `Duplicate: "${errorDetail.your_file}" has same content as "${errorDetail.existing_photo.filename}" (already uploaded)`;
+              }
+            }
+          } catch (e) {
+            // If parsing fails, keep generic message
+            console.warn('[UploadService] Could not parse error response:', e);
+          }
+          
+          // Create enhanced error object
+          const error: any = new Error(errorMessage);
+          error.status = xhr.status;
+          error.detail = errorDetail;
+          
+          console.error('[UploadService] Rejecting with error:', errorMessage);
+          reject(error);
         }
       });
 

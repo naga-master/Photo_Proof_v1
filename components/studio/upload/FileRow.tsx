@@ -25,14 +25,39 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
     }
   }
 
+  // Check if this is a duplicate error (non-retryable)
+  const isDuplicate = error && (
+    error.includes('Duplicate') || 
+    error.includes('duplicate') ||
+    error.includes('already exists')
+  );
+  
   // Show retry button for failed uploads or uploads that appear stuck
-  const showRetryButton = status === 'failed' || (status === 'uploading' && progress === 0 && error);
+  // But not for duplicates (those should be skipped/removed)
+  const showRetryButton = !isDuplicate && (status === 'failed' || (status === 'uploading' && progress === 0 && error));
+  const showSkipButton = isDuplicate && status === 'failed';
 
   const renderStatus = () => {
     switch (status) {
       case 'success':
         return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
       case 'failed':
+        if (showSkipButton) {
+          // Duplicate - show skip/remove button
+          return (
+            <button 
+              onClick={handleCancel} 
+              className="p-1 rounded-md bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-colors" 
+              aria-label="Skip duplicate"
+              title="Skip this duplicate file"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          );
+        }
+        // Regular failure - show retry button
         return (
           <button 
             onClick={handleRetry} 
@@ -104,18 +129,24 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
       )}
       {error && (
         <div className="mt-2 pl-14 flex items-center gap-2">
-          <p className="text-xs text-red-600 flex-1">{error}</p>
-          <button
-            onClick={handleRetry}
-            className="text-xs font-medium text-red-600 hover:text-red-700 underline whitespace-nowrap"
-          >
-            Retry
-          </button>
+          <p className={`text-xs flex-1 ${isDuplicate ? 'text-yellow-600' : 'text-red-600'}`}>{error}</p>
+          {!isDuplicate && (
+            <button
+              onClick={handleRetry}
+              className="text-xs font-medium text-red-600 hover:text-red-700 underline whitespace-nowrap"
+            >
+              Retry
+            </button>
+          )}
           <button
             onClick={handleCancel}
-            className="text-xs font-medium text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+            className={`text-xs font-medium underline whitespace-nowrap ${
+              isDuplicate 
+                ? 'text-yellow-600 hover:text-yellow-700' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
-            Remove
+            {isDuplicate ? 'Skip' : 'Remove'}
           </button>
         </div>
       )}

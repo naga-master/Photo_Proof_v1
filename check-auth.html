@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Diagnostics - Photo Proof</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-top: 0; }
+        .status { padding: 15px; border-radius: 6px; margin: 15px 0; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .token { word-break: break-all; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Authentication Diagnostics</h1>
+        <div id="results"></div>
+        
+        <div style="margin-top: 30px;">
+            <button onclick="checkAuth()">🔍 Re-check Authentication</button>
+            <button onclick="testPhotoEndpoint()">📸 Test Photo Endpoint</button>
+            <button onclick="clearAuth()" class="danger">🗑️ Clear Auth & Logout</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        function displayResult(html) {
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function checkAuth() {
+            let html = '<h2>Current Authentication Status</h2>';
+            
+            // Check localStorage
+            const token = localStorage.getItem('auth_token');
+            const userData = localStorage.getItem('user_data');
+            const userRole = localStorage.getItem('user_role');
+            const clientId = localStorage.getItem('client_id');
+            
+            if (token) {
+                html += '<div class="status success">✅ Token found in localStorage</div>';
+                html += '<div class="info"><strong>Token (first 50 chars):</strong><br><span class="token">' + token.substring(0, 50) + '...</span></div>';
+                
+                // Decode JWT to check expiry (basic check)
+                try {
+                    const tokenParts = token.split('.');
+                    if (tokenParts.length === 3) {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        html += '<div class="info"><strong>Token Payload:</strong><pre>' + JSON.stringify(payload, null, 2) + '</pre></div>';
+                        
+                        if (payload.exp) {
+                            const expiry = new Date(payload.exp * 1000);
+                            const now = new Date();
+                            const isExpired = now > expiry;
+                            
+                            if (isExpired) {
+                                html += '<div class="status error">❌ Token EXPIRED on ' + expiry.toLocaleString() + '</div>';
+                            } else {
+                                html += '<div class="status success">✅ Token valid until ' + expiry.toLocaleString() + '</div>';
+                            }
+                        }
+                    }
+                } catch (e) {
+                    html += '<div class="status warning">⚠️ Could not decode token: ' + e.message + '</div>';
+                }
+            } else {
+                html += '<div class="status error">❌ NO TOKEN FOUND - You need to log in!</div>';
+            }
+            
+            // Check other auth data
+            if (userData) {
+                html += '<div class="info"><strong>User Data:</strong><pre>' + userData + '</pre></div>';
+            }
+            if (userRole) {
+                html += '<div class="info"><strong>User Role:</strong> ' + userRole + '</div>';
+            }
+            if (clientId) {
+                html += '<div class="info"><strong>Client ID:</strong> ' + clientId + '</div>';
+            }
+            
+            // Check cookies
+            html += '<div class="info"><strong>Cookies:</strong><br>' + (document.cookie || 'None') + '</div>';
+            
+            displayResult(html);
+        }
+        
+        async function testPhotoEndpoint() {
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                displayResult('<div class="status error">❌ Cannot test - no token found. Please log in first.</div>');
+                return;
+            }
+            
+            displayResult('<div class="status info">⏳ Testing photo endpoint...</div>');
+            
+            try {
+                const response = await fetch(`${API_BASE}/v2/photos/7/variant/medium`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    credentials: 'include'
+                });
+                
+                let html = '<h2>Photo Endpoint Test Results</h2>';
+                html += '<div class="info"><strong>URL:</strong> ' + API_BASE + '/v2/photos/7/variant/medium</div>';
+                html += '<div class="info"><strong>Status:</strong> ' + response.status + ' ' + response.statusText + '</div>';
+                html += '<div class="info"><strong>Content-Type:</strong> ' + response.headers.get('content-type') + '</div>';
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    html += '<div class="status success">✅ SUCCESS! Photo loaded (' + Math.round(blob.size / 1024) + ' KB)</div>';
+                    html += '<img src="' + URL.createObjectURL(blob) + '" style="max-width: 100%; margin-top: 20px; border-radius: 8px;" alt="Test photo">';
+                } else {
+                    const text = await response.text();
+                    html += '<div class="status error">❌ FAILED: ' + response.status + '</div>';
+                    html += '<div class="warning"><strong>Response:</strong><pre>' + text + '</pre></div>';
+                    
+                    if (response.status === 401) {
+                        html += '<div class="status error">❌ AUTHENTICATION FAILED<br><br><strong>Possible causes:</strong><ul>';
+                        html += '<li>Token is expired</li>';
+                        html += '<li>Token is invalid</li>';
+                        html += '<li>Backend is not recognizing the token</li>';
+                        html += '<li>Photo ID 7 doesn\'t exist or you don\'t have access</li>';
+                        html += '</ul><br><strong>Solution:</strong> Try logging out and logging back in.</div>';
+                    }
+                }
+                
+                displayResult(html);
+            } catch (error) {
+                displayResult('<div class="status error">❌ Network Error: ' + error.message + '</div>');
+            }
+        }
+        
+        function clearAuth() {
+            if (confirm('This will clear all authentication data and log you out. Continue?')) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+                localStorage.removeItem('user_role');
+                localStorage.removeItem('client_id');
+                
+                displayResult('<div class="status warning">⚠️ Authentication cleared. Please refresh the page and log in again.</div>');
+            }
+        }
+        
+        // Run check on load
+        checkAuth();
+    </script>
+</body>
+</html>

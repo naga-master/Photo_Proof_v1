@@ -427,7 +427,33 @@ class UploadQueueManager {
       
       upload.error = error.message || 'Upload failed';
 
-      // Retry logic
+      // Check if this is a non-retryable error (duplicates, validation errors, etc.)
+      const isNonRetryable = error.status === 409 || // Duplicate detected
+                            error.response?.status === 409 ||
+                            (error.message && error.message.includes('duplicate'));
+      
+      if (isNonRetryable) {
+        // Don't retry duplicates - mark as failed immediately
+        upload.status = 'failed';
+        upload.error = error.detail?.message || error.message || 'Duplicate photo detected';
+        
+        // Store duplicate info if available (uploadService already formats this, but fallback just in case)
+        if (error.detail?.existing_photo && !upload.error.includes('Duplicate:')) {
+          upload.error = `Duplicate: Same content as "${error.detail.existing_photo.filename}" (already uploaded)`;
+        }
+        
+        // Add visual indicator for duplicates
+        if (!upload.error.startsWith('⚠️')) {
+          upload.error = `⚠️ ${upload.error}`;
+        }
+        
+        console.warn(`[UploadQueueManager] ⚠️  Non-retryable error for ${upload.file.name}: ${upload.error}`);
+        this.callbacks.onError?.(upload.id, upload.error);
+        this.notifyQueueUpdate();
+        return false;
+      }
+
+      // Retry logic for retryable errors (network, timeout, server errors)
       if (upload.retryCount < upload.maxRetries) {
         upload.retryCount++;
         upload.status = 'pending';
@@ -444,6 +470,20 @@ class UploadQueueManager {
         return false;
       } else {
         upload.status = 'failed';
+        
+        // Add visual indicators based on error type
+        if (!upload.error.match(/^[⚠️❌📦🔧]/)) {
+          if (error.status === 413) {
+            upload.error = `📦 File too large: ${upload.error}`;
+          } else if (error.status === 400) {
+            upload.error = `❌ Invalid file: ${upload.error}`;
+          } else if (error.status >= 500) {
+            upload.error = `🔧 Server error: ${upload.error}`;
+          } else if (upload.error.toLowerCase().includes('network')) {
+            upload.error = `🌐 ${upload.error}`;
+          }
+        }
+        
         console.error(`[UploadQueueManager] ❌ Max retries reached for ${upload.file.name}`);
         this.callbacks.onError?.(upload.id, upload.error);
         this.notifyQueueUpdate();
