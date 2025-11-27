@@ -60,4 +60,37 @@
 
 33. when we logged in as studio user and click the back button inside any on photo store , it should go to the store page instead of gallery page. remove back to store button and move functionality to header back button from the page
 
-34. All the varaiants creation happening on every file uploads, it needs to be run in background or run as sepearate service
+34. All the varaiants creation happening on every file uploads, it needs to be run in background or run as sepearate service, (fixed)
+
+---
+
+35. we have to design fully automated client side restrictions of feature based on the packages, for the we need to redesign the service package creation. give you the example.
+1. package creation has to have multiple package types, wedding, corporate photo shoot .. etc, user can able to create types as well but this can be differnt place or new button at the end of the drop down.
+1. when studio user clicks the package type while creating package, let's say for example, wedding, below form should listed dynamically,
+   2.1 (wedding) - one number box where number of photos has to be selected for users, like allowed photos to be select while clients selects the photo, so that backend will through warning message not clients to choos more photos than allowed.
+   2.2 (wedding) - video support toggle button and max GB limit
+   2.3 (wedding) - whatsapp integration toggle button
+   2.4 (wedding) - features box (one per line) this existing
+   2.5 (wedding) - description this is already existing
+   2.6 (wedding) - retention period - years and months
+   2.7 (wedding) - archival needed toggle button if enabled after when it needs to to archived - years and months
+   2.8 (wedding) - editting and modification support until which month from the photo uploaded
+   2.9 (wedding) - how many photos is frame at what size as a complement - size box
+   2.10 (wedding) - album creation which quality and which type - drop down if we have types and quality and size
+   2.11 (wedding) - pendrive or physical storage given - toggle button
+   2.12 (wedding) - price of the package (included already)
+   2.13 (wedding) - name of the package
+   2.14 (wedding) - reception - toggle/tick box, wedding toggle/tick box
+   2.15 (wedding) - candid photography- count box
+   2.16 (wedding) - candid video graphy - count box
+   2.17 (wedding) - trasitional photography - count box
+   2.18 (wedding) - traditional video graphy - count box
+   2.20 (wedding) - outdoor photoshoot - toogle
+   2.19 (wedding) - customer support 24 x 7 - weekly daily ..etc
+
+   when studio fills this form, it properly formatted and saved and shown as proper package in the UI.
+   do research for all other types of photography, and dynamically create the form. form should follow UI/UX best practices.
+
+   what and why: because all the studio and client side should follow the package. when studio owner creates the projects, he will select the package, when he select the package, these things has to be effect like, when client open the client facing app, total number of selection should be shown as 0/<allowed image count> , this will be increased as the user selects the image, and should not allow user to select image more than allowed iamges. based on the retention period and archival backend should do those activites. same goes for whatsapp integrations ..etc
+
+   you should get the idea of my plan, do the detailed research and provide me the plan. check the existing players features and packages and suggest if we add any

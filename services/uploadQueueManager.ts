@@ -643,6 +643,21 @@ class UploadQueueManager {
   }
 
   /**
+   * Process queue (for GlobalUploadManager integration)
+   * Alias for processBatches - starts processing pending uploads
+   */
+  async processQueue(): Promise<void> {
+    return this.processBatches();
+  }
+
+  /**
+   * Get current processing state
+   */
+  isProcessing(): boolean {
+    return this.isProcessingBatch;
+  }
+
+  /**
    * Notify callbacks of queue update
    */
   private notifyQueueUpdate(): void {

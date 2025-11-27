@@ -2,6 +2,7 @@ import React, { createContext, useReducer, useContext, useEffect, useCallback, u
 import type { DetectedFolder, FolderMap, UploadFile, UploadRules, UploadMode, ProjectDetails, LayoutId, UploadState } from '../../../types';
 import { uploadService } from '../../../services/uploadService';
 import { uploadQueueManager } from '../../../services/uploadQueueManager';
+import { globalUploadManager } from '../../../services/globalUploadManager';
 import { projectService } from '../../../services/projectService';
 
 type UploadAction =
@@ -77,8 +78,16 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
     case 'NEXT_STEP':
       return { ...state, step: Math.min(state.step + 1, 5) as UploadState['step'] };
     case 'PREV_STEP':
+      // When going back from upload step, pause the upload to reset error state
+      if (state.step === 4 && state.isUploading) {
+        return { ...state, step: Math.max(state.step - 1, 0) as UploadState['step'], isUploading: false };
+      }
       return { ...state, step: Math.max(state.step - 1, 0) as UploadState['step'] };
     case 'SET_STEP':
+      // When navigating away from upload step, pause the upload
+      if (state.step === 4 && action.payload !== 4 && state.isUploading) {
+        return { ...state, step: Math.max(0, Math.min(action.payload, 5)) as UploadState['step'], isUploading: false };
+      }
       return { ...state, step: Math.max(0, Math.min(action.payload, 5)) as UploadState['step'] };
     case 'RESET':
       // Clear queue manager when resetting upload context
@@ -215,38 +224,37 @@ export const useUpload = () => {
   const { state, dispatch } = context;
 
   // Real upload logic using backend API
-  // Track if we've already initialized uploads for this session
-  const uploadInitialized = React.useRef(false);
-  const uploadSessionId = React.useRef<string | null>(null);
+  // SESSION-LEVEL GUARD: Track whether uploads have started for THIS upload session
+  // This prevents re-runs even after promise completes
+  const uploadsStartedRef = React.useRef(false);
+  const folderCreationPromiseRef = React.useRef<Promise<FolderMap[] | null> | null>(null);
+  const folderCreationFailed = React.useRef(false);
+  const queueManagerCleared = React.useRef(false);
 
   React.useEffect(() => {
-    // Only initialize uploads once when isUploading becomes true
+    // Reset all refs when upload is stopped (isUploading becomes false)
     if (!state.isUploading) {
-      uploadInitialized.current = false;
-      uploadSessionId.current = null;
+      uploadsStartedRef.current = false;
+      folderCreationPromiseRef.current = null;
+      folderCreationFailed.current = false;
+      queueManagerCleared.current = false;
       return;
     }
     
-    // Check if already initialized BEFORE generating session ID
-    if (uploadInitialized.current) {
-      // Already initialized for this upload session
-      console.log('[UploadContext] Upload already initialized, skipping (session:', uploadSessionId.current, ')');
+    // CRITICAL: Session-level guard - if uploads already started, DO NOT run again
+    // This is different from promise check - it persists even after promise completes
+    if (uploadsStartedRef.current) {
+      console.log('[UploadContext] ⏭️ Uploads already started for this session, skipping');
       return;
     }
     
-    // Mark as initialized IMMEDIATELY to prevent duplicate runs
-    uploadInitialized.current = true;
-    
-    // Generate session ID for logging
-    if (!uploadSessionId.current) {
-      uploadSessionId.current = Date.now().toString();
+    // Check if folder creation has already failed - prevent infinite retry loop
+    if (folderCreationFailed.current) {
+      console.log('[UploadContext] ⚠️ Folder creation previously failed, not retrying automatically');
+      return;
     }
     
-    // CRITICAL: Clear queue manager from previous upload sessions
-    // The queue manager is a singleton and persists across component re-renders
-    console.log('[UploadContext] Clearing queue manager for new upload session');
-    uploadQueueManager.clearAll();
-
+    // Early validation checks
     if (!state.backendProjectId) {
       console.error('[UploadContext] Cannot upload: No project ID available');
       return;
@@ -260,10 +268,13 @@ export const useUpload = () => {
         dispatch({ type: 'PAUSE_UPLOAD' });
         return;
     }
+    
+    // MARK UPLOADS AS STARTED IMMEDIATELY - This is the critical guard
+    // Must be SYNCHRONOUS and happen BEFORE any async work
+    uploadsStartedRef.current = true;
+    console.log('[UploadContext] 🔒 Upload session started - blocking further effect runs');
 
-    console.log('[UploadContext] ✅ INITIALIZING UPLOADS (ONE TIME)', filesToUpload.length, 'files, session:', uploadSessionId.current);
-
-    // Step 0: Create folders in the backend if they don't have IDs yet
+    // Define folder creation function
     const createFoldersIfNeeded = async () => {
       const foldersNeedingCreation = state.folderMap.filter(f => !f.targetId);
       
@@ -272,8 +283,7 @@ export const useUpload = () => {
         return state.folderMap;
       }
       
-      if (foldersNeedingCreation.length > 0) {
-        console.log(`[UploadContext] 📁 Creating ${foldersNeedingCreation.length} remaining folders in backend...`);
+      console.log(`[UploadContext] 📁 Creating ${foldersNeedingCreation.length} folders in backend...`);
         
         try {
           // Create all folders in parallel
@@ -284,11 +294,27 @@ export const useUpload = () => {
                 folder.targetAlbumName
               );
               
-              // Check if it's a duplicate (shouldn't happen if Step 2 validation worked)
+              // Check if it's a duplicate - use existing folder instead of failing
+              // Backend ensures duplicates are scoped to THIS project only
               if ('error' in result && result.error === 'duplicate_detected') {
-                const errorMsg = result.message || `Folder '${folder.targetAlbumName}' already exists in this project`;
-                console.error(`[UploadContext] ❌ ${errorMsg} (This should have been caught in Step 2)`);
-                throw new Error(errorMsg);
+                console.warn(`[UploadContext] ⚠️ Folder '${folder.targetAlbumName}' already exists in this project - using existing folder`);
+                
+                // Extract existing folder info from error response
+                if ('existing_folder' in result && result.existing_folder) {
+                  const existingFolder = result.existing_folder as any;
+                  console.log(`[UploadContext] ✅ Using existing folder ID: ${existingFolder.id} (from duplicate response)`);
+                  
+                  // Return folder map with existing folder's ID
+                  return {
+                    ...folder,
+                    targetId: existingFolder.id
+                  };
+                } else {
+                  // Backend should always include existing_folder in 409 response
+                  // If not, throw error as we can't proceed safely
+                  const errorMsg = result.message || `Folder '${folder.targetAlbumName}' already exists but backend didn't provide folder ID`;
+                  throw new Error(errorMsg);
+                }
               }
               
               const createdFolder = result;
@@ -327,30 +353,69 @@ export const useUpload = () => {
           console.error('[UploadContext] ❌ Folder creation failed:', errorMessage);
           console.error('[UploadContext] Full error:', error);
           
+          // Mark folder creation as failed to prevent infinite retry loop
+          folderCreationFailed.current = true;
+          
           dispatch({ type: 'PAUSE_UPLOAD' });
           
-          // Don't mark individual files as failed - the error was with folder creation,
-          // not with the files themselves. User will see the modal on Step 2 instead.
+          // Show user-friendly error modal
+          dispatch({
+            type: 'SHOW_DUPLICATE_MODAL',
+            payload: {
+              type: 'folder_creation_error',
+              message: errorMessage,
+              data: {
+                action: 'Go back to Step 2 and rename or remove duplicate folders',
+                details: 'Some folders you\'re trying to create already exist in this project.',
+              },
+            },
+          });
+          
+          // Mark all files as failed with a helpful error message
+          state.uploadQueue.forEach(file => {
+            if (file.status === 'queued' || file.status === 'uploading') {
+              dispatch({
+                type: 'FILE_UPLOAD_FAIL',
+                payload: {
+                  id: file.id,
+                  error: 'Folder creation failed. Please go back and fix folder names.',
+                },
+              });
+            }
+          });
           
           // Return null to signal failure
           return null;
         }
-      }
       
       return state.folderMap;
     };
 
-    // Create folders first, then start uploads
-    createFoldersIfNeeded()
+    // ATOMIC OPERATION: Create and store promise immediately
+    // This MUST happen synchronously with no gap for race conditions
+    console.log('[UploadContext] 🆕 Initializing upload for project:', state.backendProjectId);
+    console.log('[UploadContext] ✅ INITIALIZING UPLOADS', filesToUpload.length, 'files');
+    
+    // Clear queue manager (only once)
+    if (!queueManagerCleared.current) {
+      console.log('[UploadContext] Clearing queue manager');
+      uploadQueueManager.clearAll();
+      queueManagerCleared.current = true;
+    }
+
+    // Store promise in ref IMMEDIATELY
+    folderCreationPromiseRef.current = createFoldersIfNeeded();
+
+    // Now await the promise
+    folderCreationPromiseRef.current
       .then(updatedFolderMap => {
         // Check if folder creation failed
         if (updatedFolderMap === null) {
           console.error('[UploadContext] ❌ Cannot start uploads - folder creation failed');
-          console.error('[UploadContext] All files have been marked as failed. Please check folder names and try again.');
+          console.error('[UploadContext] User should go back and fix folder names');
           
-          // Reset initialization flag so user can retry
-          uploadInitialized.current = false;
-          uploadSessionId.current = null;
+          // Keep initialization flag set to prevent retry loop
+          // User must manually reset by going back to previous step
           
           // Stop the upload
           dispatch({ type: 'PAUSE_UPLOAD' });
@@ -404,27 +469,60 @@ export const useUpload = () => {
           };
       });
 
-      // Step 3: Add files to the queue (queue manager handles concurrency and batch operations)
+      // Step 3: Start uploads using Global Upload Manager
       if (queueItems.length > 0) {
-          console.log(`[UploadContext] 🚀 Adding ${queueItems.length} files to upload queue (session: ${uploadSessionId.current})`);
-          // Note: addToQueue is now async as it fetches presigned URLs in batch
-          uploadQueueManager.addToQueue(queueItems).catch(error => {
-              console.error('[UploadContext] Failed to add files to queue:', error);
+          console.log(`[UploadContext] 🚀 Starting upload of ${queueItems.length} files for project ${state.backendProjectId}`);
+          
+          // Extract files and metadata for globalUploadManager
+          const filesWithFolders = queueItems.map(item => ({
+              file: item.file,
+              folderId: item.folderId,
+          }));
+          
+          // CRITICAL: Check if GlobalUploadManager is initialized
+          const managerState = globalUploadManager.getState();
+          console.log('[UploadContext] 🔍 GlobalUploadManager state before startUploads:', {
+              isActive: managerState.isActive,
+              isPaused: managerState.isPaused,
+              totalFiles: managerState.totalFiles
+          });
+          
+          // Use Global Upload Manager instead of uploadQueueManager directly
+          // This enables navigation resilience and background upload capability
+          console.log('[UploadContext] 📞 Calling globalUploadManager.startUploads()...');
+          globalUploadManager.startUploads({
+              files: filesWithFolders.map(f => f.file),
+              projectId: state.backendProjectId!,
+              folderId: filesWithFolders[0]?.folderId, // Use first folder ID if available
+          }).then(() => {
+              console.log('[UploadContext] ✅ globalUploadManager.startUploads() completed successfully');
+              const newState = globalUploadManager.getState();
+              console.log('[UploadContext] 🔍 GlobalUploadManager state after startUploads:', {
+                  isActive: newState.isActive,
+                  isPaused: newState.isPaused,
+                  totalFiles: newState.totalFiles,
+                  uploads: newState.uploads.size
+              });
+          }).catch(error => {
+              console.error('[UploadContext] ❌ Failed to start uploads with Global Upload Manager:', error);
+              console.error('[UploadContext] Error details:', {
+                  message: error?.message,
+                  stack: error?.stack,
+                  error: error
+              });
           });
       }
     })
     .catch(error => {
       console.error('[UploadContext] ❌ Unexpected error in upload flow:', error);
       
-      // Reset initialization flag so user can retry
-      uploadInitialized.current = false;
-      uploadSessionId.current = null;
-      
       // Stop the upload
       dispatch({ type: 'PAUSE_UPLOAD' });
-    });
+    })
+    // NOTE: We intentionally do NOT reset uploadsStartedRef here
+    // It will be reset when isUploading becomes false (user starts new upload session)
 
-  }, [state.isUploading, state.backendProjectId, dispatch]);
+  }, [state.isUploading, state.backendProjectId, state.folderMap, dispatch]);
   
   const setMode = useCallback((mode: UploadMode) => dispatch({ type: 'SET_MODE', payload: mode }), [dispatch]);
   const nextStep = useCallback(() => dispatch({ type: 'NEXT_STEP' }), [dispatch]);

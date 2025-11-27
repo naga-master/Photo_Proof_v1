@@ -291,8 +291,11 @@ export interface ServicePackage {
     description: string;
     price: number;
     isPredefined?: boolean;
+    packageTypeId?: string | null;
     features: ServicePackageFeatureItem[];
     deliverables?: string[];
+    restrictions?: Record<string, any> | null;
+    lifecycleConfig?: Record<string, any> | null;
 }
 
 export interface EmailSettings {

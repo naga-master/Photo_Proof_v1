@@ -18,8 +18,11 @@ export interface ServicePackage {
   category: string;
   description: string;
   price: number;
+  package_type_id?: string | null;
   features: ServicePackageFeature[];
   deliverables?: string[];
+  restrictions?: Record<string, any> | null;
+  lifecycle_config?: Record<string, any> | null;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -30,8 +33,11 @@ export interface CreateServicePackageRequest {
   category: string;
   description: string;
   price: number;
+  package_type_id?: string | null;
   features: ServicePackageFeature[];
   deliverables?: string[];
+  restrictions?: Record<string, any> | null;
+  lifecycle_config?: Record<string, any> | null;
 }
 
 export interface UpdateServicePackageRequest {
@@ -39,8 +45,11 @@ export interface UpdateServicePackageRequest {
   category?: string;
   description?: string;
   price?: number;
+  package_type_id?: string | null;
   features?: ServicePackageFeature[];
   deliverables?: string[];
+  restrictions?: Record<string, any> | null;
+  lifecycle_config?: Record<string, any> | null;
 }
 
 export interface ServicePackageListResponse {

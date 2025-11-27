@@ -81,6 +81,11 @@ import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
 import type { Invoice as BackendInvoice } from './services/invoiceService';
 
+// Background Upload System
+import { globalUploadManager } from './services/globalUploadManager';
+import { uploadStateStore, type StoredUpload } from './services/uploadStateStore';
+import { UploadStatusWidget } from './components/UploadStatusWidget';
+
 type Page = 'login' | 'cover' | 'albums' | 'albumFolders' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation' | 'contracts' | 'contractView' | 'privacyPolicy' | 'termsOfService' | 'privacySettings';
 
 const pageVariants = {
@@ -227,6 +232,9 @@ const AppContent: React.FC = () => {
     const [needsConsent, setNeedsConsent] = useState(false);
     const [consentChecked, setConsentChecked] = useState(false);
     
+    // Background upload state
+    const [pendingUploads, setPendingUploads] = useState<StoredUpload[]>([]);
+    
     // State
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
@@ -318,6 +326,68 @@ const AppContent: React.FC = () => {
 
         checkConsent();
     }, [isAuthenticated, authLoading, user]);
+
+    // Initialize Global Upload Manager
+    useEffect(() => {
+        let mounted = true;
+
+        const initializeUploadManager = async () => {
+            try {
+                console.log('[App] 🚀 Initializing Global Upload Manager...');
+                
+                // Initialize the global upload manager
+                await globalUploadManager.init();
+                
+                console.log('[App] ✅ Global Upload Manager initialized successfully');
+                
+                // Verify initialization by checking state
+                const state = globalUploadManager.getState();
+                console.log('[App] 🔍 GlobalUploadManager initial state:', {
+                    isActive: state.isActive,
+                    isPaused: state.isPaused,
+                    totalFiles: state.totalFiles
+                });
+                
+                // Check for pending uploads from previous session
+                const pending = await globalUploadManager.checkPendingUploads();
+                
+                if (mounted && pending.length > 0) {
+                    console.log(`[App] Found ${pending.length} pending uploads from previous session`);
+                    setPendingUploads(pending);
+                    
+                    // Show prompt to user if they want to resume
+                    const shouldResume = window.confirm(
+                        `You have ${pending.length} unfinished uploads from a previous session. Would you like to resume them?`
+                    );
+                    
+                    if (shouldResume) {
+                        await globalUploadManager.resumeFromPrevious(pending);
+                        toast.info(`Resuming ${pending.length} uploads...`);
+                    } else {
+                        // Clear the pending uploads
+                        await uploadStateStore.clearQueue();
+                        setPendingUploads([]);
+                    }
+                }
+                
+                console.log('[App] ✅ Upload system ready');
+            } catch (error: any) {
+                console.error('[App] ❌ Failed to initialize Global Upload Manager:', error);
+                console.error('[App] Error details:', {
+                    message: error?.message,
+                    stack: error?.stack,
+                    error: error
+                });
+                toast.error('Failed to initialize upload system. Please refresh the page.');
+            }
+        };
+
+        initializeUploadManager();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // Sync authentication state with AuthContext
     useEffect(() => {
@@ -1727,6 +1797,10 @@ const AppContent: React.FC = () => {
             <AnimatePresence mode="wait">
                 {renderPage()}
             </AnimatePresence>
+            
+            {/* Global Upload Status Widget */}
+            <UploadStatusWidget />
+            
             <ToastContainer
                 position="bottom-right"
                 autoClose={5000}

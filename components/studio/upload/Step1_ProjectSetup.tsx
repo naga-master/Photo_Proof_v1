@@ -318,7 +318,8 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
                 </div>
                  <div>
                     <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Project Tags</label>
-                    <input type="text" id="tags" name="tags" value={projectDetails.tags || ''} onChange={handleChange} className={inputClasses} placeholder="Wedding, Portrait, 2024" />
+                    <input type="text" id="tags" name="tags" value={projectDetails.tags || ''} onChange={handleChange} onBlur={() => setTouched({ ...touched, tags: true })} className={inputClasses('tags')} placeholder="Wedding, Portrait, 2024" />
+                    <ErrorMessage fieldName="tags" />
                 </div>
             </form>
         </div>

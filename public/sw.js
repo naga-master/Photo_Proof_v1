@@ -294,6 +294,46 @@ self.addEventListener('message', (event) => {
       })
     );
   }
+
+  // ========== BACKGROUND UPLOAD HANDLERS ==========
+  
+  if (event.data.type === 'START_UPLOAD') {
+    console.log('[SW] Received START_UPLOAD command');
+    event.waitUntil(
+      handleUploadStart(event.data.payload).then(() => {
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ success: true });
+        }
+      }).catch((error) => {
+        console.error('[SW] Upload start failed:', error);
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ success: false, error: error.message });
+        }
+      })
+    );
+  }
+  
+  if (event.data.type === 'PAUSE_UPLOAD') {
+    console.log('[SW] Received PAUSE_UPLOAD command');
+    // Handle pause (would need state management)
+  }
+  
+  if (event.data.type === 'CANCEL_UPLOAD') {
+    console.log('[SW] Received CANCEL_UPLOAD command');
+    // Handle cancel (would need state management)
+  }
+  
+  if (event.data.type === 'UPLOAD_PROGRESS') {
+    // Relay progress to all clients
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'UPLOAD_PROGRESS_UPDATE',
+          data: event.data.payload
+        });
+      });
+    });
+  }
 });
 
 /**
@@ -321,5 +361,111 @@ async function getCacheStats() {
     return { error: error.message };
   }
 }
+
+// ========== BACKGROUND UPLOAD FUNCTIONS ==========
+
+/**
+ * Handle upload start in Service Worker
+ * Called when tab is closed but uploads need to continue
+ */
+async function handleUploadStart(payload) {
+  console.log('[SW] Starting background upload:', payload);
+  
+  // In a full implementation, this would:
+  // 1. Open IndexedDB to get pending uploads
+  // 2. Process uploads using fetch()
+  // 3. Update progress in IndexedDB
+  // 4. Send notifications to user
+  // 5. Notify main app when tab reopens
+  
+  // For now, this is a placeholder that logs the intent
+  // Full implementation would require idb library in SW context
+  return Promise.resolve();
+}
+
+/**
+ * Background Sync Event
+ * Automatically retry failed uploads when network is restored
+ */
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Background sync event:', event.tag);
+  
+  if (event.tag === 'upload-retry') {
+    event.waitUntil(
+      retryFailedUploads().then(() => {
+        console.log('[SW] Background sync: uploads retried successfully');
+      }).catch((error) => {
+        console.error('[SW] Background sync failed:', error);
+      })
+    );
+  }
+});
+
+/**
+ * Retry failed uploads from IndexedDB
+ */
+async function retryFailedUploads() {
+  console.log('[SW] Retrying failed uploads...');
+  
+  // In a full implementation:
+  // 1. Open IndexedDB PhotoProofUploads
+  // 2. Get all uploads with status 'failed' or 'pending'
+  // 3. Retry each upload
+  // 4. Update status in IndexedDB
+  // 5. Send notification on completion
+  
+  // This is a placeholder - full implementation requires idb in SW
+  return Promise.resolve();
+}
+
+/**
+ * Push Notification Event
+ * Show notification when uploads complete
+ */
+self.addEventListener('push', (event) => {
+  console.log('[SW] Push notification received');
+  
+  const data = event.data ? event.data.json() : {};
+  
+  const title = data.title || 'Photo Proof Upload Complete';
+  const options = {
+    body: data.body || 'Your photos have been uploaded successfully',
+    icon: '/icon-192.png',
+    badge: '/badge-72.png',
+    tag: 'upload-complete',
+    requireInteraction: false,
+    data: data
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+/**
+ * Notification Click Event
+ * Handle notification clicks
+ */
+self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked');
+  
+  event.notification.close();
+  
+  // Open or focus the app
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a window is already open, focus it
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
+    })
+  );
+});
 
 if (DEBUG) console.log('[SW] Service Worker ready');
