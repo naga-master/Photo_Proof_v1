@@ -313,6 +313,45 @@ class PhotoService {
     const comments = await CommentService.getPhotoComments(Number(photoId));
     return { ...photo, comments };
   }
+
+  /**
+   * Get photos with processing issues for current user
+   */
+  async getProcessingIssues(): Promise<{
+    total_failed: number;
+    photos: Array<{
+      id: number;
+      project_id: number;
+      filename: string;
+      error: string;
+      uploaded_at: string;
+      last_attempt: string;
+      attempts: number;
+    }>;
+  }> {
+    return apiClient.get('/v2/photos/processing-issues');
+  }
+
+  /**
+   * Retry processing for a failed photo (admin only)
+   */
+  async reprocessPhoto(photoId: string): Promise<{ message: string; status: string }> {
+    return apiClient.post(`/v2/admin/photos/${photoId}/reprocess`, {});
+  }
+
+  /**
+   * Get processing status overview (admin only)
+   */
+  async getProcessingStatus(): Promise<{
+    total_photos: number;
+    processing: number;
+    completed_with_variants: number;
+    failed: number;
+    missing_variants: number;
+    recent_failures: Array<any>;
+  }> {
+    return apiClient.get('/v2/admin/photos/processing-status');
+  }
 }
 
 export const photoService = new PhotoService();

@@ -23,6 +23,11 @@ export interface Photo {
   width: number;
   height: number;
   comments: Comment[];
+  // Background processing fields
+  status?: 'pending' | 'uploading' | 'processing' | 'completed' | 'failed';
+  processing_error?: string;
+  processing_attempts?: number;
+  last_processing_attempt_at?: string;
 }
 
 export type LayoutId =
