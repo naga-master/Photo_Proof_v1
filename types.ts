@@ -270,6 +270,12 @@ export interface UploadState {
     uploadRules: UploadRules;
     uploadQueue: UploadFile[];
     isUploading: boolean;
+    duplicateModal?: {
+        show: boolean;
+        type: string;
+        message: string;
+        data: any;
+    };
 }
 
 export interface ServicePackageFeatureItem {

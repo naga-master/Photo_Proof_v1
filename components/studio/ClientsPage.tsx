@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import type { Client } from '../../types';
 import { PlusIcon, XCircleIcon, EyeIcon, EyeSlashIcon } from '../icons';
 import { Avatar } from '../Avatar';
+import { clientService } from '../../services/clientService';
+import { DuplicateDetectionModal } from '../../src/components/DuplicateDetectionModal';
+import type { DuplicateInfo } from '../../src/services/photoService';
 
 const PasswordDisplay: React.FC<{ password?: string, onTriggerClick?: (e: React.MouseEvent) => void }> = ({ password = '', onTriggerClick }) => {
     const [isRevealed, setIsRevealed] = useState(false);
@@ -47,6 +50,8 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
     });
 
     const [previewUrl, setPreviewUrl] = useState<string>('');
+    const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
+    const [pendingClientData, setPendingClientData] = useState<any>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -75,15 +80,84 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
         setClientData(prev => ({ ...prev, [name]: !prev[name] }));
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onCreateClient(clientData);
-        onClose();
-        // Reset form
-        setClientData({
-            name: '', email: '', phone: '', address: '', whatsappOptIn: false, emailOptIn: true, profilePicture: '',
-        });
-        setPreviewUrl('');
+        
+        try {
+            // Try to create client
+            const client = await clientService.createClient({
+                name: clientData.name,
+                email: clientData.email,
+                phone: clientData.phone,
+                address: clientData.address,
+                whatsapp_opt_in: clientData.whatsappOptIn,
+                email_opt_in: clientData.emailOptIn
+            });
+            
+            // Success - call parent callback
+            onCreateClient(client as any);
+            onClose();
+            
+            // Reset form
+            setClientData({
+                name: '', email: '', phone: '', address: '', whatsappOptIn: false, emailOptIn: true, profilePicture: '',
+            });
+            setPreviewUrl('');
+        } catch (error: any) {
+            // Check if it's a phone duplicate (409)
+            if (error.response?.status === 409 && error.response?.data?.type === 'client_phone') {
+                setDuplicateInfo(error.response.data);
+                setPendingClientData(clientData);
+                return;
+            }
+            
+            // Show other errors
+            alert('Failed to create client: ' + (error.message || 'Unknown error'));
+        }
+    };
+
+    const handleDuplicateAction = (action: string) => {
+        if (action === 'use_existing') {
+            // Use the existing client
+            if (duplicateInfo?.existing_client) {
+                onCreateClient(duplicateInfo.existing_client as any);
+                onClose();
+                setDuplicateInfo(null);
+                setPendingClientData(null);
+            }
+        } else if (action === 'create_anyway') {
+            // Force create with force=true parameter
+            if (pendingClientData) {
+                createClientWithForce(pendingClientData);
+            }
+        }
+    };
+
+    const createClientWithForce = async (data: any) => {
+        try {
+            // Call API with force=true
+            const client = await clientService.createClient({
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                address: data.address,
+                whatsapp_opt_in: data.whatsappOptIn,
+                email_opt_in: data.emailOptIn
+            }, true);
+            
+            onCreateClient(client as any);
+            onClose();
+            
+            // Reset
+            setDuplicateInfo(null);
+            setPendingClientData(null);
+            setClientData({
+                name: '', email: '', phone: '', address: '', whatsappOptIn: false, emailOptIn: true, profilePicture: '',
+            });
+            setPreviewUrl('');
+        } catch (error: any) {
+            alert('Failed to create client: ' + (error.message || 'Unknown error'));
+        }
     };
 
     if (!isOpen) return null;
@@ -183,6 +257,16 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
                     </div>
                 </form>
             </div>
+            {duplicateInfo && (
+                <DuplicateDetectionModal
+                    duplicateInfo={duplicateInfo}
+                    onAction={handleDuplicateAction}
+                    onClose={() => {
+                        setDuplicateInfo(null);
+                        setPendingClientData(null);
+                    }}
+                />
+            )}
         </div>
     )
 }

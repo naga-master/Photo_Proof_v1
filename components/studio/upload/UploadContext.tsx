@@ -22,7 +22,10 @@ type UploadAction =
   | { type: 'FILE_UPLOAD_SUCCESS'; payload: { fileId: string; photoId: string } }
   | { type: 'FILE_UPLOAD_FAIL'; payload: { id: string; error: string } }
   | { type: 'RETRY_FILE'; payload: string }
-  | { type: 'RETRY_FAILED' };
+  | { type: 'RETRY_FAILED' }
+  | { type: 'SHOW_DUPLICATE_MODAL'; payload: { type: string; message: string; data: any } }
+  | { type: 'HIDE_DUPLICATE_MODAL' }
+  | { type: 'UPDATE_FILE_STATUS'; payload: { id: string; error: string } };
 
 const getInitialState = (
   initialClientId?: number, 
@@ -156,6 +159,39 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
             isUploading: true,
             uploadQueue: state.uploadQueue.map(f => f.status === 'failed' ? { ...f, status: 'queued', progress: 0, error: undefined } : f),
         };
+    case 'SHOW_DUPLICATE_MODAL':
+        console.log('[UploadContext Reducer] SHOW_DUPLICATE_MODAL action received:', action.payload);
+        const newState = {
+            ...state,
+            duplicateModal: {
+                show: true,
+                type: action.payload.type,
+                message: action.payload.message,
+                data: action.payload.data
+            }
+        };
+        console.log('[UploadContext Reducer] New state with modal:', newState.duplicateModal);
+        return newState;
+    case 'HIDE_DUPLICATE_MODAL':
+        return {
+            ...state,
+            duplicateModal: {
+                ...state.duplicateModal,
+                show: false,
+                type: '',
+                message: '',
+                data: null
+            }
+        };
+    case 'UPDATE_FILE_STATUS':
+        return {
+            ...state,
+            uploadQueue: state.uploadQueue.map(f => 
+                f.id === action.payload.id 
+                    ? { ...f, status: 'failed', error: action.payload.error } 
+                    : f
+            ),
+        };
     default:
       return state;
   }
@@ -231,17 +267,31 @@ export const useUpload = () => {
     const createFoldersIfNeeded = async () => {
       const foldersNeedingCreation = state.folderMap.filter(f => !f.targetId);
       
+      if (foldersNeedingCreation.length === 0) {
+        console.log('[UploadContext] ✅ All folders already created in Step 2, skipping folder creation');
+        return state.folderMap;
+      }
+      
       if (foldersNeedingCreation.length > 0) {
-        console.log(`[UploadContext] 📁 Creating ${foldersNeedingCreation.length} folders in backend...`);
+        console.log(`[UploadContext] 📁 Creating ${foldersNeedingCreation.length} remaining folders in backend...`);
         
         try {
           // Create all folders in parallel
           const folderCreationPromises = foldersNeedingCreation.map(async (folder) => {
             try {
-              const createdFolder = await projectService.createFolder(
+              const result = await projectService.createFolder(
                 state.backendProjectId!,
                 folder.targetAlbumName
               );
+              
+              // Check if it's a duplicate (shouldn't happen if Step 2 validation worked)
+              if ('error' in result && result.error === 'duplicate_detected') {
+                const errorMsg = result.message || `Folder '${folder.targetAlbumName}' already exists in this project`;
+                console.error(`[UploadContext] ❌ ${errorMsg} (This should have been caught in Step 2)`);
+                throw new Error(errorMsg);
+              }
+              
+              const createdFolder = result;
               console.log(`[UploadContext] ✅ Created folder: ${folder.targetAlbumName} with ID: ${createdFolder.id}`);
               
               // Update folder map with the new ID
@@ -273,10 +323,17 @@ export const useUpload = () => {
           // Return the updated folder map for immediate use
           return newFolderMap;
         } catch (error) {
-          console.error('[UploadContext] ❌ Folder creation failed:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error('[UploadContext] ❌ Folder creation failed:', errorMessage);
+          console.error('[UploadContext] Full error:', error);
+          
           dispatch({ type: 'PAUSE_UPLOAD' });
-          // TODO: Show error to user
-          return state.folderMap;
+          
+          // Don't mark individual files as failed - the error was with folder creation,
+          // not with the files themselves. User will see the modal on Step 2 instead.
+          
+          // Return null to signal failure
+          return null;
         }
       }
       
@@ -284,7 +341,21 @@ export const useUpload = () => {
     };
 
     // Create folders first, then start uploads
-    createFoldersIfNeeded().then(updatedFolderMap => {
+    createFoldersIfNeeded()
+      .then(updatedFolderMap => {
+        // Check if folder creation failed
+        if (updatedFolderMap === null) {
+          console.error('[UploadContext] ❌ Cannot start uploads - folder creation failed');
+          console.error('[UploadContext] All files have been marked as failed. Please check folder names and try again.');
+          
+          // Reset initialization flag so user can retry
+          uploadInitialized.current = false;
+          uploadSessionId.current = null;
+          
+          // Stop the upload
+          dispatch({ type: 'PAUSE_UPLOAD' });
+          return;
+        }
       // Step 1: Set up callbacks for the queue manager
       uploadQueueManager.setCallbacks({
           onProgress: (uploadId, progress) => {
@@ -341,6 +412,16 @@ export const useUpload = () => {
               console.error('[UploadContext] Failed to add files to queue:', error);
           });
       }
+    })
+    .catch(error => {
+      console.error('[UploadContext] ❌ Unexpected error in upload flow:', error);
+      
+      // Reset initialization flag so user can retry
+      uploadInitialized.current = false;
+      uploadSessionId.current = null;
+      
+      // Stop the upload
+      dispatch({ type: 'PAUSE_UPLOAD' });
     });
 
   }, [state.isUploading, state.backendProjectId, dispatch]);

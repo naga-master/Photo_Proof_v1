@@ -3,6 +3,8 @@
  * Handles project/album CRUD operations
  */
 
+console.log('🔄 [projectService] MODULE LOADING - TOP OF FILE - v2.1');
+
 import { apiClient } from '../../lib/api-client';
 
 export interface Project {
@@ -129,6 +131,7 @@ class ProjectService {
 
   /**
    * Create a folder in a project
+   * Returns Folder on success, or DuplicateInfo on 409 conflict
    */
   async createFolder(projectId: string, folderName: string): Promise<{
     id: string;
@@ -140,9 +143,42 @@ class ProjectService {
     order_index: number;
     created_at?: string;
     updated_at?: string;
+  } | {
+    error: string;
+    type: string;
+    message: string;
+    existing_folder?: any;
   }> {
-    return apiClient.post<any>(`/api/projects/${projectId}/folders?folder_name=${encodeURIComponent(folderName)}`);
+    try {
+      console.log('[projectService] 🔵 CREATING FOLDER:', projectId, folderName);
+      const result = await apiClient.post<any>(`/api/projects/${projectId}/folders?folder_name=${encodeURIComponent(folderName)}`);
+      console.log('[projectService] ✅ FOLDER CREATED:', result);
+      return result;
+    } catch (error: any) {
+      console.error('[projectService] 🔴 CREATE FOLDER ERROR:', error);
+      console.error('[projectService] Error status:', error.status);
+      console.error('[projectService] Error detail:', error.detail);
+      
+      // If it's a 409 duplicate error, return the error details
+      // The error structure from api-client has status and detail directly
+      if (error.status === 409 && error.detail) {
+        console.warn('[projectService] ⚠️ RETURNING DUPLICATE INFO:', error.detail);
+        return error.detail;
+      }
+      
+      // Fallback: check for response.status (axios style)
+      if (error.response?.status === 409 && error.response?.data?.detail) {
+        console.warn('[projectService] ⚠️ RETURNING DUPLICATE INFO (axios):', error.response.data.detail);
+        return error.response.data.detail;
+      }
+      
+      // Re-throw other errors
+      console.error('[projectService] ❌ RE-THROWING ERROR');
+      throw error;
+    }
   }
 }
+
+console.log('🔄 [projectService] Module loaded - VERSION 2.0 with duplicate handling');
 
 export const projectService = new ProjectService();

@@ -77,8 +77,9 @@ class ClientService {
   /**
    * Create new client
    */
-  async createClient(data: CreateClientRequest): Promise<Client> {
-    return apiClient.post<Client>('/v2/clients', data);
+  async createClient(data: CreateClientRequest, force: boolean = false): Promise<Client> {
+    const url = force ? '/v2/clients?force=true' : '/v2/clients';
+    return apiClient.post<Client>(url, data);
   }
 
   /**

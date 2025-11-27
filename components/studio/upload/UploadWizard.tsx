@@ -11,6 +11,7 @@ import Step5_Summary from './Step5_Summary';
 import UploadSidebar from './UploadSidebar';
 import { ArrowLeftIcon } from '../../icons';
 import OfflineBanner from './OfflineBanner';
+import { DuplicateDetectionModal } from '../../../src/components/DuplicateDetectionModal';
 import type { ProjectDetails, UploadFile, Album, Client, LayoutId, ServicePackage } from '../../../types';
 import { canProceedFromStep1, canProceedFromStep2, validateStep1, validateStep2, getValidationErrorMessage } from '../../../lib/validators';
 import { clientService } from '../../../services/clientService';
@@ -48,6 +49,11 @@ const stepVariants = {
 
 const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients, packages, initialStep = 0, existingProjectId }) => {
   const { state, nextStep, prevStep, resetUpload, setStep, dispatch } = useUpload();
+  
+  // Debug: Log when duplicateModal state changes
+  React.useEffect(() => {
+    console.log('[UploadWizard] duplicateModal state changed:', state.duplicateModal);
+  }, [state.duplicateModal]);
   const { step, mode } = state;
   const [direction, setDirection] = useState(0);
   const [validationError, setValidationError] = useState<string>('');
@@ -124,6 +130,79 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       });
       isValid = validation.isValid;
       errors = validation.errors;
+      
+      console.log('[UploadWizard] Step 2 validation:', { isValid, hasProjectId: !!state.backendProjectId });
+      
+      // Check for duplicate folder names on backend before proceeding
+      if (isValid) {
+        if (!state.backendProjectId) {
+          console.log('[UploadWizard] ⚠️ No backend project ID yet, will check on Step 3');
+          // If no project ID yet, we'll check when project is created on Step 3
+          // For now, proceed to Step 3
+        } else {
+        console.log('[UploadWizard] ✅ Starting duplicate check...');
+        console.log('[UploadWizard] Backend Project ID:', state.backendProjectId);
+        console.log('[UploadWizard] Folders to check:', state.folderMap.map(f => f.targetAlbumName));
+        
+        try {
+          // Check each folder name
+          for (const folderMapping of state.folderMap) {
+            console.log('[UploadWizard] Creating folder:', folderMapping.targetAlbumName);
+            
+            const result = await projectService.createFolder(
+              state.backendProjectId,
+              folderMapping.targetAlbumName
+            );
+            
+            console.log('[UploadWizard] Folder creation result:', result);
+            
+            // If it's a duplicate, show modal and stop
+            if ('error' in result && result.error === 'duplicate_detected') {
+              console.log('[UploadWizard] ⚠️ DUPLICATE DETECTED:', folderMapping.targetAlbumName);
+              console.log('[UploadWizard] Duplicate info:', result);
+              
+              // Show modal
+              dispatch({
+                type: 'SHOW_DUPLICATE_MODAL',
+                payload: {
+                  type: result.type || 'folder_name',
+                  message: result.message || `Folder '${folderMapping.targetAlbumName}' already exists in this project`,
+                  data: result
+                }
+              });
+              
+              console.log('[UploadWizard] Modal dispatch sent, stopping here');
+              
+              // Show toast as well for immediate feedback
+              showToast(`Folder '${folderMapping.targetAlbumName}' already exists`);
+              
+              return; // Stop here, don't proceed to next step
+            }
+            
+            // If folder was created successfully, we need to track it
+            // So we don't create it again during upload
+            if ('id' in result) {
+              console.log('[UploadWizard] Folder created successfully:', result.name, 'ID:', result.id);
+              // Update folder map with the created ID
+              const updatedFolderMap = state.folderMap.map(f => 
+                f.targetAlbumName === result.name 
+                  ? { ...f, targetId: result.id } 
+                  : f
+              );
+              dispatch({ type: 'UPDATE_FOLDER_MAP', payload: updatedFolderMap });
+            }
+          }
+          
+          console.log('[UploadWizard] All folders checked, no duplicates found');
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Failed to check folder names';
+          setValidationError(errorMessage);
+          showToast(errorMessage);
+          console.error('[UploadWizard] Folder check failed:', error);
+          return;
+        }
+        }
+      }
     } else if (step === 3) {
       // Before starting upload, create the backend project
       console.log('[UploadWizard] Step 3 - Checking backendProjectId:', state.backendProjectId);
@@ -294,6 +373,33 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
         </main>
         {(mode || state.projectDetails.clientId) && step >= 2 && <UploadSidebar />}
       </div>
+      
+      {/* Duplicate Detection Modal */}
+      {(() => {
+        const shouldShow = state.duplicateModal?.show && state.duplicateModal.data;
+        console.log('[UploadWizard] Modal render check:', { 
+          show: state.duplicateModal?.show, 
+          hasData: !!state.duplicateModal?.data,
+          shouldShow 
+        });
+        
+        if (shouldShow) {
+          return (
+            <DuplicateDetectionModal
+              duplicateInfo={state.duplicateModal.data}
+              onClose={() => {
+                console.log('[UploadWizard] Modal close clicked');
+                dispatch({ type: 'HIDE_DUPLICATE_MODAL' });
+              }}
+              onAction={(action) => {
+                console.log('[UploadWizard] Duplicate modal action:', action);
+                dispatch({ type: 'HIDE_DUPLICATE_MODAL' });
+              }}
+            />
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 };

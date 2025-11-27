@@ -114,7 +114,15 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
   // Create folder
   createFolder: async (projectId: string, folderName: string) => {
     const startTime = Date.now();
-    const folder = await projectService.createFolder(projectId, folderName);
+    const result = await projectService.createFolder(projectId, folderName);
+    
+    // Check if it's a duplicate - reject immediately (no auto-retry)
+    if ('error' in result && result.error === 'duplicate_detected') {
+      const errorMsg = result.message || `Folder '${folderName}' already exists`;
+      throw new Error(errorMsg);
+    }
+    
+    const folder = result; // It's a valid folder
     const duration = Date.now() - startTime;
 
     cacheEvents.emit({

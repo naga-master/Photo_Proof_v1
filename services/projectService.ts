@@ -3,8 +3,10 @@
  * Handles project/album CRUD operations
  */
 
+console.log('🔄 [projectService] MODULE LOADED - v3.0 - CORRECT FILE!');
+
 import { apiClient } from '../lib/api-client';
-import { getPhotoVariantUrl } from './photoService';
+import { getPhotoVariantUrl, DuplicateInfo } from './photoService';
 import type { QualityLevel } from '../config/image-optimization.config';
 
 export interface Project {
@@ -190,8 +192,33 @@ class ProjectService {
     order_index: number;
     created_at?: string;
     updated_at?: string;
-  }> {
-    return apiClient.post<any>(`/api/projects/${projectId}/folders?folder_name=${encodeURIComponent(folderName)}`);
+  } | DuplicateInfo> {
+    console.log('[projectService] 🔵 CREATING FOLDER:', projectId, folderName);
+    try {
+      const result = await apiClient.post<any>(`/api/projects/${projectId}/folders?folder_name=${encodeURIComponent(folderName)}`);
+      console.log('[projectService] ✅ FOLDER CREATED:', result);
+      return result;
+    } catch (error: any) {
+      console.error('[projectService] 🔴 CREATE FOLDER ERROR:', error);
+      console.error('[projectService] Error status:', error.status);
+      console.error('[projectService] Error detail:', error.detail);
+      
+      // Check if it's a duplicate folder name (409)
+      // The api-client returns error with status and detail directly
+      if (error.status === 409 && error.detail) {
+        console.warn('[projectService] ⚠️ RETURNING DUPLICATE INFO (direct):', error.detail);
+        return error.detail as DuplicateInfo;
+      }
+      
+      // Fallback: check for response.status (axios style)
+      if (error.response?.status === 409 && error.response?.data) {
+        console.warn('[projectService] ⚠️ RETURNING DUPLICATE INFO (axios):', error.response.data);
+        return error.response.data as DuplicateInfo;
+      }
+      
+      console.error('[projectService] ❌ RE-THROWING ERROR');
+      throw error;
+    }
   }
 }
 
