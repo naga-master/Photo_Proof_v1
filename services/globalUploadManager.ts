@@ -362,12 +362,22 @@ class GlobalUploadManager {
     console.log(`[GlobalUploadManager] Starting upload of ${files.length} files`);
 
     try {
-      // Check for duplicates
-      const duplicates = await this.checkDuplicates(files);
-      if (duplicates.length > 0) {
-        console.warn(`[GlobalUploadManager] Found ${duplicates.length} duplicate uploads`);
-        // TODO: Show modal to user asking if they want to resume existing or start new
+      // Check for duplicates (skip if IndexedDB fails or takes too long)
+      console.log('[GlobalUploadManager] Checking for duplicates...');
+      let duplicates: StoredUpload[] = [];
+      try {
+        // Add 2 second timeout for duplicate check - don't let it block uploads
+        const timeoutPromise = new Promise<StoredUpload[]>((_, reject) => 
+          setTimeout(() => reject(new Error('Duplicate check timeout')), 2000)
+        );
+        duplicates = await Promise.race([this.checkDuplicates(files), timeoutPromise]);
+        if (duplicates.length > 0) {
+          console.warn(`[GlobalUploadManager] Found ${duplicates.length} duplicate uploads`);
+        }
+      } catch (dupError) {
+        console.warn('[GlobalUploadManager] Duplicate check skipped (non-critical):', dupError);
       }
+      console.log('[GlobalUploadManager] Duplicate check complete');
 
       // Create new session
       const sessionId = uuidv4();
@@ -381,7 +391,8 @@ class GlobalUploadManager {
       this.state.failedFiles = 0;
       this.state.uploads.clear();
 
-      // Save session to IndexedDB
+      // Save session to IndexedDB (non-blocking, continue on error)
+      console.log('[GlobalUploadManager] Creating session...');
       const session: UploadSession = {
         sessionId,
         projectId,
@@ -392,11 +403,17 @@ class GlobalUploadManager {
         startedAt: Date.now(),
         isActive: true,
       };
-      await uploadStateStore.saveSession(session);
+      // Don't block on IndexedDB - fire and forget with timeout
+      uploadStateStore.saveSession(session)
+        .then(() => console.log('[GlobalUploadManager] Session saved to IndexedDB'))
+        .catch(err => console.warn('[GlobalUploadManager] Failed to save session (non-critical):', err));
+      console.log('[GlobalUploadManager] Session created (IndexedDB save in background)');
 
       // Create queued uploads
+      // IMPORTANT: Use same ID format as UploadContext to match callbacks
+      console.log('[GlobalUploadManager] Creating queued uploads...');
       const queuedUploads: QueuedUpload[] = files.map((file) => {
-        const uploadId = `${file.name}-${file.lastModified}-${Date.now()}`;
+        const uploadId = `${file.name}-${file.lastModified}`;
         
         // Save to IndexedDB with file data
         const storedUpload: StoredUpload = {
@@ -439,17 +456,22 @@ class GlobalUploadManager {
           maxRetries: 3,
         };
       });
+      console.log('[GlobalUploadManager] Created', queuedUploads.length, 'queued uploads');
 
       // Add to upload queue
+      console.log('[GlobalUploadManager] Adding', queuedUploads.length, 'files to queue...');
       await uploadQueueManager.addToQueue(queuedUploads);
+      console.log('[GlobalUploadManager] Files added to queue');
 
       // Start processing
+      console.log('[GlobalUploadManager] Starting queue processing...');
       await uploadQueueManager.processQueue();
+      console.log('[GlobalUploadManager] Queue processing started');
 
       this.notifySubscribers();
       console.log('[GlobalUploadManager] ✅ Upload session started:', sessionId);
     } catch (error) {
-      console.error('[GlobalUploadManager] Failed to start uploads:', error);
+      console.error('[GlobalUploadManager] ❌ Failed to start uploads:', error);
       throw error;
     }
   }
