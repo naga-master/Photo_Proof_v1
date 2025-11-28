@@ -7,9 +7,11 @@
 export const colors = {
   // Studio Dashboard (Professional Blue)
   studio: {
-    primary: '#2563eb',        // Blue-600
-    primaryLight: '#3b82f6',   // Blue-500 - hover
-    primaryDark: '#1d4ed8',    // Blue-700 - active
+    primary: '#0A58D0',        // Custom brand blue
+    primaryLight: '#3B7FE8',   // Lighter - hover states
+    primaryDark: '#083F98',    // Darker - active states
+    primaryLighter: '#6BA4F0', // Very light - backgrounds
+    primaryDarker: '#062A60',  // Very dark - text
     secondary: '#64748b',      // Slate-600
     accent: '#10b981',         // Emerald-500 - success
     warning: '#f59e0b',        // Amber-500
@@ -28,7 +30,7 @@ export const colors = {
 
   // E-commerce Store (Action-Oriented)
   store: {
-    primary: '#2563eb',        // Trust blue
+    primary: '#0A58D0',        // Trust blue (matches studio)
     secondary: '#8b5cf6',      // Violet-500 - premium
     accent: '#f97316',         // Orange-500 - urgency
     accentHover: '#ea580c',    // Orange-600

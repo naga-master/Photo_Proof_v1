@@ -16,6 +16,8 @@ export default {
           primary: designSystem.colors.studio.primary,
           'primary-light': designSystem.colors.studio.primaryLight,
           'primary-dark': designSystem.colors.studio.primaryDark,
+          'primary-lighter': designSystem.colors.studio.primaryLighter,
+          'primary-darker': designSystem.colors.studio.primaryDarker,
           secondary: designSystem.colors.studio.secondary,
           accent: designSystem.colors.studio.accent,
           warning: designSystem.colors.studio.warning,
