@@ -463,6 +463,53 @@ class GlobalUploadManager {
       await uploadQueueManager.addToQueue(queuedUploads);
       console.log('[GlobalUploadManager] Files added to queue');
 
+      // Set up callbacks to update GlobalUploadManager state
+      uploadQueueManager.setCallbacks({
+        onProgress: (uploadId, progress) => {
+          const upload = this.state.uploads.get(uploadId);
+          if (upload) {
+            upload.progress = progress;
+            upload.status = 'uploading';
+            this.updateOverallProgress();
+            this.notifySubscribers();
+          }
+        },
+        onSuccess: (uploadId) => {
+          const upload = this.state.uploads.get(uploadId);
+          if (upload) {
+            upload.progress = 100;
+            upload.status = 'completed';
+            this.state.completedFiles++;
+            this.updateOverallProgress();
+            this.notifySubscribers();
+            
+            // Check if all uploads are complete
+            if (this.state.completedFiles + this.state.failedFiles >= this.state.totalFiles) {
+              console.log('[GlobalUploadManager] ✅ All uploads complete!');
+              this.state.isActive = false;
+              this.notifySubscribers();
+            }
+          }
+        },
+        onError: (uploadId, error) => {
+          const upload = this.state.uploads.get(uploadId);
+          if (upload) {
+            upload.status = 'failed';
+            upload.error = error;
+            this.state.failedFiles++;
+            this.updateOverallProgress();
+            this.notifySubscribers();
+            
+            // Check if all uploads are complete (including failed)
+            if (this.state.completedFiles + this.state.failedFiles >= this.state.totalFiles) {
+              console.log('[GlobalUploadManager] All uploads finished (with some failures)');
+              this.state.isActive = false;
+              this.notifySubscribers();
+            }
+          }
+        },
+      });
+
       // Start processing
       console.log('[GlobalUploadManager] Starting queue processing...');
       await uploadQueueManager.processQueue();
