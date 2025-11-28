@@ -65,9 +65,49 @@ class UploadQueueManager {
 
   /**
    * Set callbacks for upload events
+   * IMPORTANT: Merges with existing callbacks so multiple subscribers can listen
    */
   setCallbacks(callbacks: UploadQueueCallbacks) {
-    this.callbacks = { ...this.callbacks, ...callbacks };
+    const mergedCallbacks: UploadQueueCallbacks = {};
+    
+    // For each callback type, create wrapper that calls ALL registered callbacks
+    if (callbacks.onProgress || this.callbacks.onProgress) {
+      const existing = this.callbacks.onProgress;
+      const newCb = callbacks.onProgress;
+      mergedCallbacks.onProgress = (uploadId, progress) => {
+        existing?.(uploadId, progress);
+        newCb?.(uploadId, progress);
+      };
+    }
+    
+    if (callbacks.onSuccess || this.callbacks.onSuccess) {
+      const existing = this.callbacks.onSuccess;
+      const newCb = callbacks.onSuccess;
+      mergedCallbacks.onSuccess = (uploadId, result) => {
+        existing?.(uploadId, result);
+        newCb?.(uploadId, result);
+      };
+    }
+    
+    if (callbacks.onError || this.callbacks.onError) {
+      const existing = this.callbacks.onError;
+      const newCb = callbacks.onError;
+      mergedCallbacks.onError = (uploadId, error) => {
+        existing?.(uploadId, error);
+        newCb?.(uploadId, error);
+      };
+    }
+    
+    if (callbacks.onQueueUpdate || this.callbacks.onQueueUpdate) {
+      const existing = this.callbacks.onQueueUpdate;
+      const newCb = callbacks.onQueueUpdate;
+      mergedCallbacks.onQueueUpdate = (queue) => {
+        existing?.(queue);
+        newCb?.(queue);
+      };
+    }
+    
+    this.callbacks = mergedCallbacks;
   }
 
   /**
@@ -106,11 +146,16 @@ class UploadQueueManager {
    * Process batches of uploads
    * MODIFIED: Split by upload method BEFORE fetching presigned URLs (hybrid mode)
    */
-  private async processBatches(): Promise<void> {
+  private async processBatches(forceRestart: boolean = false): Promise<void> {
     // Prevent multiple batch processing running simultaneously
-    if (this.isProcessingBatch) {
+    if (this.isProcessingBatch && !forceRestart) {
       console.log('[UploadQueueManager] ⏸️ Batch processing already in progress, skipping');
       return;
+    }
+    
+    if (forceRestart) {
+      console.log('[UploadQueueManager] 🔄 Force restarting batch processing');
+      this.isProcessingBatch = false; // Reset flag
     }
 
     // Find pending files that don't have tokens yet
@@ -646,8 +691,8 @@ class UploadQueueManager {
    * Process queue (for GlobalUploadManager integration)
    * Alias for processBatches - starts processing pending uploads
    */
-  async processQueue(): Promise<void> {
-    return this.processBatches();
+  async processQueue(forceRestart: boolean = false): Promise<void> {
+    return this.processBatches(forceRestart);
   }
 
   /**
@@ -655,6 +700,66 @@ class UploadQueueManager {
    */
   isProcessing(): boolean {
     return this.isProcessingBatch;
+  }
+
+  /**
+   * Retry a specific upload by ID
+   * Resets the upload status to pending and restarts processing
+   */
+  async retryUploadById(uploadId: string, file: File): Promise<void> {
+    console.log('[UploadQueueManager] Retrying upload:', uploadId);
+    
+    // Find existing upload in queue
+    const existingIndex = this.queue.findIndex(u => u.id === uploadId);
+    
+    if (existingIndex !== -1) {
+      // Update existing entry
+      const existing = this.queue[existingIndex];
+      existing.status = 'pending';
+      existing.progress = 0;
+      existing.retryCount = (existing.retryCount || 0) + 1;
+      existing.token = undefined;
+      existing.batchId = undefined;
+      existing.file = file;
+      console.log('[UploadQueueManager] Reset existing upload in queue:', uploadId);
+    } else {
+      // Add new entry
+      const projectId = this.queue[0]?.projectId || '';
+      const folderId = this.queue[0]?.folderId;
+      
+      this.queue.push({
+        id: uploadId,
+        file,
+        projectId,
+        folderId,
+        status: 'pending',
+        progress: 0,
+        retryCount: 0,
+        maxRetries: this.MAX_RETRIES,
+        batchId: undefined,
+      });
+      console.log('[UploadQueueManager] Added new retry upload to queue:', uploadId);
+    }
+    
+    this.notifyQueueUpdate();
+  }
+
+  /**
+   * Retry all failed uploads
+   */
+  async retryFailed(): Promise<void> {
+    const failedUploads = this.queue.filter(u => u.status === 'failed');
+    console.log(`[UploadQueueManager] Retrying ${failedUploads.length} failed uploads`);
+    
+    for (const upload of failedUploads) {
+      upload.status = 'pending';
+      upload.progress = 0;
+      upload.retryCount = (upload.retryCount || 0) + 1;
+      upload.token = undefined;
+      upload.batchId = undefined;
+    }
+    
+    this.notifyQueueUpdate();
   }
 
   /**

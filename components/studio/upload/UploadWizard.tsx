@@ -48,13 +48,34 @@ const stepVariants = {
 };
 
 const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCreated, onViewGallery, showToast, clients, packages, initialStep = 0, existingProjectId }) => {
-  const { state, nextStep, prevStep, resetUpload, setStep, dispatch } = useUpload();
+  const { state, nextStep, prevStep, resetUpload, setStep, dispatch, pauseUpload } = useUpload();
   
   // Debug: Log when duplicateModal state changes
   React.useEffect(() => {
     console.log('[UploadWizard] duplicateModal state changed:', state.duplicateModal);
   }, [state.duplicateModal]);
   const { step, mode } = state;
+  
+  // Smart back button handler
+  const handleBackButton = React.useCallback(() => {
+    // If on first step (mode selection), exit wizard
+    if (step === 0) {
+      onExit();
+      return;
+    }
+    
+    // If uploading, warn user before going back
+    if (step === 4 && state.isUploading) {
+      if (window.confirm('Upload in progress. Going back will pause uploads. Continue?')) {
+        pauseUpload();
+        prevStep();
+      }
+      return;
+    }
+    
+    // Otherwise, go back one step
+    prevStep();
+  }, [step, state.isUploading, onExit, pauseUpload, prevStep]);
   const [direction, setDirection] = useState(0);
   const [validationError, setValidationError] = useState<string>('');
 
@@ -101,7 +122,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       // If validation passes and we're creating a new client, create it first
       if (isValid && state.projectDetails.clientId === 'new' && state.projectDetails.newClientDetails) {
         try {
-          showToast('Creating client...');
+          // Toast removed - widget shows upload progress
           const newClient = await clientService.createClient({
             name: `${state.projectDetails.newClientDetails.firstName} ${state.projectDetails.newClientDetails.lastName}`,
             email: state.projectDetails.newClientDetails.email,
@@ -114,7 +135,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             payload: { clientId: newClient.id }
           });
           
-          showToast('Client created successfully');
+          console.log('[UploadWizard] Client created successfully');
         } catch (error: any) {
           const errorMessage = error?.message || 'Failed to create client';
           setValidationError(errorMessage);
@@ -173,8 +194,8 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
               
               console.log('[UploadWizard] Modal dispatch sent, stopping here');
               
-              // Show toast as well for immediate feedback
-              showToast(`Folder '${folderMapping.targetAlbumName}' already exists`);
+              // Log for debugging
+              console.log(`[UploadWizard] Folder '${folderMapping.targetAlbumName}' already exists`);
               
               return; // Stop here, don't proceed to next step
             }
@@ -209,7 +230,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       if (!state.backendProjectId) {
         console.log('[UploadWizard] No backendProjectId found, creating new project...');
         try {
-          showToast('Creating project...');
+          // Toast removed - widget shows upload progress
           
           // Get client details - either from existing client or from newClientDetails
           let clientName = '';
@@ -247,7 +268,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             payload: project.id
           });
           
-          showToast('Project created successfully');
+          console.log('[UploadWizard] Project created successfully:', project.id);
         } catch (error: any) {
           const errorMessage = error?.message || 'Failed to create project';
           setValidationError(errorMessage);
@@ -315,7 +336,11 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
       <header className="flex-shrink-0 bg-white border-b border-slate-200">
         <div className="p-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <button onClick={onExit} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+            <button 
+              onClick={handleBackButton} 
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-full"
+              title={step === 0 ? "Close wizard" : "Go back"}
+            >
               <ArrowLeftIcon className="w-5 h-5" />
             </button>
             <div>

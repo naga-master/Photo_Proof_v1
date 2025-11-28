@@ -19,21 +19,8 @@ import { uploadQueueManager, type QueuedUpload } from './uploadQueueManager';
 import { uploadStateStore, type StoredUpload, type UploadSession } from './uploadStateStore';
 import { networkDetectionService } from './networkDetectionService';
 import { notificationService } from './notificationService';
+import { uploadHistoryStore } from './uploadHistoryStore';
 import { v4 as uuidv4 } from 'uuid';
-
-export interface GlobalUploadState {
-  isActive: boolean;
-  isPaused: boolean;
-  sessionId: string | null;
-  projectId: string | null;
-  folderId?: string;
-  totalFiles: number;
-  completedFiles: number;
-  failedFiles: number;
-  currentFile: string | null;
-  overallProgress: number;
-  uploads: Map<string, UploadProgress>;
-}
 
 export interface UploadProgress {
   id: string;
@@ -43,11 +30,50 @@ export interface UploadProgress {
   progress: number;
   error?: string;
   photoId?: string;
+  sessionId: string; // Track which session this upload belongs to
+}
+
+// Individual upload session (one per project upload)
+export interface UploadSessionState {
+  sessionId: string;
+  projectId: string;
+  projectName: string;
+  folderId?: string;
+  isActive: boolean;
+  isPaused: boolean;
+  totalFiles: number;
+  completedFiles: number;
+  failedFiles: number;
+  currentFile: string | null;
+  overallProgress: number;
+  uploads: Map<string, UploadProgress>;
+}
+
+// Global state contains all sessions
+export interface GlobalUploadState {
+  // Multi-session support
+  sessions: Map<string, UploadSessionState>;
+  
+  // Legacy single-session interface (for backward compatibility with widget)
+  // Points to the most recent/active session
+  isActive: boolean;
+  isPaused: boolean;
+  sessionId: string | null;
+  projectId: string | null;
+  projectName: string | null;
+  folderId?: string;
+  totalFiles: number;
+  completedFiles: number;
+  failedFiles: number;
+  currentFile: string | null;
+  overallProgress: number;
+  uploads: Map<string, UploadProgress>;
 }
 
 export interface StartUploadOptions {
   files: File[];
   projectId: string;
+  projectName?: string;
   folderId?: string;
   folderPath?: string;
 }
@@ -55,11 +81,17 @@ export interface StartUploadOptions {
 type StateSubscriber = (state: GlobalUploadState) => void;
 
 class GlobalUploadManager {
+  // Multi-session state
+  private sessions: Map<string, UploadSessionState> = new Map();
+  
+  // Legacy single-session state (computed from sessions for backward compatibility)
   private state: GlobalUploadState = {
+    sessions: new Map(),
     isActive: false,
     isPaused: false,
     sessionId: null,
     projectId: null,
+    projectName: null,
     folderId: undefined,
     totalFiles: 0,
     completedFiles: 0,
@@ -68,6 +100,9 @@ class GlobalUploadManager {
     overallProgress: 0,
     uploads: new Map(),
   };
+
+  // Callback for when upload completes (to refresh project list)
+  private onUploadCompleteCallback?: (projectId: string, projectName: string, status: 'success' | 'partial' | 'failed') => void;
 
   private subscribers: Set<StateSubscriber> = new Set();
   private initialized = false;
@@ -349,10 +384,43 @@ class GlobalUploadManager {
   }
 
   /**
+   * Clear all session data - call when widget is closed or new upload starts
+   */
+  clearSession(): void {
+    console.log('[GlobalUploadManager] Clearing all session data...');
+    
+    // Clear all sessions
+    this.sessions.clear();
+    
+    // Reset legacy state
+    this.state.sessions = new Map();
+    this.state.isActive = false;
+    this.state.isPaused = false;
+    this.state.sessionId = null;
+    this.state.projectId = null;
+    this.state.projectName = null;
+    this.state.folderId = undefined;
+    this.state.totalFiles = 0;
+    this.state.completedFiles = 0;
+    this.state.failedFiles = 0;
+    this.state.currentFile = null;
+    this.state.overallProgress = 0;
+    this.state.uploads.clear();
+    
+    // Clear the upload queue
+    uploadQueueManager.clearAll();
+    
+    console.log('[GlobalUploadManager] Session data cleared');
+    
+    // Notify subscribers (widget will hide)
+    this.notifySubscribers();
+  }
+
+  /**
    * Start new upload session
    */
   async startUploads(options: StartUploadOptions): Promise<void> {
-    const { files, projectId, folderId, folderPath } = options;
+    const { files, projectId, projectName, folderId, folderPath } = options;
 
     if (files.length === 0) {
       console.warn('[GlobalUploadManager] No files to upload');
@@ -360,6 +428,13 @@ class GlobalUploadManager {
     }
 
     console.log(`[GlobalUploadManager] Starting upload of ${files.length} files`);
+    
+    // Clear any previous session data before starting new upload
+    // This prevents accumulation of old data
+    console.log('[GlobalUploadManager] Clearing previous session data...');
+    this.sessions.clear();
+    this.state.uploads.clear();
+    uploadQueueManager.clearAll();
 
     try {
       // Check for duplicates (skip if IndexedDB fails or takes too long)
@@ -379,17 +454,41 @@ class GlobalUploadManager {
       }
       console.log('[GlobalUploadManager] Duplicate check complete');
 
-      // Create new session
+      // Create new session (supports multiple concurrent uploads)
       const sessionId = uuidv4();
+      const sessionState: UploadSessionState = {
+        sessionId,
+        projectId,
+        projectName: projectName || 'Untitled Project',
+        folderId,
+        isActive: true,
+        isPaused: false,
+        totalFiles: files.length,
+        completedFiles: 0,
+        failedFiles: 0,
+        currentFile: null,
+        overallProgress: 0,
+        uploads: new Map(),
+      };
+      
+      // Add to sessions Map
+      this.sessions.set(sessionId, sessionState);
+      
+      // Update legacy state to point to this session (for backward compatibility)
       this.state.sessionId = sessionId;
       this.state.projectId = projectId;
+      this.state.projectName = projectName || 'Untitled Project';
       this.state.folderId = folderId;
       this.state.isActive = true;
       this.state.isPaused = false;
       this.state.totalFiles = files.length;
       this.state.completedFiles = 0;
       this.state.failedFiles = 0;
-      this.state.uploads.clear();
+      this.state.uploads = sessionState.uploads; // Share the same Map
+      
+      // Notify immediately to show widget
+      console.log('[GlobalUploadManager] Session starting, notifying subscribers...');
+      this.notifySubscribers();
 
       // Save session to IndexedDB (non-blocking, continue on error)
       console.log('[GlobalUploadManager] Creating session...');
@@ -436,14 +535,16 @@ class GlobalUploadManager {
           console.error('[GlobalUploadManager] Failed to save upload to IndexedDB:', error);
         });
 
-        // Update state
-        this.state.uploads.set(uploadId, {
+        // Update state (both session and legacy state share the same Map)
+        const uploadProgress: UploadProgress = {
           id: uploadId,
           fileName: file.name,
           fileSize: file.size,
           status: 'pending',
           progress: 0,
-        });
+          sessionId, // Track which session this upload belongs to
+        };
+        sessionState.uploads.set(uploadId, uploadProgress);
 
         return {
           id: uploadId,
@@ -464,47 +565,56 @@ class GlobalUploadManager {
       console.log('[GlobalUploadManager] Files added to queue');
 
       // Set up callbacks to update GlobalUploadManager state
+      // Capture sessionId for this upload batch
+      const currentSessionId = sessionId;
       uploadQueueManager.setCallbacks({
         onProgress: (uploadId, progress) => {
-          const upload = this.state.uploads.get(uploadId);
-          if (upload) {
-            upload.progress = progress;
-            upload.status = 'uploading';
-            this.updateOverallProgress();
-            this.notifySubscribers();
-          }
-        },
-        onSuccess: (uploadId) => {
-          const upload = this.state.uploads.get(uploadId);
-          if (upload) {
-            upload.progress = 100;
-            upload.status = 'completed';
-            this.state.completedFiles++;
-            this.updateOverallProgress();
-            this.notifySubscribers();
-            
-            // Check if all uploads are complete
-            if (this.state.completedFiles + this.state.failedFiles >= this.state.totalFiles) {
-              console.log('[GlobalUploadManager] ✅ All uploads complete!');
-              this.state.isActive = false;
+          const session = this.findSessionForUpload(uploadId);
+          if (session) {
+            const upload = session.uploads.get(uploadId);
+            if (upload) {
+              upload.progress = progress;
+              upload.status = 'uploading';
+              this.updateSessionProgress(session);
               this.notifySubscribers();
             }
           }
         },
-        onError: (uploadId, error) => {
-          const upload = this.state.uploads.get(uploadId);
-          if (upload) {
-            upload.status = 'failed';
-            upload.error = error;
-            this.state.failedFiles++;
-            this.updateOverallProgress();
-            this.notifySubscribers();
-            
-            // Check if all uploads are complete (including failed)
-            if (this.state.completedFiles + this.state.failedFiles >= this.state.totalFiles) {
-              console.log('[GlobalUploadManager] All uploads finished (with some failures)');
-              this.state.isActive = false;
+        onSuccess: (uploadId) => {
+          const session = this.findSessionForUpload(uploadId);
+          if (session) {
+            const upload = session.uploads.get(uploadId);
+            if (upload) {
+              upload.progress = 100;
+              upload.status = 'completed';
+              session.completedFiles++;
+              this.updateSessionProgress(session);
               this.notifySubscribers();
+              
+              // Check if all uploads in THIS session are complete
+              if (session.completedFiles + session.failedFiles >= session.totalFiles) {
+                console.log(`[GlobalUploadManager] ✅ Session ${session.sessionId} complete!`);
+                this.handleSessionComplete(session.sessionId);
+              }
+            }
+          }
+        },
+        onError: (uploadId, error) => {
+          const session = this.findSessionForUpload(uploadId);
+          if (session) {
+            const upload = session.uploads.get(uploadId);
+            if (upload) {
+              upload.status = 'failed';
+              upload.error = error;
+              session.failedFiles++;
+              this.updateSessionProgress(session);
+              this.notifySubscribers();
+              
+              // Check if all uploads in THIS session are complete (including failed)
+              if (session.completedFiles + session.failedFiles >= session.totalFiles) {
+                console.log(`[GlobalUploadManager] Session ${session.sessionId} finished (with some failures)`);
+                this.handleSessionComplete(session.sessionId);
+              }
             }
           }
         },
@@ -595,17 +705,148 @@ class GlobalUploadManager {
 
   /**
    * Retry failed uploads
+   * Works in both active upload state AND completion state
    */
-  retryFailed(): void {
+  async retryFailed(): Promise<void> {
     console.log('[GlobalUploadManager] Retrying failed uploads');
-    uploadQueueManager.retryFailed();
+    
+    // Debug: Show current state
+    const allUploads = Array.from(this.state.uploads.values());
+    console.log('[GlobalUploadManager] Total uploads in state:', allUploads.length);
+    console.log('[GlobalUploadManager] Upload statuses:', allUploads.map(u => ({ id: u.id.substring(0, 20), status: u.status })));
+    console.log('[GlobalUploadManager] State:', { 
+      isActive: this.state.isActive,
+      totalFiles: this.state.totalFiles,
+      completedFiles: this.state.completedFiles,
+      failedFiles: this.state.failedFiles 
+    });
+    
+    // Get failed uploads
+    const failedUploads = allUploads.filter(u => u.status === 'failed');
+    
+    if (failedUploads.length === 0) {
+      console.warn('[GlobalUploadManager] No failed uploads to retry');
+      console.warn('[GlobalUploadManager] Looking for uploads in queue instead...');
+      
+      // Fallback: Check queue for failed files
+      const queuedFiles = uploadQueueManager.getQueue();
+      const queueFailedFiles = queuedFiles.filter(q => q.status === 'failed');
+      console.log('[GlobalUploadManager] Queue has', queueFailedFiles.length, 'failed files');
+      
+      if (queueFailedFiles.length > 0) {
+        // Files are in queue but not in state - use queue retry
+        this.state.isActive = true;
+        this.notifySubscribers();
+        await uploadQueueManager.retryFailed();
+        await uploadQueueManager.processQueue(true);
+        console.log('[GlobalUploadManager] ✅ Retry started via queue');
+      }
+      return;
+    }
+    
+    console.log(`[GlobalUploadManager] 🔄 Retrying ${failedUploads.length} failed uploads`);
+    
+    // Reset failed upload statuses in our state
+    for (const upload of failedUploads) {
+      upload.status = 'uploading';
+      upload.progress = 0;
+      upload.error = undefined;
+      this.state.failedFiles--;
+    }
+    
+    // Re-activate session
+    this.state.isActive = true;
+    this.notifySubscribers();
+    
+    // Check if files are still in queue (active upload state)
+    const queuedFiles = uploadQueueManager.getQueue();
+    const queueHasFailedFiles = queuedFiles.some(q => q.status === 'failed');
+    console.log('[GlobalUploadManager] Queue status:', { 
+      queueLength: queuedFiles.length, 
+      hasFailedFiles: queueHasFailedFiles,
+      statuses: queuedFiles.map(q => q.status).slice(0, 10) // first 10 statuses
+    });
+    
+    if (queueHasFailedFiles) {
+      // Files still in queue - just reset and process
+      console.log('[GlobalUploadManager] Files found in queue, using queue retry');
+      await uploadQueueManager.retryFailed();
+    } else {
+      // Completion state - fetch files from IndexedDB
+      console.log('[GlobalUploadManager] Files not in queue, fetching from IndexedDB');
+      for (const upload of failedUploads) {
+        const storedUpload = await uploadStateStore.getUpload(upload.id);
+        if (storedUpload?.file) {
+          console.log('[GlobalUploadManager] Found file in IndexedDB:', upload.fileName);
+          await uploadQueueManager.retryUploadById(upload.id, storedUpload.file);
+        } else {
+          console.error('[GlobalUploadManager] File not found in IndexedDB:', upload.id);
+          upload.status = 'failed';
+          upload.error = 'File not found in storage';
+          this.state.failedFiles++;
+        }
+      }
+    }
+    
+    // Start processing
+    await uploadQueueManager.processQueue(true);
+    
+    console.log(`[GlobalUploadManager] ✅ Retry started for ${failedUploads.length} uploads`);
   }
 
   /**
    * Get current state
    */
   getState(): GlobalUploadState {
-    return { ...this.state };
+    // Include sessions in state for multi-widget rendering
+    return { 
+      ...this.state,
+      sessions: new Map(this.sessions), // Copy the sessions Map
+    };
+  }
+
+  /**
+   * Get all active sessions
+   */
+  getSessions(): Map<string, UploadSessionState> {
+    return new Map(this.sessions);
+  }
+
+  /**
+   * Find which session an upload belongs to
+   */
+  private findSessionForUpload(uploadId: string): UploadSessionState | null {
+    // First check current session
+    for (const session of this.sessions.values()) {
+      if (session.uploads.has(uploadId)) {
+        return session;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Update session progress
+   */
+  private updateSessionProgress(session: UploadSessionState): void {
+    if (session.totalFiles === 0) {
+      session.overallProgress = 0;
+      return;
+    }
+
+    const totalProgress = Array.from(session.uploads.values()).reduce(
+      (sum, upload) => sum + upload.progress,
+      0
+    );
+
+    session.overallProgress = totalProgress / session.totalFiles;
+    
+    // Also update legacy state if this is the current session
+    if (this.state.sessionId === session.sessionId) {
+      this.state.overallProgress = session.overallProgress;
+      this.state.completedFiles = session.completedFiles;
+      this.state.failedFiles = session.failedFiles;
+    }
   }
 
   /**
@@ -723,31 +964,102 @@ class GlobalUploadManager {
   /**
    * Handle session complete
    */
-  private handleSessionComplete(): void {
-    console.log('[GlobalUploadManager] Session complete:', {
-      total: this.state.totalFiles,
-      completed: this.state.completedFiles,
-      failed: this.state.failedFiles,
+  private handleSessionComplete(sessionId?: string): void {
+    // Find the session to complete
+    const session = sessionId ? this.sessions.get(sessionId) : null;
+    
+    // Use session data if available, otherwise fall back to legacy state
+    const totalFiles = session?.totalFiles ?? this.state.totalFiles;
+    const completedFiles = session?.completedFiles ?? this.state.completedFiles;
+    const failedFiles = session?.failedFiles ?? this.state.failedFiles;
+    const projectId = session?.projectId ?? this.state.projectId;
+    const projectName = session?.projectName ?? this.state.projectName;
+    const targetSessionId = sessionId ?? this.state.sessionId;
+    
+    console.log('[GlobalUploadManager] 🏁 Session complete:', {
+      sessionId: targetSessionId,
+      total: totalFiles,
+      completed: completedFiles,
+      failed: failedFiles,
+      projectId,
+      projectName,
     });
 
-    this.state.isActive = false;
-    this.state.isPaused = false;
+    // Determine status
+    const status: 'success' | 'partial' | 'failed' = 
+      failedFiles === 0 ? 'success' :
+      completedFiles > 0 ? 'partial' :
+      'failed';
 
-    // Show completion notification
+    // Update session state
+    if (session) {
+      session.isActive = false;
+      session.isPaused = false;
+    }
+    
+    // Update legacy state if this is the current session
+    if (targetSessionId === this.state.sessionId) {
+      this.state.isActive = false;
+      this.state.isPaused = false;
+    }
+
+    // Save to upload history for NotificationsPage
+    console.log('[GlobalUploadManager] Saving to upload history...');
+    uploadHistoryStore.addEntry({
+      projectId: projectId || '',
+      projectName: projectName || 'Untitled Project',
+      totalFiles,
+      completedFiles,
+      failedFiles,
+      status,
+    });
+    console.log('[GlobalUploadManager] Upload history entry added');
+
+    // Show browser notification
     notificationService.notifyUploadComplete(
-      this.state.totalFiles,
-      this.state.failedFiles
+      totalFiles,
+      failedFiles
     );
 
     // Update session in IndexedDB
-    if (this.state.sessionId) {
-      uploadStateStore.updateSession(this.state.sessionId, {
+    if (targetSessionId) {
+      uploadStateStore.updateSession(targetSessionId, {
         isActive: false,
         completedAt: Date.now(),
       }).catch(console.error);
     }
 
+    // Call completion callback (for App.tsx to refresh project list)
+    if (this.onUploadCompleteCallback && projectId) {
+      console.log('[GlobalUploadManager] 📞 Calling completion callback...');
+      console.log('[GlobalUploadManager] Callback registered:', !!this.onUploadCompleteCallback);
+      console.log('[GlobalUploadManager] Project ID:', projectId);
+      
+      try {
+        this.onUploadCompleteCallback(
+          projectId,
+          projectName || 'Untitled Project',
+          status
+        );
+        console.log('[GlobalUploadManager] ✅ Completion callback executed successfully');
+      } catch (error) {
+        console.error('[GlobalUploadManager] ❌ Completion callback threw error:', error);
+      }
+    } else {
+      console.error('[GlobalUploadManager] ❌ Completion callback NOT CALLED:', {
+        hasCallback: !!this.onUploadCompleteCallback,
+        projectId,
+      });
+    }
+
     this.notifySubscribers();
+  }
+
+  /**
+   * Set callback for when upload completes
+   */
+  setOnUploadComplete(callback: (projectId: string, projectName: string, status: 'success' | 'partial' | 'failed') => void): void {
+    this.onUploadCompleteCallback = callback;
   }
 
   /**
@@ -803,6 +1115,8 @@ class GlobalUploadManager {
 
     return duplicates;
   }
+
+
 
   /**
    * Cleanup on destroy

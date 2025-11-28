@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { DashboardView, NavItem } from '../../types';
 import {
   DashboardIcon, ProjectsIcon, ClientsIcon, InvoicesIcon, AnalyticsIcon, SettingsIcon, BellIcon, ChevronDoubleLeftIcon, ArrowLeftOnRectangleIcon,
 } from '../icons';
+import { uploadHistoryStore } from '../../services/uploadHistoryStore';
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 const LayoutIcon = (props: IconProps) => (
@@ -37,6 +38,26 @@ interface StudioSidebarProps {
 }
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, isMobileOpen, setMobileOpen, isCollapsed, onToggleCollapse }) => {
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // Track unread notifications
+  useEffect(() => {
+    // Load initial unread count
+    const initialCount = uploadHistoryStore.getUnreadCount();
+    setUnreadNotificationCount(initialCount);
+    console.log('[StudioSidebar] Initial unread count:', initialCount);
+    
+    // Listen for upload history updates
+    const handleHistoryUpdate = () => {
+      const newCount = uploadHistoryStore.getUnreadCount();
+      setUnreadNotificationCount(newCount);
+      console.log('[StudioSidebar] Unread count updated:', newCount);
+    };
+    
+    window.addEventListener('uploadHistoryUpdate', handleHistoryUpdate);
+    return () => window.removeEventListener('uploadHistoryUpdate', handleHistoryUpdate);
+  }, []);
+
   const mainNavItems: NavItem[] = [
     { view: 'overview', label: 'Dashboard', icon: <DashboardIcon className="w-5 h-5" /> },
     { view: 'projects', label: 'Projects', icon: <ProjectsIcon className="w-5 h-5" /> },
@@ -71,6 +92,12 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
     >
       <span className="flex-shrink-0">{item.icon}</span>
       <span className={`ml-3 flex-1 ${isCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
+      {/* Notification Badge */}
+      {item.view === 'notifications' && unreadNotificationCount > 0 && (
+        <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+          {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+        </span>
+      )}
     </button>
   );
 

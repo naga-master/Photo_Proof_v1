@@ -101,6 +101,56 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         }
     }, [props.returnToProject]);
 
+    // Listen for navigation events from UploadStatusWidget
+    useEffect(() => {
+        const handleNavigateToProject = (event: Event) => {
+            const customEvent = event as CustomEvent<{ projectId: string }>;
+            const projectId = customEvent.detail.projectId;
+            
+            console.log('[StudioLayout] Navigation event received for project:', projectId);
+            console.log('[StudioLayout] Albums available:', albums.length, 'IDs:', albums.map(a => a.id));
+            
+            // Find album by projectId - handle both string and number comparison
+            const album = albums.find(a => String(a.id) === String(projectId));
+            
+            if (album) {
+                console.log('[StudioLayout] ✅ Project found immediately, navigating:', album.title);
+                handleManageProject(album);
+            } else {
+                console.warn('[StudioLayout] Project not found yet, waiting for auto-refresh...');
+                toast.info('Loading project...');
+                
+                // Project might be newly created and not in albums list yet
+                // The auto-refresh callback in App.tsx should have updated it
+                // Retry with increasing delays: 1s, 2s, 3s
+                const retryAttempts = [1000, 2000, 3000];
+                
+                const attemptNavigation = (attemptIndex: number) => {
+                    if (attemptIndex >= retryAttempts.length) {
+                        toast.error('Unable to find project. Please check the Projects page.');
+                        return;
+                    }
+                    
+                    setTimeout(() => {
+                        const retryAlbum = albums.find(a => String(a.id) === String(projectId));
+                        if (retryAlbum) {
+                            console.log('[StudioLayout] ✅ Project found after retry, navigating:', retryAlbum.title);
+                            handleManageProject(retryAlbum);
+                        } else {
+                            console.log(`[StudioLayout] Retry attempt ${attemptIndex + 1} failed, trying again...`);
+                            attemptNavigation(attemptIndex + 1);
+                        }
+                    }, retryAttempts[attemptIndex]);
+                };
+                
+                attemptNavigation(0);
+            }
+        };
+        
+        window.addEventListener('navigateToProject', handleNavigateToProject);
+        return () => window.removeEventListener('navigateToProject', handleNavigateToProject);
+    }, [albums]); // Re-run when albums list updates
+
     const handleSetView = (newView: DashboardView) => {
         setManagingClient(null);
         setManagingProject(null);

@@ -456,6 +456,7 @@ export const UploadProvider: React.FC<{
           globalUploadManager.startUploads({
               files: filesWithFolders.map(f => f.file),
               projectId: state.backendProjectId!,
+              projectName: state.projectDetails.title || 'Untitled Project',
               folderId: filesWithFolders[0]?.folderId,
           }).then(() => {
               console.log('[UploadContext] ✅ globalUploadManager.startUploads() completed successfully');

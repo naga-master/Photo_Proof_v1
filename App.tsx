@@ -327,6 +327,45 @@ const AppContent: React.FC = () => {
         checkConsent();
     }, [isAuthenticated, authLoading, user]);
 
+    // Set up completion callback IMMEDIATELY (before any async operations)
+    useEffect(() => {
+        console.log('[App] Setting up completion callback (early)...');
+        globalUploadManager.setOnUploadComplete(async (projectId, projectName, status) => {
+            console.log(`[App] 📦 Upload complete callback triggered:`, {
+                projectId,
+                projectName,
+                status,
+            });
+            
+            try {
+                console.log('[App] 🔄 Fetching updated projects from API...');
+                const projectsResponse = await projectService.getProjects();
+                const projects = projectsResponse.projects || [];
+                const albums = projects.map(mapProjectToAlbum);
+                
+                console.log(`[App] ✅ Fetched ${albums.length} projects from API`);
+                console.log(`[App] 🔍 Looking for new project ID ${projectId} in response...`);
+                const newProject = albums.find(a => String(a.id) === String(projectId));
+                
+                if (newProject) {
+                    console.log(`[App] ✅ Found new project in API response:`, newProject.title);
+                } else {
+                    console.warn(`[App] ⚠️ New project ID ${projectId} NOT in API response yet!`);
+                    console.log(`[App] Available project IDs:`, albums.map(a => a.id));
+                }
+                
+                setAllAlbums(albums);
+                console.log(`[App] ✅ Updated albums state with ${albums.length} projects`);
+                
+                // Toast notifications removed - widget and notification bell handle this
+            } catch (error) {
+                console.error('[App] ❌ Failed to refresh projects after upload:', error);
+                // Toast removed - error is logged and widget shows status
+            }
+        });
+        console.log('[App] ✅ Completion callback registered (early)');
+    }, []);
+    
     // Initialize Global Upload Manager
     useEffect(() => {
         let mounted = true;
@@ -339,6 +378,43 @@ const AppContent: React.FC = () => {
                 await globalUploadManager.init();
                 
                 console.log('[App] ✅ Global Upload Manager initialized successfully');
+                
+                // Callback already set above, but verify it's still there
+                console.log('[App] Verifying completion callback is set...');
+                globalUploadManager.setOnUploadComplete(async (projectId, projectName, status) => {
+                    console.log(`[App] 📦 Upload complete callback triggered:`, {
+                        projectId,
+                        projectName,
+                        status,
+                    });
+                    
+                    try {
+                        console.log('[App] 🔄 Fetching updated projects from API...');
+                        const projectsResponse = await projectService.getProjects();
+                        const projects = projectsResponse.projects || [];
+                        const albums = projects.map(mapProjectToAlbum);
+                        
+                        console.log(`[App] ✅ Fetched ${albums.length} projects from API`);
+                        console.log(`[App] 🔍 Looking for new project ID ${projectId} in response...`);
+                        const newProject = albums.find(a => String(a.id) === String(projectId));
+                        
+                        if (newProject) {
+                            console.log(`[App] ✅ Found new project in API response:`, newProject.title);
+                        } else {
+                            console.warn(`[App] ⚠️ New project ID ${projectId} NOT in API response yet!`);
+                            console.log(`[App] Available project IDs:`, albums.map(a => a.id));
+                        }
+                        
+                        setAllAlbums(albums);
+                        console.log(`[App] ✅ Updated albums state with ${albums.length} projects`);
+                        
+                        // Toast notifications removed - widget and notification bell handle this
+                    } catch (error) {
+                        console.error('[App] ❌ Failed to refresh projects after upload:', error);
+                        // Toast removed - error is logged and widget shows status
+                    }
+                });
+                console.log('[App] ✅ Completion callback registered successfully');
                 
                 // Verify initialization by checking state
                 const state = globalUploadManager.getState();
@@ -362,7 +438,7 @@ const AppContent: React.FC = () => {
                     
                     if (shouldResume) {
                         await globalUploadManager.resumeFromPrevious(pending);
-                        toast.info(`Resuming ${pending.length} uploads...`);
+                        // Toast removed - widget shows resume status
                     } else {
                         // Clear the pending uploads
                         await uploadStateStore.clearQueue();
@@ -378,7 +454,7 @@ const AppContent: React.FC = () => {
                     stack: error?.stack,
                     error: error
                 });
-                toast.error('Failed to initialize upload system. Please refresh the page.');
+                // Toast removed - error is logged, system will retry on page refresh
             }
         };
 
