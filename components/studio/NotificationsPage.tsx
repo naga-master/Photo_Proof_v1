@@ -19,12 +19,19 @@ const formatTimestamp = (timestamp: number): string => {
   return new Date(timestamp).toLocaleDateString();
 };
 
+const UploadIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+    </svg>
+);
+
 const notificationIcons: Record<NotificationType, React.ReactNode> = {
     comment: <ChatBubbleIcon className="w-6 h-6 text-sky-500" />,
     favorite: <HeartIcon className="w-6 h-6 text-red-500" />,
     order: <ShoppingCartIcon className="w-6 h-6 text-green-500" />,
     payment: <InvoicesIcon className="w-6 h-6 text-purple-500" />,
     system: <BellIcon className="w-6 h-6 text-slate-500" />,
+    upload: <UploadIcon className="w-6 h-6 text-blue-500" />,
 };
 
 const groupNotifications = (notifications: Notification[]) => {
@@ -157,7 +164,7 @@ const NotificationsPage: React.FC = () => {
                   </div>
                   <div className="flex-1">
                       <p className="text-sm text-slate-800">
-                          {notification.text} <span className="font-semibold">{notification.context}</span>
+                          {notification.title || notification.text} <span className="font-semibold">{notification.message || notification.context}</span>
                       </p>
                       <p className="text-xs text-slate-500 mt-0.5">{notification.timestamp}</p>
                   </div>
@@ -203,6 +210,9 @@ const NotificationsPage: React.FC = () => {
                         </button>
                         <button onClick={() => setTypeFilter('order')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'order' ? 'bg-green-100 text-green-700' : 'text-slate-500 hover:bg-slate-100'}`}>
                             <ShoppingCartIcon className="w-3 h-3" /> Orders
+                        </button>
+                        <button onClick={() => setTypeFilter('upload')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'upload' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                            <UploadIcon className="w-3 h-3" /> Uploads
                         </button>
                         <button onClick={() => setTypeFilter('system')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'system' ? 'bg-slate-200 text-slate-700' : 'text-slate-500 hover:bg-slate-100'}`}>
                             <BellIcon className="w-3 h-3" /> System

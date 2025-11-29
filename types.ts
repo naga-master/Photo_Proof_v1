@@ -319,7 +319,7 @@ export interface CommunicationSettings {
   whatsapp: WhatsAppSettings;
 }
 
-export type NotificationType = 'comment' | 'favorite' | 'order' | 'payment' | 'system';
+export type NotificationType = 'comment' | 'favorite' | 'order' | 'payment' | 'system' | 'upload';
 
 export interface Notification {
   id: string;
@@ -329,12 +329,21 @@ export interface Notification {
   timestamp: string;
   isRead: boolean;
   avatarUrl?: string;
-  // Extended fields for navigation (comment notifications)
+  // New unified fields
+  category?: string;
+  eventType?: string;
+  title?: string;
+  message?: string;
+  priority?: string;
+  extraData?: Record<string, any>;
+  // Extended fields for navigation
   projectId?: number;
   photoId?: number;
   commentId?: number;
+  entityType?: string;
+  entityId?: string;
   actorName?: string;
-  actorType?: 'studio' | 'client';
+  actorType?: 'studio' | 'client' | 'system';
 }
 
 // Studio User Management Types

@@ -20,6 +20,7 @@ import { uploadStateStore, type StoredUpload, type UploadSession } from './uploa
 import { networkDetectionService } from './networkDetectionService';
 import { notificationService } from './notificationService';
 import { uploadHistoryStore } from './uploadHistoryStore';
+import ApiNotificationService from './apiNotificationService';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface UploadProgress {
@@ -1134,7 +1135,7 @@ class GlobalUploadManager {
       this.state.isPaused = false;
     }
 
-    // Save to upload history for NotificationsPage
+    // Save to upload history for NotificationsPage (local backup)
     console.log('[GlobalUploadManager] Saving to upload history...');
     uploadHistoryStore.addEntry({
       projectId: projectId || '',
@@ -1145,6 +1146,20 @@ class GlobalUploadManager {
       status,
     });
     console.log('[GlobalUploadManager] Upload history entry added');
+
+    // Create upload notification in backend (persistent storage)
+    if (projectId) {
+      ApiNotificationService.createUploadNotification({
+        projectId: parseInt(projectId, 10),
+        projectName: projectName || 'Untitled Project',
+        status,
+        totalFiles,
+        completedFiles,
+        failedFiles,
+      }).catch(error => {
+        console.error('[GlobalUploadManager] Failed to create API notification:', error);
+      });
+    }
 
     // Show browser notification
     notificationService.notifyUploadComplete(
