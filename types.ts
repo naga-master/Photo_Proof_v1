@@ -58,6 +58,7 @@ export interface Album {
   coverPhotoId?: string | null;  // Photo ID for authenticated image loading
   coverPhotoSrc?: string;
   photoCount: number;
+  totalComments?: number;
   isLocked: boolean;
   photos?: Photo[];
   folders?: Folder[];

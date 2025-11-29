@@ -12,13 +12,15 @@ interface StudioOverviewProps {
 const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     const totalProjects = albums.length;
     const totalImages = albums.reduce((sum, album) => sum + album.photoCount, 0);
+    const totalComments = albums.reduce((sum, album) => sum + (album.totalComments || 0), 0);
+    
+    // For recent comments display (requires photos to be loaded)
     const allComments: (Comment & { photo: Photo, album: Album })[] = albums.flatMap(album =>
         (album.photos || []).flatMap(photo =>
             (photo.comments || []).map(comment => ({ ...comment, photo, album }))
         )
     );
     const recentComments = allComments.slice(-5).reverse();
-    const totalComments = allComments.length;
 
     const stats = [
         { label: 'Total Projects', value: totalProjects },

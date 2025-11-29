@@ -7,6 +7,7 @@
 
 import type { Comment } from '../types';
 import { apiClient } from '../lib/api-client';
+import { commentEvents } from './commentEvents';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -218,11 +219,13 @@ class CommentService {
         photoId: number,
         text: string,
         parentCommentId?: number,
-        replyToId?: number
+        replyToId?: number,
+        projectId?: string
     ): Promise<Comment> {
         console.log(`[CommentService] Creating comment for photo ${photoId}`, {
             parentCommentId,
-            replyToId
+            replyToId,
+            projectId
         });
         
         // If replyToId is provided, determine the parent comment
@@ -245,6 +248,15 @@ class CommentService {
         
         // Invalidate cache since we have new data
         await invalidateCache(photoId);
+        
+        // Emit event for dashboard update
+        if (projectId) {
+            commentEvents.emit({
+                type: 'comment-added',
+                projectId,
+                photoId: String(photoId)
+            });
+        }
         
         // Map to frontend format
         return mapBackendComment(data);
@@ -270,13 +282,22 @@ class CommentService {
     /**
      * Delete a comment
      */
-    static async deleteComment(commentId: number, photoId: number): Promise<void> {
+    static async deleteComment(commentId: number, photoId: number, projectId?: string): Promise<void> {
         console.log(`[CommentService] Deleting comment ${commentId}`);
         
         await apiClient.delete<void>(`/api/comments/${commentId}`);
         
         // Invalidate cache
         await invalidateCache(photoId);
+        
+        // Emit event for dashboard update
+        if (projectId) {
+            commentEvents.emit({
+                type: 'comment-deleted',
+                projectId,
+                photoId: String(photoId)
+            });
+        }
     }
 }
 

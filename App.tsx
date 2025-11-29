@@ -76,6 +76,7 @@ import { servicePackageService } from './services/servicePackageService';
 import { invoiceService } from './services/invoiceService';
 import { photoService } from './services/photoService';
 import { CommentService } from './services/commentService';
+import { commentEvents } from './services/commentEvents';
 import type { Project as BackendProject } from './services/projectService';
 import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
@@ -151,6 +152,7 @@ const mapProjectToAlbum = (project: BackendProject): Album => {
         coverPhotoId: project.cover_photo_id ? String(project.cover_photo_id) : null,
         coverPhotoSrc: getCoverPhotoVariantUrl(project, 'medium'),
         photoCount: project.photo_count ?? 0,
+        totalComments: project.total_comments ?? 0,
         isLocked: project.is_locked ?? false,
         layout: project.layout as LayoutId | undefined,
         paymentStatus: normalizePaymentStatus(project.payment_status),
@@ -364,6 +366,32 @@ const AppContent: React.FC = () => {
             }
         });
         console.log('[App] ✅ Completion callback registered (early)');
+    }, []);
+
+    // Subscribe to comment events for real-time totalComments updates
+    useEffect(() => {
+        console.log('[App] 🔔 Setting up comment events subscription...');
+        const unsubscribe = commentEvents.subscribe(async (event) => {
+            console.log('[App] 📝 Comment event received:', event);
+            try {
+                // Fetch updated project to get new totalComments
+                const project = await projectService.getProject(event.projectId);
+                if (project) {
+                    setAllAlbums(prev => prev.map(album => 
+                        album.id === event.projectId 
+                            ? { ...album, totalComments: project.total_comments ?? 0 }
+                            : album
+                    ));
+                    console.log(`[App] ✅ Updated totalComments for project ${event.projectId}`);
+                }
+            } catch (error) {
+                console.error('[App] ❌ Failed to update totalComments:', error);
+            }
+        });
+        return () => {
+            console.log('[App] 🔔 Cleaning up comment events subscription');
+            unsubscribe();
+        };
     }, []);
     
     // Initialize Global Upload Manager
@@ -1382,7 +1410,8 @@ const AppContent: React.FC = () => {
                 Number(photoId),
                 commentText,
                 parentId,
-                parentId // replyToId same as parentId for now
+                parentId, // replyToId same as parentId for now
+                currentAlbum.id // projectId for real-time dashboard updates
             );
             
             console.log('[App] Comment created successfully:', backendComment);

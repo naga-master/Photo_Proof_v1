@@ -155,13 +155,23 @@ class GlobalUploadManager {
         if (session) {
           const upload = session.uploads.get(uploadId);
           if (upload) {
+            // Only increment completedFiles if this upload wasn't already completed
+            // This prevents double-counting during retries
+            const wasAlreadyCompleted = upload.status === 'completed';
+            
             upload.progress = 100;
             upload.status = 'completed';
-            session.completedFiles++;
-            console.log('[GlobalUploadManager] ✅ Updated session:', {
-              completedFiles: session.completedFiles,
-              totalFiles: session.totalFiles,
-            });
+            
+            if (!wasAlreadyCompleted) {
+              session.completedFiles++;
+              console.log('[GlobalUploadManager] ✅ Updated session:', {
+                completedFiles: session.completedFiles,
+                totalFiles: session.totalFiles,
+              });
+            } else {
+              console.log('[GlobalUploadManager] ⚠️ Upload already completed, skipping count:', uploadId);
+            }
+            
             this.updateSessionProgress(session);
             this.notifySubscribers();
             
@@ -182,9 +192,19 @@ class GlobalUploadManager {
         if (session) {
           const upload = session.uploads.get(uploadId);
           if (upload) {
+            // Only increment failedFiles if this upload wasn't already failed or completed
+            // This prevents double-counting during retries
+            const wasAlreadyCounted = upload.status === 'failed' || upload.status === 'completed';
+            
             upload.status = 'failed';
             upload.error = error;
-            session.failedFiles++;
+            
+            if (!wasAlreadyCounted) {
+              session.failedFiles++;
+            } else {
+              console.log('[GlobalUploadManager] ⚠️ Upload already counted, skipping fail count:', uploadId);
+            }
+            
             this.updateSessionProgress(session);
             this.notifySubscribers();
             
