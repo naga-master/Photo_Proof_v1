@@ -1,8 +1,7 @@
 import React, { createContext, useReducer, useContext, useEffect, useCallback, useRef } from 'react';
 import type { DetectedFolder, FolderMap, UploadFile, UploadRules, UploadMode, ProjectDetails, LayoutId, UploadState } from '../../../types';
 import { uploadService } from '../../../services/uploadService';
-import { uploadQueueManager } from '../../../services/uploadQueueManager';
-import { globalUploadManager } from '../../../services/globalUploadManager';
+import { unifiedUploadManager } from '../../../services/UnifiedUploadManager';
 import { projectService } from '../../../services/projectService';
 
 type UploadAction =
@@ -90,8 +89,8 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
       }
       return { ...state, step: Math.max(0, Math.min(action.payload, 5)) as UploadState['step'] };
     case 'RESET':
-      // Clear queue manager when resetting upload context
-      uploadQueueManager.clearAll();
+      // Clear upload manager when resetting upload context
+      unifiedUploadManager.clearAll();
       return getInitialState();
     case 'SET_PROJECT_DETAILS':
         const updatedDetails = { ...state.projectDetails, ...action.payload };
@@ -369,10 +368,10 @@ export const UploadProvider: React.FC<{
     console.log('[UploadContext] 🆕 Initializing upload for project:', state.backendProjectId);
     console.log('[UploadContext] ✅ INITIALIZING UPLOADS', filesToUpload.length, 'files');
     
-    // Clear queue manager (only once)
+    // Clear upload manager (only once)
     if (!queueManagerCleared.current) {
-      console.log('[UploadContext] Clearing queue manager');
-      uploadQueueManager.clearAll();
+      console.log('[UploadContext] Clearing upload manager');
+      unifiedUploadManager.clearAll();
       queueManagerCleared.current = true;
     }
 
@@ -388,11 +387,8 @@ export const UploadProvider: React.FC<{
           return;
         }
         
-      // Register as subscriber for upload events (Named Subscriber Pattern)
-      // This replaces any previous 'upload-context' subscriber (no stacking)
-      
       // Helper to extract original file ID from session-prefixed upload ID
-      // globalUploadManager uses format: ${sessionId}-${filename}-${timestamp}
+      // UnifiedUploadManager uses format: ${sessionId}-${filename}-${timestamp}
       // UploadContext uses format: ${filename}-${timestamp}
       // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars)
       const extractOriginalFileId = (uploadId: string): string => {
@@ -400,82 +396,84 @@ export const UploadProvider: React.FC<{
         return uploadId.replace(uuidPrefixRegex, '');
       };
       
-      uploadQueueManager.registerSubscriber('upload-context', {
-          onProgress: (uploadId, progress) => {
-              const originalId = extractOriginalFileId(uploadId);
-              dispatch({ 
-                  type: 'UPDATE_FILE_PROGRESS', 
-                  payload: { id: originalId, progress } 
-              });
-          },
-          onSuccess: (uploadId, result) => {
-              const originalId = extractOriginalFileId(uploadId);
-              console.log(`[UploadContext] Upload complete for file ID: ${uploadId} -> ${originalId}`, result);
-              dispatch({ 
-                  type: 'FILE_UPLOAD_SUCCESS', 
-                  payload: { 
-                      fileId: originalId, 
-                      photoId: result.id 
-                  } 
-              });
-          },
-          onError: (uploadId, error) => {
-              const originalId = extractOriginalFileId(uploadId);
-              console.error(`[UploadContext] Upload failed for file ID: ${uploadId} -> ${originalId}`, error);
-              dispatch({ 
-                  type: 'FILE_UPLOAD_FAIL', 
-                  payload: { 
-                      id: originalId, 
-                      error: error || 'Upload failed'
-                  }
-              });
-          },
-          onQueueUpdate: (queue) => {
-              const status = uploadQueueManager.getStatus();
-              console.log('[UploadContext] Queue status:', status);
+      // Subscribe to UnifiedUploadManager state changes
+      const unsubscribe = unifiedUploadManager.subscribe((managerState) => {
+          // Get the current session
+          const sessions = Array.from(managerState.sessions.values());
+          const currentSession = sessions.find(s => s.projectId === state.backendProjectId);
+          
+          if (!currentSession) return;
+          
+          // Update progress for each upload
+          for (const upload of currentSession.uploads.values()) {
+              const originalId = extractOriginalFileId(upload.id);
+              
+              if (upload.status === 'uploading') {
+                  dispatch({ 
+                      type: 'UPDATE_FILE_PROGRESS', 
+                      payload: { id: originalId, progress: upload.progress } 
+                  });
+              } else if (upload.status === 'completed') {
+                  dispatch({ 
+                      type: 'FILE_UPLOAD_SUCCESS', 
+                      payload: { 
+                          fileId: originalId, 
+                          photoId: upload.photoId || '' 
+                      } 
+                  });
+              } else if (upload.status === 'failed') {
+                  dispatch({ 
+                      type: 'FILE_UPLOAD_FAIL', 
+                      payload: { 
+                          id: originalId, 
+                          error: upload.error || 'Upload failed'
+                      }
+                  });
+              }
           }
+          
+          // Log status
+          console.log('[UploadContext] Upload status:', {
+              total: currentSession.totalFiles,
+              completed: currentSession.completedFiles,
+              failed: currentSession.failedFiles,
+              progress: currentSession.overallProgress.toFixed(1) + '%'
+          });
       });
 
-      // Prepare queue items from files to upload using the updated folder map
-      const queueItems = filesToUpload.map(file => {
+      // Prepare files for upload using the updated folder map
+      const filesForUpload = filesToUpload.map(file => {
           const folderMapping = updatedFolderMap.find(
               map => map.sourcePath === file.folderPath
           );
-          
-          return {
-              id: file.id,
-              file: file.file,
-              projectId: state.backendProjectId!,
-              folderId: folderMapping?.targetId
-          };
+          return file.file;
       });
 
-      // Start uploads using Global Upload Manager
-      if (queueItems.length > 0) {
-          console.log(`[UploadContext] 🚀 Starting upload of ${queueItems.length} files for project ${state.backendProjectId}`);
+      // Get folder ID (use first file's folder for now)
+      const firstFolderMapping = updatedFolderMap.find(
+          map => map.sourcePath === filesToUpload[0]?.folderPath
+      );
+
+      // Start uploads using Unified Upload Manager
+      if (filesForUpload.length > 0) {
+          console.log(`[UploadContext] 🚀 Starting upload of ${filesForUpload.length} files for project ${state.backendProjectId}`);
           
-          const filesWithFolders = queueItems.map(item => ({
-              file: item.file,
-              folderId: item.folderId,
-          }));
-          
-          const managerState = globalUploadManager.getState();
-          console.log('[UploadContext] 🔍 GlobalUploadManager state before startUploads:', {
+          const managerState = unifiedUploadManager.getState();
+          console.log('[UploadContext] 🔍 UnifiedUploadManager state before startUploads:', {
               isActive: managerState.isActive,
-              isPaused: managerState.isPaused,
-              totalFiles: managerState.totalFiles
+              sessionsCount: managerState.sessions.size
           });
           
-          console.log('[UploadContext] 📞 Calling globalUploadManager.startUploads()...');
-          globalUploadManager.startUploads({
-              files: filesWithFolders.map(f => f.file),
+          console.log('[UploadContext] 📞 Calling unifiedUploadManager.startUpload()...');
+          unifiedUploadManager.startUpload({
+              files: filesForUpload,
               projectId: state.backendProjectId!,
               projectName: state.projectDetails.title || 'Untitled Project',
-              folderId: filesWithFolders[0]?.folderId,
+              folderId: firstFolderMapping?.targetId,
           }).then(() => {
-              console.log('[UploadContext] ✅ globalUploadManager.startUploads() completed successfully');
+              console.log('[UploadContext] ✅ unifiedUploadManager.startUpload() completed successfully');
           }).catch(error => {
-              console.error('[UploadContext] ❌ Failed to start uploads with Global Upload Manager:', error);
+              console.error('[UploadContext] ❌ Failed to start uploads:', error);
           });
       }
     })
@@ -510,24 +508,36 @@ export const useUpload = () => {
   const updateUploadRules = useCallback((rules: Partial<UploadRules>) => dispatch({ type: 'UPDATE_UPLOAD_RULES', payload: rules }), [dispatch]);
   const startUpload = useCallback(() => dispatch({ type: 'START_UPLOAD' }), [dispatch]);
   const pauseUpload = useCallback(() => {
-    uploadQueueManager.pauseAll();
+    // Pause current session in unified manager
+    const managerState = unifiedUploadManager.getState();
+    if (managerState.currentSessionId) {
+      unifiedUploadManager.pauseSession(managerState.currentSessionId);
+    }
     dispatch({ type: 'PAUSE_UPLOAD' });
   }, [dispatch]);
   const resumeUpload = useCallback(() => {
-    uploadQueueManager.resumeAll();
+    // Resume current session in unified manager
+    const managerState = unifiedUploadManager.getState();
+    if (managerState.currentSessionId) {
+      unifiedUploadManager.resumeSession(managerState.currentSessionId);
+    }
     dispatch({ type: 'RESUME_UPLOAD' });
   }, [dispatch]);
   const retryFile = useCallback((id: string) => {
-    uploadQueueManager.retryUpload(id);
+    // Retry is handled at session level in unified manager
     dispatch({ type: 'RETRY_FILE', payload: id });
   }, [dispatch]);
   const retryFailedUploads = useCallback(() => {
-    uploadQueueManager.retryAllFailed();
+    // Retry failed uploads in current session
+    const managerState = unifiedUploadManager.getState();
+    if (managerState.currentSessionId) {
+      unifiedUploadManager.retryFailed(managerState.currentSessionId);
+    }
     dispatch({ type: 'RETRY_FAILED' });
   }, [dispatch]);
   const cancelFile = useCallback((id: string) => {
-    uploadQueueManager.cancelUpload(id);
-    // File will be removed from queue, no need to dispatch
+    // Cancel is handled at session level in unified manager
+    // Individual file cancellation not directly supported, handled via UI
   }, []);
 
   return { state, dispatch, setMode, nextStep, prevStep, setStep, resetUpload, setFiles, updateFolderMap, updateUploadRules, startUpload, pauseUpload, resumeUpload, retryFile, retryFailedUploads, cancelFile };

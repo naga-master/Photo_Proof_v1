@@ -4,7 +4,7 @@ import { PlusIcon, XCircleIcon, EyeIcon, EyeSlashIcon } from '../icons';
 import { Avatar } from '../Avatar';
 import { clientService } from '../../services/clientService';
 import { DuplicateDetectionModal } from '../../src/components/DuplicateDetectionModal';
-import type { DuplicateInfo } from '../../src/services/photoService';
+import type { DuplicateInfo } from '../../services/photoService';
 
 const PasswordDisplay: React.FC<{ 
     clientId?: string;

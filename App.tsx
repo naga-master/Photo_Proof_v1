@@ -82,9 +82,11 @@ import type { Client as BackendClient } from './services/clientService';
 import type { ServicePackage as BackendServicePackage } from './services/servicePackageService';
 import type { Invoice as BackendInvoice } from './services/invoiceService';
 
+// Data Mappers
+import { mapProjectToAlbum, mapClientResponse, mapServicePackageResponse, mapInvoiceResponse } from './lib/mappers';
+
 // Background Upload System
-import { globalUploadManager } from './services/globalUploadManager';
-import { uploadStateStore, type StoredUpload } from './services/uploadStateStore';
+import { unifiedUploadManager } from './services/UnifiedUploadManager';
 import { UploadStatusWidget } from './components/UploadStatusWidget';
 
 type Page = 'login' | 'cover' | 'albums' | 'albumFolders' | 'galleryFolders' | 'gallery' | 'dashboard' | 'store' | 'about' | 'productDetail' | 'photoSelection' | 'cartConfig' | 'cart' | 'checkout' | 'orderConfirmation' | 'contracts' | 'contractView' | 'privacyPolicy' | 'termsOfService' | 'privacySettings';
@@ -105,126 +107,6 @@ const pageTransition: Transition = {
 const FALLBACK_COVER_IMAGE = '/placeholder-image.jpg';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-const normalizePaymentStatus = (status?: string | null): Album['paymentStatus'] => {
-    if (!status) return undefined;
-    switch (status.toLowerCase()) {
-        case 'paid':
-            return 'Paid';
-        case 'unpaid':
-            return 'Unpaid';
-        case 'due':
-        case 'overdue':
-            return 'Due';
-        default:
-            return undefined;
-    }
-};
-
-const normalizeInvoiceStatus = (status: string): Invoice['status'] => {
-    switch (status.toLowerCase()) {
-        case 'paid':
-            return 'Paid';
-        case 'draft':
-            return 'Draft';
-        case 'overdue':
-            return 'Overdue';
-        case 'unpaid':
-        case 'sent':
-        default:
-            return 'Unpaid';
-    }
-};
-
-const mapProjectToAlbum = (project: BackendProject): Album => {
-    console.log('[mapProjectToAlbum] Processing project:', {
-        id: project.id,
-        title: project.title,
-        cover_photo_id: project.cover_photo_id,
-        cover_photo_src: project.cover_photo_src,
-        has_cover_src: !!project.cover_photo_src
-    });
-    
-    return {
-        id: String(project.id),
-        title: project.title ?? 'Untitled Project',
-        clientId: project.client_id ? String(project.client_id) : '',
-        shootDate: project.shoot_date ?? project.created_at,
-        coverPhotoId: project.cover_photo_id ? String(project.cover_photo_id) : null,
-        coverPhotoSrc: getCoverPhotoVariantUrl(project, 'medium'),
-        photoCount: project.photo_count ?? 0,
-        totalComments: project.total_comments ?? 0,
-        isLocked: project.is_locked ?? false,
-        layout: project.layout as LayoutId | undefined,
-        paymentStatus: normalizePaymentStatus(project.payment_status),
-        price: project.price ? Number(project.price) : undefined,
-        packageId: project.package_id ?? undefined,
-        status: project.status,
-        createdAt: project.created_at,
-        updatedAt: project.updated_at,
-        photos: [],
-        folders: project.has_folders ? [] : undefined,
-    };
-};
-
-const mapClientResponse = (client: BackendClient): Client => ({
-    id: String(client.id),
-    name: client.name,
-    email: client.email,
-    username: client.username ?? client.email,
-    password: (client as any).password ?? undefined,  // Plain password (only during creation)
-    hasPassword: (client as any).has_password ?? false,  // Indicates if password is set
-    phone: client.phone ?? undefined,
-    address: client.address ?? undefined,
-    avatarUrl: (client as any).avatar_url ?? null,
-    profilePicture: (client as any).profile_picture ?? null,
-    whatsappOptIn: (client as any).whatsapp_opt_in ?? false,
-    emailOptIn: (client as any).email_opt_in ?? true,
-    projects: [],  // Empty array for compatibility
-    totalProjects: (client as any).total_projects ?? 0,  // Use API count
-    lastActivity: client.updated_at ?? client.created_at,
-    status: (client as any).status ?? (client.is_active ? 'active' : 'inactive'),
-});
-
-const mapServicePackageResponse = (pkg: BackendServicePackage): ServicePackage => ({
-    id: pkg.id,
-    name: pkg.name,
-    category: pkg.category,
-    description: pkg.description,
-    price: Number(pkg.price),
-    isPredefined: (pkg as any).is_predefined ?? false,
-    features: (pkg.features || []).map((feature) => ({
-        name: feature.name,
-        included: feature.included,
-        details: feature.details ?? null,
-    })),
-    deliverables: pkg.deliverables ?? [],
-});
-
-const mapInvoiceResponse = (invoice: BackendInvoice): Invoice => ({
-    id: invoice.id,
-    invoiceNumber: invoice.invoice_number,
-    invoiceDate: invoice.invoice_date,
-    dueDate: invoice.due_date,
-    clientId: invoice.client_id ? String(invoice.client_id) : undefined,
-    projectId: invoice.project_id ? String(invoice.project_id) : undefined,
-    clientName: invoice.client_name,
-    clientAddress: invoice.client_address,
-    items: (invoice.items || []).map((item, index) => ({
-        id: item.id ?? `${invoice.id}-item-${index}`,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: Number(item.unit_price),
-    })),
-    notes: invoice.notes ?? undefined,
-    subtotal: Number(invoice.subtotal),
-    tax: Number(invoice.tax),
-    total: Number(invoice.total),
-    status: normalizeInvoiceStatus(invoice.status),
-    template: (invoice.template as InvoiceTemplateId) ?? 'modern',
-    createdAt: invoice.created_at,
-    updatedAt: invoice.updated_at,
-});
-
 const AppContent: React.FC = () => {
     // Get authentication state from AuthContext
     const { user, isAuthenticated, isLoading: authLoading, logout: authLogout } = useAuth();
@@ -236,8 +118,7 @@ const AppContent: React.FC = () => {
     const [needsConsent, setNeedsConsent] = useState(false);
     const [consentChecked, setConsentChecked] = useState(false);
     
-    // Background upload state
-    const [pendingUploads, setPendingUploads] = useState<StoredUpload[]>([]);
+    // Background upload state (managed by UnifiedUploadManager)
     
     // State
     const [page, setPage] = useState<Page>('login');
@@ -334,7 +215,7 @@ const AppContent: React.FC = () => {
     // Set up completion callback IMMEDIATELY (before any async operations)
     useEffect(() => {
         console.log('[App] Setting up completion callback (early)...');
-        globalUploadManager.setOnUploadComplete(async (projectId, projectName, status) => {
+        unifiedUploadManager.setOnSessionComplete(async (projectId, projectName, status) => {
             console.log(`[App] 📦 Upload complete callback triggered:`, {
                 projectId,
                 projectName,
@@ -396,95 +277,32 @@ const AppContent: React.FC = () => {
         };
     }, []);
     
-    // Initialize Global Upload Manager
+    // Initialize Unified Upload Manager
     useEffect(() => {
-        let mounted = true;
-
         const initializeUploadManager = async () => {
             try {
-                console.log('[App] 🚀 Initializing Global Upload Manager...');
+                console.log('[App] 🚀 Initializing Unified Upload Manager...');
                 
-                // Initialize the global upload manager
-                await globalUploadManager.init();
+                // Initialize the upload manager
+                await unifiedUploadManager.init();
                 
-                console.log('[App] ✅ Global Upload Manager initialized successfully');
-                
-                // Callback already set above, but verify it's still there
-                console.log('[App] Verifying completion callback is set...');
-                globalUploadManager.setOnUploadComplete(async (projectId, projectName, status) => {
-                    console.log(`[App] 📦 Upload complete callback triggered:`, {
-                        projectId,
-                        projectName,
-                        status,
-                    });
-                    
-                    try {
-                        console.log('[App] 🔄 Fetching updated projects from API...');
-                        const projectsResponse = await projectService.getProjects();
-                        const projects = projectsResponse.projects || [];
-                        const albums = projects.map(mapProjectToAlbum);
-                        
-                        console.log(`[App] ✅ Fetched ${albums.length} projects from API`);
-                        console.log(`[App] 🔍 Looking for new project ID ${projectId} in response...`);
-                        const newProject = albums.find(a => String(a.id) === String(projectId));
-                        
-                        if (newProject) {
-                            console.log(`[App] ✅ Found new project in API response:`, newProject.title);
-                        } else {
-                            console.warn(`[App] ⚠️ New project ID ${projectId} NOT in API response yet!`);
-                            console.log(`[App] Available project IDs:`, albums.map(a => a.id));
-                        }
-                        
-                        setAllAlbums(albums);
-                        console.log(`[App] ✅ Updated albums state with ${albums.length} projects`);
-                        
-                        // Toast notifications removed - widget and notification bell handle this
-                    } catch (error) {
-                        console.error('[App] ❌ Failed to refresh projects after upload:', error);
-                        // Toast removed - error is logged and widget shows status
-                    }
-                });
-                console.log('[App] ✅ Completion callback registered successfully');
+                console.log('[App] ✅ Unified Upload Manager initialized successfully');
                 
                 // Verify initialization by checking state
-                const state = globalUploadManager.getState();
-                console.log('[App] 🔍 GlobalUploadManager initial state:', {
+                const state = unifiedUploadManager.getState();
+                console.log('[App] 🔍 UnifiedUploadManager initial state:', {
                     isActive: state.isActive,
-                    isPaused: state.isPaused,
-                    totalFiles: state.totalFiles
+                    sessionsCount: state.sessions.size
                 });
-                
-                // Check for pending uploads from previous session
-                const pending = await globalUploadManager.checkPendingUploads();
-                
-                if (mounted && pending.length > 0) {
-                    console.log(`[App] Found ${pending.length} pending uploads from previous session`);
-                    setPendingUploads(pending);
-                    
-                    // Show prompt to user if they want to resume
-                    const shouldResume = window.confirm(
-                        `You have ${pending.length} unfinished uploads from a previous session. Would you like to resume them?`
-                    );
-                    
-                    if (shouldResume) {
-                        await globalUploadManager.resumeFromPrevious(pending);
-                        // Toast removed - widget shows resume status
-                    } else {
-                        // Clear the pending uploads
-                        await uploadStateStore.clearQueue();
-                        setPendingUploads([]);
-                    }
-                }
                 
                 console.log('[App] ✅ Upload system ready');
             } catch (error: any) {
-                console.error('[App] ❌ Failed to initialize Global Upload Manager:', error);
+                console.error('[App] ❌ Failed to initialize Upload Manager:', error);
                 console.error('[App] Error details:', {
                     message: error?.message,
                     stack: error?.stack,
                     error: error
                 });
-                // Toast removed - error is logged, system will retry on page refresh
             }
         };
 

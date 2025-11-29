@@ -16,11 +16,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { globalUploadManager, type GlobalUploadState, type UploadSessionState, type UploadProgress } from '../services/globalUploadManager';
+import { unifiedUploadManager, type UploadManagerState, type UploadSession, type Upload } from '../services/UnifiedUploadManager';
 import { navigationEvents } from '../utils/navigationEvents';
 
 interface SessionWidgetProps {
-  session: UploadSessionState;
+  session: UploadSession;
   stackIndex: number;
   onClose: (sessionId: string) => void;
   showCompletedMap: Map<string, boolean>;
@@ -39,8 +39,10 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const dragControls = useDragControls();
 
-  const showCompleted = showCompletedMap.get(session.sessionId) || false;
-  const isComplete = !session.isActive && (showCompleted || session.completedFiles + session.failedFiles >= session.totalFiles);
+  const showCompleted = showCompletedMap.get(session.id) || false;
+  const isSessionActive = session.status === 'active';
+  const isSessionPaused = session.status === 'paused';
+  const isComplete = !isSessionActive && (showCompleted || session.completedFiles + session.failedFiles >= session.totalFiles);
   
   const completionState = {
     allSuccess: session.failedFiles === 0 && session.completedFiles > 0,
@@ -53,29 +55,29 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
     if (!isComplete || !completionState.allSuccess) return;
 
     const dismissTimer = setTimeout(() => {
-      onClose(session.sessionId);
+      onClose(session.id);
     }, 30000);
 
     return () => clearTimeout(dismissTimer);
-  }, [isComplete, completionState.allSuccess, session.sessionId, onClose]);
+  }, [isComplete, completionState.allSuccess, session.id, onClose]);
 
   const handlePauseResume = () => {
-    if (session.isPaused) {
-      globalUploadManager.resumeUploads();
+    if (isSessionPaused) {
+      unifiedUploadManager.resumeSession(session.id);
     } else {
-      globalUploadManager.pauseUploads();
+      unifiedUploadManager.pauseSession(session.id);
     }
   };
 
   const handleCancel = () => {
     if (confirm(`Cancel upload for "${session.projectName}"?`)) {
-      globalUploadManager.cancelUploads();
+      unifiedUploadManager.cancelSession(session.id);
     }
   };
 
   const handleRetryFailed = async () => {
-    console.log('[SessionWidget] Retry Failed clicked for session:', session.sessionId);
-    await globalUploadManager.retryFailed(session.sessionId);
+    console.log('[SessionWidget] Retry Failed clicked for session:', session.id);
+    await unifiedUploadManager.retryFailed(session.id);
   };
 
   const toggleMinimize = () => {
@@ -87,7 +89,7 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
 
   const uploadsArray = Array.from(session.uploads.values());
   const uploadingFiles = uploadsArray.filter(u => u.status === 'uploading');
-  const currentFile = uploadingFiles[0]?.fileName || session.currentFile;
+  const currentFile = uploadingFiles[0]?.fileName || null;
 
   // Calculate vertical offset for stacking (each widget is ~60px apart when minimized)
   const verticalOffset = stackIndex * 70;
@@ -167,7 +169,7 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
                 ) : (
                   <>
                     {Math.round(session.overallProgress)}% complete
-                    {session.isPaused && ' (Paused)'}
+                    {isSessionPaused && ' (Paused)'}
                   </>
                 )}
               </div>
@@ -201,7 +203,7 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
             </button>
           )}
           <button
-            onClick={() => onClose(session.sessionId)}
+            onClick={() => onClose(session.id)}
             className="p-1 hover:bg-white/20 rounded transition-colors"
             title="Close"
           >
@@ -307,7 +309,7 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
                 onClick={handlePauseResume}
                 className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded transition-colors flex items-center justify-center gap-1"
               >
-                {session.isPaused ? (
+                {isSessionPaused ? (
                   <>
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
@@ -427,7 +429,7 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
               )}
               {completionState.allSuccess && !session.projectId && (
                 <button
-                  onClick={() => onClose(session.sessionId)}
+                  onClick={() => onClose(session.id)}
                   className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium transition-colors"
                 >
                   Close
@@ -442,18 +444,18 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
 };
 
 export const UploadStatusWidget: React.FC = () => {
-  const [state, setState] = useState<GlobalUploadState | null>(null);
+  const [state, setState] = useState<UploadManagerState | null>(null);
   const [showCompletedMap, setShowCompletedMap] = useState<Map<string, boolean>>(new Map());
   const [closedSessions, setClosedSessions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     console.log('[UploadStatusWidget] Setting up subscription...');
     
-    const unsubscribe = globalUploadManager.subscribe((newState) => {
+    const unsubscribe = unifiedUploadManager.subscribe((newState) => {
       const sessionCount = newState.sessions?.size || 0;
       console.log('[UploadStatusWidget] Received state update:', {
         sessionCount,
-        sessionsActive: Array.from(newState.sessions?.values() || []).filter(s => s.isActive).length,
+        sessionsActive: Array.from(newState.sessions?.values() || []).filter(s => s.status === 'active').length,
       });
       
       setState(newState);
@@ -461,7 +463,8 @@ export const UploadStatusWidget: React.FC = () => {
       // Track completed sessions for showCompleted state
       if (newState.sessions) {
         newState.sessions.forEach((session, sessionId) => {
-          if (!session.isActive && session.completedFiles + session.failedFiles >= session.totalFiles) {
+          const isActive = session.status === 'active';
+          if (!isActive && session.completedFiles + session.failedFiles >= session.totalFiles) {
             setShowCompletedMap(prev => {
               const next = new Map(prev);
               if (!next.has(sessionId)) {
@@ -491,7 +494,7 @@ export const UploadStatusWidget: React.FC = () => {
     
     // If this was the only session, clear all data
     if (state?.sessions?.size === 1) {
-      globalUploadManager.clearSession();
+      unifiedUploadManager.clearAll();
     }
   };
 
@@ -504,37 +507,17 @@ export const UploadStatusWidget: React.FC = () => {
   };
 
   // Get sessions to display
-  const sessionsToShow = state?.sessions 
+  const sessionsToShow: UploadSession[] = state?.sessions 
     ? Array.from(state.sessions.values()).filter(session => {
         // Don't show closed sessions
-        if (closedSessions.has(session.sessionId)) return false;
+        if (closedSessions.has(session.id)) return false;
         // Show active sessions
-        if (session.isActive) return true;
+        if (session.status === 'active') return true;
         // Show completed sessions that have showCompleted flag or have failures
-        const showCompleted = showCompletedMap.get(session.sessionId);
+        const showCompleted = showCompletedMap.get(session.id);
         return showCompleted || session.failedFiles > 0;
       })
     : [];
-
-  // Fallback to legacy state if no sessions but state is active
-  if (sessionsToShow.length === 0 && state?.isActive) {
-    // Create a session-like object from legacy state
-    const legacySession: UploadSessionState = {
-      sessionId: state.sessionId || 'legacy',
-      projectId: state.projectId || '',
-      projectName: state.projectName || 'Untitled Project',
-      folderId: state.folderId,
-      isActive: state.isActive,
-      isPaused: state.isPaused,
-      totalFiles: state.totalFiles,
-      completedFiles: state.completedFiles,
-      failedFiles: state.failedFiles,
-      currentFile: state.currentFile,
-      overallProgress: state.overallProgress,
-      uploads: state.uploads,
-    };
-    sessionsToShow.push(legacySession);
-  }
 
   if (sessionsToShow.length === 0) {
     return null;
@@ -557,7 +540,7 @@ export const UploadStatusWidget: React.FC = () => {
       <AnimatePresence>
         {sessionsToShow.map((session, index) => (
           <SessionWidget
-            key={session.sessionId}
+            key={session.id}
             session={session}
             stackIndex={index}
             onClose={handleCloseSession}
