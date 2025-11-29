@@ -344,12 +344,13 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             
             if (existingAlbum) {
                 // UPDATE existing album with new photos
+                // Note: Don't manually increment photoCount - the API refresh in App.tsx handles this
                 console.log('[StudioLayout] Adding photos to existing project:', backendProjectId);
                 
                 const updatedAlbum: Album = {
                     ...existingAlbum,
                     photos: [...(existingAlbum.photos || []), ...newPhotos],
-                    photoCount: (existingAlbum.photoCount || 0) + newPhotos.length,
+                    // photoCount will be updated by API refresh after upload completes
                     coverPhotoSrc: coverPhotoSrc || existingAlbum.coverPhotoSrc,
                 };
                 
