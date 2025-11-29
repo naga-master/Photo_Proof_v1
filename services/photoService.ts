@@ -27,6 +27,29 @@ export interface Photo {
   updated_at: string;
 }
 
+export interface DuplicateInfo {
+  error: string;
+  type: 'photo_content' | 'photo_filename' | 'folder_name' | 'client_phone';
+  message: string;
+  existing_photo?: {
+    id: number;
+    filename: string;
+    uploaded_at: string;
+    folder_id?: string;
+    thumbnail_url: string;
+  };
+  existing_folder?: {
+    id: string;
+    name: string;
+    photo_count: number;
+  };
+  existing_client?: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+}
+
 /**
  * Get variant URL for a photo based on quality level
  */

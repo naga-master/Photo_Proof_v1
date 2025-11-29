@@ -538,6 +538,9 @@ const AppContent: React.FC = () => {
     const [photosForProduct, setPhotosForProduct] = useState<Photo[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     
+    // Contract state
+    const [currentContractId, setCurrentContractId] = useState<string | null>(null);
+    
     // Studio Branding State
     const [defaultLayoutId, setDefaultLayoutId] = useState<LayoutId>('layout1');
     const [logo, setLogo] = useState<string | null>('/logo-placeholder.svg');
@@ -965,16 +968,6 @@ const AppContent: React.FC = () => {
             const newStack = [...navigationStack];
             newStack.pop();
             const prevPage = newStack[newStack.length - 1];
-            
-            // If we're backing out from the cover page (entry point), go to dashboard
-            if (page === 'cover' && navigationStack.length === 2) {
-                setPage('dashboard');
-                setPreviousPage(null);
-                setNavigationStack([]);
-                setCurrentAlbum(null);
-                setGalleryContent(null);
-                return;
-            }
             
             // Skip cover page when navigating back - go to the page before cover
             if (prevPage === 'cover') {
@@ -1703,10 +1696,14 @@ const AppContent: React.FC = () => {
                 }
                 break;
             case 'contractView':
-                component = <ContractViewerPage 
-                    contractId={pageData?.contractId} 
-                    onNavigate={handleNavigate} 
-                />;
+                component = currentContractId ? (
+                    <ContractViewerPage 
+                        contractId={currentContractId} 
+                        onNavigate={handleNavigate} 
+                    />
+                ) : (
+                    <ContractsPage onNavigate={handleNavigate} />
+                );
                 break;
             case 'productDetail':
                  if (!currentProduct) {

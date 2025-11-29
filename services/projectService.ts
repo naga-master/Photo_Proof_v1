@@ -20,6 +20,7 @@ export interface Project {
   cover_photo_id?: string | null;
   cover_photo_src?: string | null;
   photo_count: number;
+  total_comments?: number;
   is_locked: boolean;
   payment_status?: string | null;
   price?: number | null;

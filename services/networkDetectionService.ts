@@ -19,6 +19,9 @@ class NetworkDetectionService {
   private currentNetwork: NetworkInfo | null = null;
   private listeners: Set<(info: NetworkInfo) => void> = new Set();
   private detectionInterval: number | null = null;
+  private onlineListeners: Set<() => void> = new Set();
+  private offlineListeners: Set<() => void> = new Set();
+  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   
   /**
    * Initialize service
@@ -33,6 +36,12 @@ class NetworkDetectionService {
       connection.addEventListener('change', () => this.handleNetworkChange());
     }
     
+    // Listen for online/offline events
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.handleOnline());
+      window.addEventListener('offline', () => this.handleOffline());
+    }
+    
     // Periodic detection
     const config = imageOptimizationConfig.getNetworkAdaptationConfig();
     if (config.detection.intervalMs > 0) {
@@ -40,6 +49,16 @@ class NetworkDetectionService {
     }
     
     console.log('[NetworkDetection] Service initialized:', this.currentNetwork);
+  }
+  
+  private handleOnline(): void {
+    this.isOnline = true;
+    this.onlineListeners.forEach(listener => listener());
+  }
+  
+  private handleOffline(): void {
+    this.isOnline = false;
+    this.offlineListeners.forEach(listener => listener());
   }
   
   /**
@@ -197,9 +216,31 @@ class NetworkDetectionService {
   /**
    * Subscribe to network changes
    */
-  subscribe(listener: (info: NetworkInfo) => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  subscribe(listener: (info: NetworkInfo) => void): () => void;
+  subscribe(event: 'online' | 'offline', handler: () => void): void;
+  subscribe(
+    listenerOrEvent: ((info: NetworkInfo) => void) | 'online' | 'offline',
+    handler?: () => void
+  ): (() => void) | void {
+    if (typeof listenerOrEvent === 'function') {
+      this.listeners.add(listenerOrEvent);
+      return () => this.listeners.delete(listenerOrEvent);
+    } else if (listenerOrEvent === 'online' && handler) {
+      this.onlineListeners.add(handler);
+    } else if (listenerOrEvent === 'offline' && handler) {
+      this.offlineListeners.add(handler);
+    }
+  }
+  
+  /**
+   * Unsubscribe from online/offline events
+   */
+  unsubscribe(event: 'online' | 'offline', handler: () => void): void {
+    if (event === 'online') {
+      this.onlineListeners.delete(handler);
+    } else if (event === 'offline') {
+      this.offlineListeners.delete(handler);
+    }
   }
   
   /**

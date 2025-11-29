@@ -117,12 +117,23 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     const result = await projectService.createFolder(projectId, folderName);
     
     // Check if it's a duplicate - reject immediately (no auto-retry)
-    if ('error' in result && result.error === 'duplicate_detected') {
+    if ('error' in result) {
       const errorMsg = result.message || `Folder '${folderName}' already exists`;
       throw new Error(errorMsg);
     }
     
-    const folder = result; // It's a valid folder
+    // TypeScript now knows result is the folder type (not DuplicateInfo)
+    const folder: Folder = {
+      id: result.id,
+      name: result.name,
+      project_id: result.project_id,
+      photoCount: result.photoCount,
+      coverPhotoId: result.coverPhotoId,
+      coverPhotoSrc: result.coverPhotoSrc,
+      order_index: result.order_index,
+      created_at: result.created_at,
+      updated_at: result.updated_at,
+    };
     const duration = Date.now() - startTime;
 
     cacheEvents.emit({

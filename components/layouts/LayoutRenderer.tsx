@@ -17,11 +17,11 @@ export interface LayoutComponentProps {
     album: Album;
     photos: Photo[];
     title: string;
-    favorites: number[] | string[];
-    selections: number[] | string[];
-    toggleFavorite: (photoId: number | string) => void;
-    toggleSelection: (photoId: number | string) => void;
-    onAddComment: (photoId: number, commentText: string, parentId?: number) => void;
+    favorites: string[];
+    selections: string[];
+    toggleFavorite: (photoId: string) => void;
+    toggleSelection: (photoId: string) => void;
+    onAddComment: (photoId: string, commentText: string, parentId?: number) => void;
     onDownload: (photoSrc: string, photoAlt: string) => void;
     openLightbox: (index: number) => void;
     onBack?: () => void;

@@ -19,6 +19,9 @@ interface DashboardPageProps {
     typography: string;
     defaultLayoutId: LayoutId;
     defaultTemplateId: InvoiceTemplateId;
+    studioPhoto: string | null;
+    studioDescription: string;
+    studioDisplayImage: string | null;
   };
   onUpdateBranding: {
     setLogo: (logo: string | null) => void;
@@ -26,6 +29,9 @@ interface DashboardPageProps {
     setTypography: (font: string) => void;
     setDefaultLayoutId: (layoutId: LayoutId) => void;
     setDefaultTemplateId: (templateId: InvoiceTemplateId) => void;
+    setStudioPhoto: (photo: string | null) => void;
+    setStudioDescription: (description: string) => void;
+    setStudioDisplayImage: (image: string | null) => void;
   };
   communicationSettings: CommunicationSettings;
   onUpdateCommunicationSettings: (settings: CommunicationSettings) => void;
