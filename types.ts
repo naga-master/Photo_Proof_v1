@@ -329,6 +329,12 @@ export interface Notification {
   timestamp: string;
   isRead: boolean;
   avatarUrl?: string;
+  // Extended fields for navigation (comment notifications)
+  projectId?: number;
+  photoId?: number;
+  commentId?: number;
+  actorName?: string;
+  actorType?: 'studio' | 'client';
 }
 
 // Studio User Management Types

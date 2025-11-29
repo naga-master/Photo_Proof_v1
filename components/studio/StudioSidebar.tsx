@@ -4,6 +4,7 @@ import {
   DashboardIcon, ProjectsIcon, ClientsIcon, InvoicesIcon, AnalyticsIcon, SettingsIcon, BellIcon, ChevronDoubleLeftIcon, ArrowLeftOnRectangleIcon,
 } from '../icons';
 import { uploadHistoryStore } from '../../services/uploadHistoryStore';
+import ApiNotificationService from '../../services/apiNotificationService';
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 const LayoutIcon = (props: IconProps) => (
@@ -39,24 +40,50 @@ interface StudioSidebarProps {
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, isMobileOpen, setMobileOpen, isCollapsed, onToggleCollapse }) => {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [apiUnreadCount, setApiUnreadCount] = useState(0);
+  const [uploadUnreadCount, setUploadUnreadCount] = useState(0);
 
-  // Track unread notifications
+  // Track unread notifications from API
+  useEffect(() => {
+    const fetchApiUnreadCount = async () => {
+      try {
+        const count = await ApiNotificationService.getUnreadCount();
+        setApiUnreadCount(count);
+        console.log('[StudioSidebar] API unread count:', count);
+      } catch (error) {
+        console.error('[StudioSidebar] Failed to fetch API unread count:', error);
+      }
+    };
+    
+    fetchApiUnreadCount();
+    
+    // Refresh count periodically (every 60 seconds)
+    const interval = setInterval(fetchApiUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Track unread notifications from upload history
   useEffect(() => {
     // Load initial unread count
     const initialCount = uploadHistoryStore.getUnreadCount();
-    setUnreadNotificationCount(initialCount);
-    console.log('[StudioSidebar] Initial unread count:', initialCount);
+    setUploadUnreadCount(initialCount);
+    console.log('[StudioSidebar] Initial upload unread count:', initialCount);
     
     // Listen for upload history updates
     const handleHistoryUpdate = () => {
       const newCount = uploadHistoryStore.getUnreadCount();
-      setUnreadNotificationCount(newCount);
-      console.log('[StudioSidebar] Unread count updated:', newCount);
+      setUploadUnreadCount(newCount);
+      console.log('[StudioSidebar] Upload unread count updated:', newCount);
     };
     
     window.addEventListener('uploadHistoryUpdate', handleHistoryUpdate);
     return () => window.removeEventListener('uploadHistoryUpdate', handleHistoryUpdate);
   }, []);
+
+  // Combine counts
+  useEffect(() => {
+    setUnreadNotificationCount(apiUnreadCount + uploadUnreadCount);
+  }, [apiUnreadCount, uploadUnreadCount]);
 
   const mainNavItems: NavItem[] = [
     { view: 'overview', label: 'Dashboard', icon: <DashboardIcon className="w-5 h-5" /> },

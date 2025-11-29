@@ -2,9 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { Notification, NotificationType } from '../../types';
 import { BellIcon, ChatBubbleIcon, HeartIcon, InvoicesIcon, ShoppingCartIcon } from '../icons';
 import { uploadHistoryStore, type UploadHistoryEntry } from '../../services/uploadHistoryStore';
-
-// TODO: Fetch notifications from /api/notifications
-const initialNotifications: Notification[] = [];
+import ApiNotificationService from '../../services/apiNotificationService';
 
 // Helper to format timestamp
 const formatTimestamp = (timestamp: number): string => {
@@ -49,9 +47,32 @@ const groupNotifications = (notifications: Notification[]) => {
 
 
 const NotificationsPage: React.FC = () => {
-    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [uploadHistory, setUploadHistory] = useState<UploadHistoryEntry[]>([]);
     const [filter, setFilter] = useState<'all' | 'unread'>('all');
+    const [typeFilter, setTypeFilter] = useState<NotificationType | 'all'>('all');
+    const [loading, setLoading] = useState(true);
+    const [apiUnreadCount, setApiUnreadCount] = useState(0);
+
+    // Fetch notifications from API
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            setLoading(true);
+            try {
+                const typeParam = typeFilter === 'all' ? undefined : typeFilter;
+                const { notifications: apiNotifications, unreadCount } = await ApiNotificationService.getNotifications(typeParam);
+                setNotifications(apiNotifications);
+                setApiUnreadCount(unreadCount);
+                console.log('[NotificationsPage] Fetched', apiNotifications.length, 'notifications from API');
+            } catch (error) {
+                console.error('[NotificationsPage] Failed to fetch notifications:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchNotifications();
+    }, [typeFilter]);
 
     // Load upload history and listen for updates
     useEffect(() => {
@@ -89,17 +110,27 @@ const NotificationsPage: React.FC = () => {
         console.log('[NotificationsPage] Filtered upload history:', filteredUploadHistory.length, 'entries');
     }, [uploadHistory, filteredUploadHistory]);
 
-    const handleMarkAsRead = (id: string) => {
+    const handleMarkAsRead = async (id: string) => {
+        // Optimistically update UI
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+        setApiUnreadCount(prev => Math.max(0, prev - 1));
+        
+        // Call API
+        await ApiNotificationService.markAsRead(id);
     };
 
     const handleUploadMarkAsRead = (id: string) => {
         uploadHistoryStore.markAsRead(id);
     };
 
-    const handleMarkAllAsRead = () => {
+    const handleMarkAllAsRead = async () => {
+        // Optimistically update UI
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setApiUnreadCount(0);
         uploadHistoryStore.markAllAsRead();
+        
+        // Call API
+        await ApiNotificationService.markAllRead();
     };
 
     const totalCount = filteredNotifications.length + filteredUploadHistory.length;
@@ -145,23 +176,51 @@ const NotificationsPage: React.FC = () => {
             </header>
 
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b flex justify-between items-center bg-white z-10">
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-                            All
-                        </button>
-                        <button onClick={() => setFilter('unread')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'unread' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-                            Unread
+                <div className="p-4 border-b bg-white z-10">
+                    {/* Top row: Read status filter + Mark all read */}
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                                All
+                            </button>
+                            <button onClick={() => setFilter('unread')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'unread' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                                Unread {apiUnreadCount > 0 && `(${apiUnreadCount})`}
+                            </button>
+                        </div>
+                        <button onClick={handleMarkAllAsRead} className="text-sm font-semibold text-sky-600 hover:text-sky-800">
+                            Mark all as read
                         </button>
                     </div>
-                    <button onClick={handleMarkAllAsRead} className="text-sm font-semibold text-sky-600 hover:text-sky-800">
-                        Mark all as read
-                    </button>
+                    
+                    {/* Bottom row: Type filter */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                        <span className="text-xs text-slate-500 mr-1">Type:</span>
+                        <button onClick={() => setTypeFilter('all')} className={`px-2 py-1 text-xs font-medium rounded ${typeFilter === 'all' ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
+                            All
+                        </button>
+                        <button onClick={() => setTypeFilter('comment')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'comment' ? 'bg-sky-100 text-sky-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                            <ChatBubbleIcon className="w-3 h-3" /> Comments
+                        </button>
+                        <button onClick={() => setTypeFilter('order')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'order' ? 'bg-green-100 text-green-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                            <ShoppingCartIcon className="w-3 h-3" /> Orders
+                        </button>
+                        <button onClick={() => setTypeFilter('system')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'system' ? 'bg-slate-200 text-slate-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                            <BellIcon className="w-3 h-3" /> System
+                        </button>
+                    </div>
                 </div>
 
                 <div className="max-h-[65vh] overflow-y-auto">
-                    {/* Upload History Notifications */}
-                    {filteredUploadHistory.length > 0 && (
+                    {/* Loading State */}
+                    {loading && (
+                        <div className="text-center py-10">
+                            <div className="animate-spin w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full mx-auto"></div>
+                            <p className="mt-2 text-slate-500 text-sm">Loading notifications...</p>
+                        </div>
+                    )}
+
+                    {/* Upload History Notifications - only show when type filter is 'all' or 'system' */}
+                    {!loading && filteredUploadHistory.length > 0 && (typeFilter === 'all' || typeFilter === 'system') && (
                         <div>
                             <h3 className="px-6 py-2 text-sm font-semibold text-slate-500 bg-slate-50">
                                 Recent Uploads
@@ -227,17 +286,17 @@ const NotificationsPage: React.FC = () => {
                     )}
 
                     {/* Regular Notifications */}
-                    {filteredNotifications.length > 0 ? (
+                    {!loading && filteredNotifications.length > 0 ? (
                         <>
                             {renderNotificationList(groupedNotifications.today, "Today")}
                             {renderNotificationList(groupedNotifications.yesterday, "Yesterday")}
                             {renderNotificationList(groupedNotifications.older, "Older")}
                         </>
-                    ) : filteredUploadHistory.length === 0 && (
+                    ) : !loading && (filteredUploadHistory.length === 0 || (typeFilter !== 'all' && typeFilter !== 'system')) && (
                         <div className="text-center py-20 text-slate-500">
                             <BellIcon className="w-12 h-12 mx-auto text-slate-300" />
                             <h3 className="mt-4 text-lg font-medium">All caught up!</h3>
-                            <p className="mt-1">You have no {filter === 'unread' ? 'unread' : ''} notifications.</p>
+                            <p className="mt-1">You have no {filter === 'unread' ? 'unread' : ''} {typeFilter !== 'all' ? typeFilter : ''} notifications.</p>
                         </div>
                     )}
                 </div>
