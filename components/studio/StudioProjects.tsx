@@ -130,7 +130,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
                 </tr>
               ) : (
                 filteredAndSortedAlbums.map((album) => {
-                  const commentCount = (album.photos || []).reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
+                  const commentCount = album.totalComments || 0;
                   console.log(`[StudioProjects] Rendering project ${album.id}:`, {
                     title: album.title,
                     coverPhotoSrc: album.coverPhotoSrc,
@@ -204,7 +204,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
           </div>
         ) : (
           filteredAndSortedAlbums.map((album) => {
-            const commentCount = (album.photos || []).reduce((acc, photo) => acc + (photo.comments?.length || 0), 0);
+            const commentCount = album.totalComments || 0;
             return (
               <div 
                 key={album.id}
