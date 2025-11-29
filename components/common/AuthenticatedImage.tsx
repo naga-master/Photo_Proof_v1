@@ -49,8 +49,13 @@ export const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
           setBlobUrl(url);
           setLoading(false);
         }
-      } catch (err) {
-        console.error('[AuthenticatedImage] Failed to load photo:', photoId, err);
+      } catch (err: any) {
+        // Use debug level for auth errors (expected when user lacks access)
+        if (err?.message?.includes('Auth error')) {
+          console.debug('[AuthenticatedImage] Auth error for photo:', photoId);
+        } else {
+          console.error('[AuthenticatedImage] Failed to load photo:', photoId, err);
+        }
         if (mounted) {
           setError(true);
           setLoading(false);

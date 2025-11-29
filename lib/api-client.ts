@@ -295,10 +295,19 @@ export class ApiClient {
   async getRaw(endpoint: string): Promise<Response> {
     const token = localStorage.getItem('auth_token');
     
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    // If no token, return a fake 401 response to avoid unnecessary network requests
+    if (!token) {
+      console.debug('[API Client] No auth token for getRaw request:', endpoint);
+      return new Response(JSON.stringify({ detail: 'No authentication token' }), {
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
+    
+    const headers: HeadersInit = {
+      'Authorization': `Bearer ${token}`
+    };
     
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'GET',

@@ -94,6 +94,11 @@ export async function fetchPhotoVariantBlob(photoId: string | number, quality?: 
     const response = await apiClient.getRaw(path);
     
     if (!response.ok) {
+      // Don't retry on 401/403 - these won't succeed without re-auth
+      if (response.status === 401 || response.status === 403) {
+        console.debug(`[photoService] Auth error for photo ${photoId}: ${response.status}`);
+        throw new Error(`Auth error: ${response.status}`);
+      }
       throw new Error(`Failed to fetch photo ${photoId}: ${response.status} ${response.statusText}`);
     }
     
@@ -104,8 +109,12 @@ export async function fetchPhotoVariantBlob(photoId: string | number, quality?: 
     console.log('[photoService] Created blob URL:', { photoId, quality, blobUrl: blobUrl.substring(0, 50) + '...' });
     
     return blobUrl;
-  } catch (error) {
-    // Retry up to 3 times with exponential backoff
+  } catch (error: any) {
+    // Don't retry auth errors
+    if (error?.message?.includes('Auth error')) {
+      throw error;
+    }
+    // Retry up to 3 times with exponential backoff for other errors
     if (retryCount < 3) {
       const delay = Math.pow(2, retryCount) * 100; // 100ms, 200ms, 400ms
       console.log(`[photoService] Retrying photo ${photoId} after ${delay}ms (attempt ${retryCount + 1}/3)`);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { contractService, Contract, ContractStats } from '../services/contractService';
+import { contractService, Contract } from '../services/contractService';
+import { useContractStore } from '../src/stores/ContractStore';
 import CreateContractModal from './CreateContractModal';
 import SendContractModal from './SendContractModal';
 import StatusBadge from './StatusBadge';
@@ -11,40 +12,31 @@ interface ContractsPageProps {
 }
 
 export default function ContractsPage({ onNavigate }: ContractsPageProps) {
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [stats, setStats] = useState<ContractStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Use contract store for cached data
+  const { 
+    contracts, 
+    stats, 
+    loading, 
+    error, 
+    fetchContracts, 
+    fetchStats,
+    refreshContracts 
+  } = useContractStore();
+  
   const [filter, setFilter] = useState<string | undefined>();
-  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   useEffect(() => {
-    loadData();
+    fetchContracts(filter);
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
+  // Force refresh from API (bypasses cache)
   const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Load contracts
-      const contractsData = await contractService.getContracts({
-        status: filter,
-        limit: 50,
-      });
-      setContracts(contractsData.contracts);
-      
-      // Load stats
-      const statsData = await contractService.getContractStats();
-      setStats(statsData);
-    } catch (err: any) {
-      console.error('Failed to load contracts:', err);
-      setError(err.response?.data?.detail || 'Failed to load contracts');
-    } finally {
-      setLoading(false);
-    }
+    await refreshContracts(filter);
   };
 
   const handleSendContract = async (contract: Contract) => {
