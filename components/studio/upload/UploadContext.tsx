@@ -388,30 +388,44 @@ export const UploadProvider: React.FC<{
           return;
         }
         
-      // Set up callbacks for the queue manager
-      uploadQueueManager.setCallbacks({
+      // Register as subscriber for upload events (Named Subscriber Pattern)
+      // This replaces any previous 'upload-context' subscriber (no stacking)
+      
+      // Helper to extract original file ID from session-prefixed upload ID
+      // globalUploadManager uses format: ${sessionId}-${filename}-${timestamp}
+      // UploadContext uses format: ${filename}-${timestamp}
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars)
+      const extractOriginalFileId = (uploadId: string): string => {
+        const uuidPrefixRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i;
+        return uploadId.replace(uuidPrefixRegex, '');
+      };
+      
+      uploadQueueManager.registerSubscriber('upload-context', {
           onProgress: (uploadId, progress) => {
+              const originalId = extractOriginalFileId(uploadId);
               dispatch({ 
                   type: 'UPDATE_FILE_PROGRESS', 
-                  payload: { id: uploadId, progress } 
+                  payload: { id: originalId, progress } 
               });
           },
           onSuccess: (uploadId, result) => {
-              console.log(`[UploadContext] Upload complete for file ID: ${uploadId}`, result);
+              const originalId = extractOriginalFileId(uploadId);
+              console.log(`[UploadContext] Upload complete for file ID: ${uploadId} -> ${originalId}`, result);
               dispatch({ 
                   type: 'FILE_UPLOAD_SUCCESS', 
                   payload: { 
-                      fileId: uploadId, 
+                      fileId: originalId, 
                       photoId: result.id 
                   } 
               });
           },
           onError: (uploadId, error) => {
-              console.error(`[UploadContext] Upload failed for file ID: ${uploadId}`, error);
+              const originalId = extractOriginalFileId(uploadId);
+              console.error(`[UploadContext] Upload failed for file ID: ${uploadId} -> ${originalId}`, error);
               dispatch({ 
                   type: 'FILE_UPLOAD_FAIL', 
                   payload: { 
-                      id: uploadId, 
+                      id: originalId, 
                       error: error || 'Upload failed'
                   }
               });

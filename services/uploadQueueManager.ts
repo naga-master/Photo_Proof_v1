@@ -47,9 +47,12 @@ export interface UploadQueueCallbacks {
 class UploadQueueManager {
   private queue: QueuedUpload[] = [];
   private activeUploads: Set<string> = new Set();
-  private callbacks: UploadQueueCallbacks = {};
   private currentBatchId: number = 0;
   private isProcessingBatch: boolean = false;
+  
+  // Named Subscriber Pattern - each subscriber has unique ID
+  // Replaces the old callback chaining which caused duplicate events
+  private subscribers: Map<string, UploadQueueCallbacks> = new Map();
   
   // Configuration
   private readonly MAX_CONCURRENT_UPLOADS = 3; // Upload 3 files at a time within a batch
@@ -64,50 +67,93 @@ class UploadQueueManager {
   }
 
   /**
-   * Set callbacks for upload events
-   * IMPORTANT: Merges with existing callbacks so multiple subscribers can listen
+   * Register a subscriber with unique ID
+   * If subscriber with same ID exists, REPLACES callbacks (no chaining)
+   * This is the RECOMMENDED way to subscribe to upload events
    */
-  setCallbacks(callbacks: UploadQueueCallbacks) {
-    const mergedCallbacks: UploadQueueCallbacks = {};
-    
-    // For each callback type, create wrapper that calls ALL registered callbacks
-    if (callbacks.onProgress || this.callbacks.onProgress) {
-      const existing = this.callbacks.onProgress;
-      const newCb = callbacks.onProgress;
-      mergedCallbacks.onProgress = (uploadId, progress) => {
-        existing?.(uploadId, progress);
-        newCb?.(uploadId, progress);
-      };
+  registerSubscriber(subscriberId: string, callbacks: UploadQueueCallbacks): void {
+    console.log(`[UploadQueueManager] Registering subscriber: ${subscriberId}`);
+    this.subscribers.set(subscriberId, callbacks);
+  }
+
+  /**
+   * Unregister a subscriber by ID
+   * Call this when component unmounts or no longer needs updates
+   */
+  unregisterSubscriber(subscriberId: string): void {
+    console.log(`[UploadQueueManager] Unregistering subscriber: ${subscriberId}`);
+    this.subscribers.delete(subscriberId);
+  }
+
+  /**
+   * Notify all subscribers of progress update
+   */
+  private notifyProgress(uploadId: string, progress: number): void {
+    for (const [id, callbacks] of this.subscribers) {
+      try {
+        callbacks.onProgress?.(uploadId, progress);
+      } catch (e) {
+        console.error(`[UploadQueueManager] Subscriber ${id} onProgress error:`, e);
+      }
     }
-    
-    if (callbacks.onSuccess || this.callbacks.onSuccess) {
-      const existing = this.callbacks.onSuccess;
-      const newCb = callbacks.onSuccess;
-      mergedCallbacks.onSuccess = (uploadId, result) => {
-        existing?.(uploadId, result);
-        newCb?.(uploadId, result);
-      };
+  }
+
+  /**
+   * Notify all subscribers of success
+   */
+  private notifySuccess(uploadId: string, result: any): void {
+    for (const [id, callbacks] of this.subscribers) {
+      try {
+        callbacks.onSuccess?.(uploadId, result);
+      } catch (e) {
+        console.error(`[UploadQueueManager] Subscriber ${id} onSuccess error:`, e);
+      }
     }
-    
-    if (callbacks.onError || this.callbacks.onError) {
-      const existing = this.callbacks.onError;
-      const newCb = callbacks.onError;
-      mergedCallbacks.onError = (uploadId, error) => {
-        existing?.(uploadId, error);
-        newCb?.(uploadId, error);
-      };
+  }
+
+  /**
+   * Notify all subscribers of error
+   */
+  private notifyError(uploadId: string, error: string): void {
+    for (const [id, callbacks] of this.subscribers) {
+      try {
+        callbacks.onError?.(uploadId, error);
+      } catch (e) {
+        console.error(`[UploadQueueManager] Subscriber ${id} onError error:`, e);
+      }
     }
-    
-    if (callbacks.onQueueUpdate || this.callbacks.onQueueUpdate) {
-      const existing = this.callbacks.onQueueUpdate;
-      const newCb = callbacks.onQueueUpdate;
-      mergedCallbacks.onQueueUpdate = (queue) => {
-        existing?.(queue);
-        newCb?.(queue);
-      };
+  }
+
+  /**
+   * Notify all subscribers of queue update
+   */
+  private notifyQueueUpdateToSubscribers(): void {
+    const queue = this.getQueue();
+    for (const [id, callbacks] of this.subscribers) {
+      try {
+        callbacks.onQueueUpdate?.(queue);
+      } catch (e) {
+        console.error(`[UploadQueueManager] Subscriber ${id} onQueueUpdate error:`, e);
+      }
     }
-    
-    this.callbacks = mergedCallbacks;
+  }
+
+  /**
+   * @deprecated Use registerSubscriber() instead
+   * Kept for backward compatibility - registers as 'legacy' subscriber
+   */
+  setCallbacks(callbacks: UploadQueueCallbacks): void {
+    console.log('[UploadQueueManager] setCallbacks called (deprecated - use registerSubscriber)');
+    this.registerSubscriber('legacy', callbacks);
+  }
+
+  /**
+   * @deprecated Not needed with subscriber pattern
+   * Clears all subscribers - use unregisterSubscriber() for specific cleanup
+   */
+  clearCallbacks(): void {
+    console.log('[UploadQueueManager] clearCallbacks called (deprecated)');
+    this.subscribers.clear();
   }
 
   /**
@@ -288,14 +334,14 @@ class UploadQueueManager {
         upload.folderId,
         (progress) => {
           upload.progress = progress.percentComplete;
-          this.callbacks.onProgress?.(upload.id, progress.percentComplete);
+          this.notifyProgress(upload.id, progress.percentComplete);
           this.notifyQueueUpdate();
         }
       );
       
       upload.status = 'completed';
       upload.progress = 100;
-      this.callbacks.onSuccess?.(upload.id, result);
+      this.notifySuccess(upload.id, result);
       this.notifyQueueUpdate();
       
       console.log(`[UploadQueueManager] ✅ Chunked upload complete: ${upload.file.name}`);
@@ -318,7 +364,7 @@ class UploadQueueManager {
       } else {
         upload.status = 'failed';
         upload.error = error.message || 'Chunked upload failed';
-        this.callbacks.onError?.(upload.id, upload.error);
+        this.notifyError(upload.id, upload.error || 'Unknown error');
         this.notifyQueueUpdate();
         
         console.error(`[UploadQueueManager] ❌ Max retries reached for ${upload.file.name}`);
@@ -368,7 +414,7 @@ class UploadQueueManager {
           upload.status = 'failed';
           upload.error = 'No presigned URL received from server';
           console.error(`[UploadQueueManager] ❌ Batch ${batchId}: No token for ${upload.file.name}`);
-          this.callbacks.onError?.(upload.id, upload.error);
+          this.notifyError(upload.id, upload.error || 'Unknown error');
         }
       });
 
@@ -381,7 +427,7 @@ class UploadQueueManager {
       batch.forEach(upload => {
         upload.status = 'failed';
         upload.error = error instanceof Error ? error.message : 'Failed to fetch presigned URLs';
-        this.callbacks.onError?.(upload.id, upload.error);
+        this.notifyError(upload.id, upload.error || 'Unknown error');
       });
       
       this.notifyQueueUpdate();
@@ -442,7 +488,7 @@ class UploadQueueManager {
       console.error(`[UploadQueueManager] ❌ Batch ${batchId}: No token for ${upload.file.name}`);
       upload.status = 'failed';
       upload.error = 'Missing upload token';
-      this.callbacks.onError?.(upload.id, upload.error);
+      this.notifyError(upload.id, upload.error || 'Unknown error');
       this.notifyQueueUpdate();
       return false;
     }
@@ -456,14 +502,14 @@ class UploadQueueManager {
         upload.token,
         (progress) => {
           upload.progress = progress;
-          this.callbacks.onProgress?.(upload.id, progress);
+          this.notifyProgress(upload.id, progress);
           this.notifyQueueUpdate();
         }
       );
 
       upload.status = 'completed';
       upload.progress = 100;
-      this.callbacks.onSuccess?.(upload.id, result);
+      this.notifySuccess(upload.id, result);
       this.notifyQueueUpdate();
       return true;
 
@@ -493,7 +539,7 @@ class UploadQueueManager {
         }
         
         console.warn(`[UploadQueueManager] ⚠️  Non-retryable error for ${upload.file.name}: ${upload.error}`);
-        this.callbacks.onError?.(upload.id, upload.error);
+        this.notifyError(upload.id, upload.error || 'Unknown error');
         this.notifyQueueUpdate();
         return false;
       }
@@ -530,7 +576,7 @@ class UploadQueueManager {
         }
         
         console.error(`[UploadQueueManager] ❌ Max retries reached for ${upload.file.name}`);
-        this.callbacks.onError?.(upload.id, upload.error);
+        this.notifyError(upload.id, upload.error || 'Unknown error');
         this.notifyQueueUpdate();
         return false;
       }
@@ -594,8 +640,8 @@ class UploadQueueManager {
     // Remove from queue
     this.queue.splice(uploadIndex, 1);
     
-    // Notify callbacks
-    this.callbacks.onError?.(uploadId, 'Upload cancelled by user');
+    // Notify subscribers
+    this.notifyError(uploadId, 'Upload cancelled by user');
     this.notifyQueueUpdate();
   }
 
@@ -684,6 +730,8 @@ class UploadQueueManager {
     console.log('[UploadQueueManager] Clearing all uploads');
     this.queue = [];
     this.activeUploads.clear();
+    // Note: Don't clear subscribers here - they should persist across upload sessions
+    // Use clearCallbacks() or unregisterSubscriber() for explicit cleanup
     this.notifyQueueUpdate();
   }
 
@@ -763,10 +811,10 @@ class UploadQueueManager {
   }
 
   /**
-   * Notify callbacks of queue update
+   * Notify all subscribers of queue update
    */
   private notifyQueueUpdate(): void {
-    this.callbacks.onQueueUpdate?.(this.getQueue());
+    this.notifyQueueUpdateToSubscribers();
   }
 }
 
