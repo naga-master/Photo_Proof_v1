@@ -15,6 +15,8 @@ export interface Client {
   company?: string;
   notes?: string;
   username?: string;
+  password?: string;  // Plain password (only returned during creation/reset)
+  has_password?: boolean;  // Indicates if client has a password set
   avatar_url?: string | null;
   profile_picture?: string | null;
   whatsapp_opt_in?: boolean;
@@ -25,6 +27,14 @@ export interface Client {
   updated_at: string;
   project_count?: number;
   total_photos?: number;
+}
+
+export interface PasswordResponse {
+  client_id: number;
+  password?: string;
+  has_password?: boolean;
+  is_new?: boolean;
+  message?: string;
 }
 
 export interface CreateClientRequest {
@@ -115,6 +125,29 @@ class ClientService {
    */
   async getClientProjects(clientId: string): Promise<any[]> {
     return apiClient.get<any[]>(`/v2/clients/${clientId}/projects`);
+  }
+
+  /**
+   * Set or reset client's gallery access password
+   * Returns the plain password for studio to share with client
+   */
+  async setPassword(clientId: string, password?: string): Promise<PasswordResponse> {
+    return apiClient.put<PasswordResponse>(`/v2/clients/${clientId}/password`, { password });
+  }
+
+  /**
+   * Get client's password status
+   * If no password exists, generates one
+   */
+  async getPassword(clientId: string): Promise<PasswordResponse> {
+    return apiClient.get<PasswordResponse>(`/v2/clients/${clientId}/password`);
+  }
+
+  /**
+   * Generate new password for client (resets existing)
+   */
+  async resetPassword(clientId: string): Promise<PasswordResponse> {
+    return apiClient.put<PasswordResponse>(`/v2/clients/${clientId}/password`, {});
   }
 }
 

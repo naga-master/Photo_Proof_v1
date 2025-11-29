@@ -77,6 +77,7 @@ export interface Client {
   email: string;
   username?: string;
   password?: string;
+  hasPassword?: boolean;  // Indicates if client has a password set
   phone?: string;
   address?: string;
   avatarUrl?: string | null;

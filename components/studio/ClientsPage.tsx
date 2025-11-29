@@ -6,29 +6,130 @@ import { clientService } from '../../services/clientService';
 import { DuplicateDetectionModal } from '../../src/components/DuplicateDetectionModal';
 import type { DuplicateInfo } from '../../src/services/photoService';
 
-const PasswordDisplay: React.FC<{ password?: string, onTriggerClick?: (e: React.MouseEvent) => void }> = ({ password = '', onTriggerClick }) => {
+const PasswordDisplay: React.FC<{ 
+    clientId?: string;
+    password?: string; 
+    hasPassword?: boolean;
+    onTriggerClick?: (e: React.MouseEvent) => void;
+    onPasswordReset?: (newPassword: string) => void;
+}> = ({ clientId, password = '', hasPassword = false, onTriggerClick, onPasswordReset }) => {
     const [isRevealed, setIsRevealed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [displayPassword, setDisplayPassword] = useState(password);
     
-    if (!password) return <span className="text-gray-400 italic">Not set</span>;
+    // If we have a plain password (from creation or after reset), show it with view/reset options
+    if (displayPassword) {
+        const handleToggleView = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            setIsRevealed(!isRevealed);
+            if (onTriggerClick) onTriggerClick(e);
+        };
+        
+        const handleReset = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!clientId || isLoading) return;
+            
+            setIsLoading(true);
+            try {
+                const response = await clientService.resetPassword(clientId);
+                if (response.password) {
+                    setDisplayPassword(response.password);
+                    setIsRevealed(true);
+                    if (onPasswordReset) onPasswordReset(response.password);
+                }
+            } catch (error) {
+                console.error('Failed to reset password:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        return (
+            <div className="flex items-center gap-2">
+                <span className="font-mono text-sm">{isRevealed ? displayPassword : '••••••••'}</span>
+                <button
+                    onClick={handleToggleView}
+                    className="text-gray-500 hover:text-gray-800 p-1"
+                    aria-label={isRevealed ? 'Hide password' : 'Show password'}
+                >
+                    {isRevealed ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                </button>
+                <button
+                    onClick={handleReset}
+                    disabled={isLoading}
+                    className="text-xs text-orange-600 hover:text-orange-800 font-medium disabled:opacity-50"
+                >
+                    {isLoading ? '...' : 'Reset'}
+                </button>
+            </div>
+        );
+    }
     
-    const handleClick = (e: React.MouseEvent) => {
-        setIsRevealed(!isRevealed);
-        if (onTriggerClick) {
-            onTriggerClick(e);
+    // Password exists in DB but we don't have plain text (it's hashed)
+    // User must reset to get a new viewable password
+    if (hasPassword) {
+        const handleReset = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!clientId || isLoading) return;
+            
+            setIsLoading(true);
+            try {
+                const response = await clientService.resetPassword(clientId);
+                if (response.password) {
+                    setDisplayPassword(response.password);
+                    setIsRevealed(true);
+                    if (onPasswordReset) onPasswordReset(response.password);
+                }
+            } catch (error) {
+                console.error('Failed to reset password:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        return (
+            <div className="flex items-center gap-2">
+                <span className="font-mono text-sm text-gray-400" title="Password is set but hidden. Click Reset to generate a new one.">••••••••</span>
+                <button
+                    onClick={handleReset}
+                    disabled={isLoading}
+                    className="text-xs text-orange-600 hover:text-orange-800 font-medium disabled:opacity-50"
+                    title="Generate a new password (replaces existing)"
+                >
+                    {isLoading ? '...' : 'Reset'}
+                </button>
+            </div>
+        );
+    }
+    
+    // No password set - show generate option
+    const handleGenerate = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!clientId || isLoading) return;
+        
+        setIsLoading(true);
+        try {
+            const response = await clientService.resetPassword(clientId);
+            if (response.password) {
+                setDisplayPassword(response.password);
+                setIsRevealed(true);
+                if (onPasswordReset) onPasswordReset(response.password);
+            }
+        } catch (error) {
+            console.error('Failed to generate password:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
     
     return (
-        <div className="flex items-center gap-2">
-            <span className="font-mono">{isRevealed ? password : '••••••••'}</span>
-            <button
-                onClick={handleClick}
-                className="text-gray-500 hover:text-gray-800"
-                aria-label={isRevealed ? 'Hide password' : 'Show password'}
-            >
-                {isRevealed ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-            </button>
-        </div>
+        <button
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+        >
+            {isLoading ? 'Generating...' : 'Generate'}
+        </button>
     );
 };
 
@@ -326,11 +427,16 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div>
-                            <span className="font-semibold text-gray-700">User:</span> {client.username}
+                            <span className="font-semibold text-gray-700">User:</span> {client.username || client.email}
                         </div>
                          <div className="flex items-center">
                             <span className="font-semibold text-gray-700 mr-1">Pass:</span>
-                            <PasswordDisplay password={client.password} onTriggerClick={(e) => e.stopPropagation()} />
+                            <PasswordDisplay 
+                                clientId={client.id} 
+                                password={client.password} 
+                                hasPassword={client.hasPassword}
+                                onTriggerClick={(e) => e.stopPropagation()} 
+                            />
                         </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -363,11 +469,16 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
             <div className="space-y-2 text-sm mb-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Username:</span>
-                <span className="text-gray-900 font-medium">{client.username}</span>
+                <span className="text-gray-900 font-medium">{client.username || client.email}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Password:</span>
-                <PasswordDisplay password={client.password} onTriggerClick={(e) => e.stopPropagation()} />
+                <PasswordDisplay 
+                    clientId={client.id} 
+                    password={client.password} 
+                    hasPassword={client.hasPassword}
+                    onTriggerClick={(e) => e.stopPropagation()} 
+                />
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Projects:</span>

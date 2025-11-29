@@ -171,6 +171,8 @@ const mapClientResponse = (client: BackendClient): Client => ({
     name: client.name,
     email: client.email,
     username: client.username ?? client.email,
+    password: (client as any).password ?? undefined,  // Plain password (only during creation)
+    hasPassword: (client as any).has_password ?? false,  // Indicates if password is set
     phone: client.phone ?? undefined,
     address: client.address ?? undefined,
     avatarUrl: (client as any).avatar_url ?? null,
