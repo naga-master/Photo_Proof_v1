@@ -137,13 +137,13 @@ const CommentThread: React.FC<{
             <div className="flex items-start gap-2 hover:bg-gray-50 rounded-lg p-1.5 -ml-1.5 transition-colors">
                 {/* Avatar placeholder */}
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${comment.author === 'Studio' ? 'bg-purple-500' : 'bg-blue-500'}`}>
-                    {comment.author.charAt(0)}
+                    {(comment.userName || comment.author).charAt(0)}
                 </div>
                 
                 {/* Message content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-gray-900 text-sm">{comment.author}</span>
+                        <span className="font-semibold text-gray-900 text-sm">{comment.userName || comment.author}</span>
                         <span className="text-xs text-gray-500">{comment.timestamp}</span>
                     </div>
                     
@@ -307,10 +307,10 @@ const Lightbox: React.FC<LightboxProps> = ({ photos, currentIndex, onClose, onNe
     setShowComments(false);
   }, [currentIndex]);
   
-  // Load comments when comment panel is opened
+  // Load comments when comment panel is opened - ALWAYS reload to get latest
   useEffect(() => {
     const loadComments = async () => {
-      if (showComments && currentPhoto && (!currentPhoto.comments || currentPhoto.comments.length === 0)) {
+      if (showComments && currentPhoto) {
         setCommentsLoading(true);
         await onLoadComments(currentPhoto.id);
         setCommentsLoading(false);

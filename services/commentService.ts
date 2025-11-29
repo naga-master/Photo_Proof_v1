@@ -63,6 +63,7 @@ const mapBackendComment = (backendComment: BackendCommentResponse): Comment => {
     return {
         id: backendComment.id,
         author: backendComment.author,
+        userName: backendComment.user_name,
         text: backendComment.text,
         timestamp: backendComment.timestamp,
         replies: backendComment.replies.map(mapBackendComment),
@@ -174,31 +175,38 @@ const invalidateCache = async (photoId: number): Promise<void> => {
 class CommentService {
     /**
      * Get all comments for a photo (with caching)
+     * @param photoId - The photo ID
+     * @param forceRefresh - If true, bypass cache and fetch fresh data
      */
-    static async getPhotoComments(photoId: number): Promise<Comment[]> {
-        console.log(`[CommentService] Fetching comments for photo ${photoId}`);
+    static async getPhotoComments(photoId: number, forceRefresh: boolean = false): Promise<Comment[]> {
+        console.log(`[CommentService] Fetching comments for photo ${photoId}, forceRefresh: ${forceRefresh}`);
         
-        // Check memory cache first
-        const memoryCache = getFromMemoryCache(photoId);
-        if (memoryCache) {
-            return memoryCache;
-        }
-        
-        // Check IndexedDB cache
-        const indexedDBCache = await getFromIndexedDB(photoId);
-        if (indexedDBCache) {
-            // Store in memory for next access
-            if ((window as any).__cache) {
-                (window as any).__cache.set(getCacheKey(photoId), {
-                    data: indexedDBCache,
-                    timestamp: Date.now()
-                });
+        // If force refresh, invalidate cache first
+        if (forceRefresh) {
+            await invalidateCache(photoId);
+        } else {
+            // Check memory cache first
+            const memoryCache = getFromMemoryCache(photoId);
+            if (memoryCache) {
+                return memoryCache;
             }
-            return indexedDBCache;
+            
+            // Check IndexedDB cache
+            const indexedDBCache = await getFromIndexedDB(photoId);
+            if (indexedDBCache) {
+                // Store in memory for next access
+                if ((window as any).__cache) {
+                    (window as any).__cache.set(getCacheKey(photoId), {
+                        data: indexedDBCache,
+                        timestamp: Date.now()
+                    });
+                }
+                return indexedDBCache;
+            }
         }
         
-        // Cache miss - fetch from API
-        console.log(`[CommentService] ⚠️ Cache miss, fetching from API`);
+        // Cache miss or force refresh - fetch from API
+        console.log(`[CommentService] ⚠️ Fetching from API`);
         
         const data = await apiClient.get<BackendCommentListResponse>(
             `/api/comments/photos/${photoId}`

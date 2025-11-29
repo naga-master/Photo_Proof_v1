@@ -1371,13 +1371,14 @@ const AppContent: React.FC = () => {
         }
     };
 
-    // Load comments for a photo on-demand
+    // Load comments for a photo on-demand (always fresh to catch new replies)
     const loadPhotoComments = async (photoId: string): Promise<void> => {
         if (!galleryContent) return;
         
         try {
             console.log(`[App] Loading comments for photo ${photoId}...`);
-            const comments = await CommentService.getPhotoComments(Number(photoId));
+            // Force refresh to always get latest comments (including replies from other users)
+            const comments = await CommentService.getPhotoComments(Number(photoId), true);
             
             // Update galleryContent with loaded comments
             const updatedPhotos = galleryContent.photos.map(photo => {

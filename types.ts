@@ -3,6 +3,7 @@ import React from 'react';
 export interface Reply {
   id: number;
   author: 'Client' | 'Studio';
+  userName?: string;
   text: string;
   timestamp: string;
 }
@@ -10,9 +11,10 @@ export interface Reply {
 export interface Comment {
   id: number;
   author: 'Client' | 'Studio';
+  userName?: string;
   text: string;
   timestamp: string;
-  replies?: Reply[];
+  replies?: Comment[];
 }
 
 export interface Photo {
