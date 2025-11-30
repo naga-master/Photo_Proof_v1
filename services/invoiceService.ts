@@ -41,6 +41,8 @@ export interface CreateInvoiceRequest {
   items: Array<Pick<InvoiceItem, 'description' | 'quantity' | 'unit_price'>>;
   notes?: string;
   template?: string;
+  currency?: string;  // ISO 4217 code: "INR", "USD", etc.
+  tax_rate?: number;  // Tax rate as decimal (0.18 for 18%)
 }
 
 export interface UpdateInvoiceRequest {

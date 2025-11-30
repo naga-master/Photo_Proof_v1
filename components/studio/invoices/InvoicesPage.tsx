@@ -56,7 +56,7 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{invoice.invoiceNumber}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{getClientName(invoice.clientId)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.invoiceDate}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">${invoice.total.toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{invoice.currencySymbol || '₹'}{invoice.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[invoice.status]}`}>
                       {invoice.status}
@@ -107,7 +107,7 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Amount:</span>
-                  <span className="text-slate-900 font-bold text-base">${invoice.total.toFixed(2)}</span>
+                  <span className="text-slate-900 font-bold text-base">{invoice.currencySymbol || '₹'}{invoice.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
               

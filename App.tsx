@@ -1323,6 +1323,9 @@ const AppContent: React.FC = () => {
                 })),
                 notes: invoice.notes,
                 template: invoice.template,
+                currency: 'INR',  // Default to INR, can be made configurable from billing settings
+                // Convert percentage (18) to decimal (0.18) for backend
+                tax_rate: invoice.taxRate ? invoice.taxRate / 100 : 0.18,
             };
             
             console.log('[App] Saving invoice to backend:', backendData);
