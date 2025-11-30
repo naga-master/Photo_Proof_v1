@@ -51,8 +51,8 @@ const MinimalistTemplate: React.FC<TemplateProps> = ({ invoice, logo }) => {
                 <tr key={item.id} className="border-b border-gray-100">
                   <td className="py-3 pr-4 font-semibold text-gray-800">{item.description}</td>
                   <td className="py-3 px-4 text-center">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right">${item.unitPrice.toFixed(2)}</td>
-                  <td className="py-3 pl-4 text-right font-semibold text-gray-800">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right">{invoice.currencySymbol || '₹'}{item.unitPrice.toFixed(2)}</td>
+                  <td className="py-3 pl-4 text-right font-semibold text-gray-800">{invoice.currencySymbol || '₹'}{(item.quantity * item.unitPrice).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -63,15 +63,15 @@ const MinimalistTemplate: React.FC<TemplateProps> = ({ invoice, logo }) => {
             <div className="w-full max-w-xs space-y-2">
                 <div className="flex justify-between">
                     <span className="text-gray-500">Subtotal</span>
-                    <span className="font-semibold text-gray-800">${invoice.subtotal.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-800">{invoice.currencySymbol || '₹'}{invoice.subtotal.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between">
-                    <span className="text-gray-500">Tax (8%)</span>
-                    <span className="font-semibold text-gray-800">${invoice.tax.toFixed(2)}</span>
+                    <span className="text-gray-500">{invoice.taxLabel || 'Tax'}</span>
+                    <span className="font-semibold text-gray-800">{invoice.currencySymbol || '₹'}{invoice.tax.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">
                     <span className="text-gray-800">Total</span>
-                    <span className="text-gray-800">${invoice.total.toFixed(2)}</span>
+                    <span className="text-gray-800">{invoice.currencySymbol || '₹'}{invoice.total.toFixed(2)}</span>
                 </div>
             </div>
         </section>

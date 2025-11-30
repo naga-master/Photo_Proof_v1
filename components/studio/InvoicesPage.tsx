@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Invoice, InvoiceItem, Client, Album, InvoiceTemplateId } from '../../types';
+import type { Invoice, InvoiceItem, Client, Album, InvoiceTemplateId, InvoiceInitialData, BillingConfiguration, ServicePackage } from '../../types';
 import { PlusIcon, XCircleIcon, StarIcon } from '../icons';
 import InvoiceRenderer from './invoices/InvoiceRenderer';
+
+// Helper function for GST-inclusive calculation (reverse calculation)
+const calculateGSTBreakdown = (totalPrice: number, gstPercentage: number) => {
+    if (gstPercentage <= 0) {
+        return { baseAmount: totalPrice, gstAmount: 0, totalPrice };
+    }
+    const baseAmount = totalPrice / (1 + gstPercentage / 100);
+    const gstAmount = totalPrice - baseAmount;
+    return { baseAmount, gstAmount, totalPrice };
+};
 
 // TODO: Fetch invoice templates from /api/invoices/templates
 const invoiceTemplates = [
@@ -31,9 +41,10 @@ const invoiceTemplates = [
 interface InvoicesPageProps {
     clients: Client[];
     albums: Album[];
+    packages: ServicePackage[];
     invoices: Invoice[];
     onSaveInvoice: (invoice: Invoice) => void;
-    initialData: { client: Client, project: Album } | null;
+    initialData: InvoiceInitialData | null;
     clearInitialData: () => void;
     defaultTemplateId: InvoiceTemplateId;
     onSetDefaultTemplate: (templateId: InvoiceTemplateId) => void;
@@ -52,18 +63,43 @@ const getNextInvoiceNumber = (invoices: Invoice[]) => {
 };
 
 const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
-    const { clients, albums, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor, studioDisplayImage, onInvoiceSaved } = props;
+    const { clients, albums, packages, invoices, onSaveInvoice, initialData, clearInitialData, defaultTemplateId, onSetDefaultTemplate, logo, brandColor, studioDisplayImage, onInvoiceSaved } = props;
 
     const displayLogo = studioDisplayImage || logo;
 
     const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
+    const [billingConfig, setBillingConfig] = useState<BillingConfiguration | null>(null);
+    const [selectedPackageId, setSelectedPackageId] = useState<string>('');
+    
+    // Load billing config from localStorage or initialData
+    useEffect(() => {
+        if (initialData?.billingConfig) {
+            setBillingConfig(initialData.billingConfig);
+        } else {
+            const savedConfig = localStorage.getItem('billingConfig');
+            if (savedConfig) {
+                try {
+                    setBillingConfig(JSON.parse(savedConfig));
+                } catch (e) {
+                    console.error('Failed to parse billing config:', e);
+                }
+            }
+        }
+    }, [initialData?.billingConfig]);
 
     const today = new Date().toISOString().split('T')[0];
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
     const futureDate = dueDate.toISOString().split('T')[0];
 
-    const createNewInvoice = () => ({
+    // Get GST rate from billing config (default to 18% for photography services in India)
+    const gstEnabled = billingConfig?.tax?.enableGST !== false;
+    const gstPercentage = billingConfig?.tax?.gstPercentage ?? 18;
+    const gstRate = gstEnabled ? gstPercentage / 100 : 0;
+    const taxLabel = gstEnabled ? `GST (${gstPercentage}%)` : 'Tax';
+    const currencySymbol = billingConfig?.currencySymbol || '₹'; // Default to Rupee for India
+
+    const createNewInvoice = (): Invoice => ({
         id: `inv_${Date.now()}`,
         invoiceNumber: getNextInvoiceNumber(invoices),
         invoiceDate: today,
@@ -75,41 +111,93 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
         clientAddress: '',
         subtotal: 0,
         tax: 0,
+        taxRate: gstPercentage,
+        taxLabel: taxLabel,
+        currencySymbol: currencySymbol,
         total: 0,
     });
     
+    // Recalculate totals when items or GST rate changes
     useEffect(() => {
         if (!currentInvoice) return;
         const subtotal = currentInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-        const tax = subtotal * 0.08;
+        const tax = subtotal * gstRate;
         const total = subtotal + tax;
-        if (currentInvoice.subtotal !== subtotal || currentInvoice.tax !== tax || currentInvoice.total !== total) {
-            setCurrentInvoice(inv => inv ? { ...inv, subtotal, tax, total } : null);
+        const newTaxLabel = gstEnabled ? `GST (${gstPercentage}%)` : 'Tax';
+        
+        if (currentInvoice.subtotal !== subtotal || currentInvoice.tax !== tax || currentInvoice.total !== total || currentInvoice.taxLabel !== newTaxLabel) {
+            setCurrentInvoice(inv => inv ? { ...inv, subtotal, tax, taxRate: gstPercentage, taxLabel: newTaxLabel, total } : null);
         }
-    }, [currentInvoice?.items, currentInvoice?.subtotal, currentInvoice?.tax, currentInvoice?.total]);
+    }, [currentInvoice?.items, gstRate, gstPercentage, gstEnabled]);
 
 
+    // Process initialData when it changes - use billing config from initialData directly
     useEffect(() => {
         if (initialData) {
             const { client, project } = initialData;
+            const pkg = initialData.package;
+            const config = initialData.billingConfig;
+            
+            // Use GST settings from initialData's billingConfig directly (avoids race condition)
+            const gstEnabledLocal = config?.tax?.enableGST !== false;
+            const gstPercentageLocal = config?.tax?.gstPercentage ?? 18;
+            const taxLabelLocal = gstEnabledLocal ? `GST (${gstPercentageLocal}%)` : 'Tax';
+            const currencySymbolLocal = config?.currencySymbol || '₹'; // Default to Rupee for India
+            
+            // Determine price: use package price if available, otherwise project price
+            const totalPrice = pkg?.price ?? project.price ?? 0;
+            
+            // Calculate GST-inclusive breakdown
+            // The package price includes GST, so we reverse-calculate the base amount
+            const { baseAmount } = calculateGSTBreakdown(totalPrice, gstEnabledLocal ? gstPercentageLocal : 0);
+            
+            // Create description with package name if available
+            const description = pkg 
+                ? `${pkg.name} - "${project.title}"`
+                : `Services for "${project.title}"`;
+            
+            console.log('[InvoiceEditor] Processing initialData:', {
+                packageId: project.packageId,
+                packageName: pkg?.name,
+                packagePrice: pkg?.price,
+                projectPrice: project.price,
+                totalPrice,
+                gstPercentageLocal,
+                baseAmount,
+            });
+            
+            // Set selected package in dropdown (if package exists)
+            setSelectedPackageId(pkg?.id || '');
+            
             setCurrentInvoice({
-                ...createNewInvoice(),
+                id: `inv_${Date.now()}`,
+                invoiceNumber: getNextInvoiceNumber(invoices),
+                invoiceDate: today,
+                dueDate: futureDate,
+                status: 'Draft' as const,
+                template: defaultTemplateId,
                 clientId: client.id,
                 projectId: project.id,
                 clientName: client.name,
                 clientAddress: client.address || '',
+                subtotal: 0,
+                tax: 0,
+                taxRate: gstPercentageLocal,
+                taxLabel: taxLabelLocal,
+                currencySymbol: currencySymbolLocal,
+                total: 0,
                 items: [{
                     id: `item_${Date.now()}`,
-                    description: `Services for "${project.title}"`,
+                    description: description,
                     quantity: 1,
-                    unitPrice: project.price || 0,
+                    unitPrice: Math.round(baseAmount * 100) / 100, // Round to 2 decimal places
                 }]
             });
             clearInitialData();
         } else if (!currentInvoice) {
             setCurrentInvoice(createNewInvoice());
         }
-    }, [initialData, clearInitialData, invoices, currentInvoice, defaultTemplateId]);
+    }, [initialData]);
     
     const handleInvoiceChange = (field: keyof Invoice, value: any) => {
         if (!currentInvoice) return;
@@ -148,6 +236,42 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
         }
     }
     
+    // Handle package selection - update invoice with package pricing
+    const handlePackageSelect = (packageId: string) => {
+        setSelectedPackageId(packageId);
+        if (!currentInvoice) return;
+        
+        const pkg = packages.find(p => p.id === packageId);
+        if (pkg) {
+            // Calculate GST-inclusive breakdown
+            const { baseAmount } = calculateGSTBreakdown(pkg.price, gstEnabled ? gstPercentage : 0);
+            
+            // Get project title for description
+            const project = albums.find(a => a.id === currentInvoice.projectId);
+            const description = project 
+                ? `${pkg.name} - "${project.title}"`
+                : pkg.name;
+            
+            // Update the first item with package details
+            const newItems = [...currentInvoice.items];
+            if (newItems.length > 0) {
+                newItems[0] = {
+                    ...newItems[0],
+                    description: description,
+                    unitPrice: Math.round(baseAmount * 100) / 100,
+                };
+            } else {
+                newItems.push({
+                    id: `item_${Date.now()}`,
+                    description: description,
+                    quantity: 1,
+                    unitPrice: Math.round(baseAmount * 100) / 100,
+                });
+            }
+            handleInvoiceChange('items', newItems);
+        }
+    };
+    
     const filteredProjects = useMemo(() => {
         if (!currentInvoice?.clientId) return [];
         return albums.filter(a => a.clientId === currentInvoice.clientId);
@@ -183,7 +307,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
 
                 <div className="space-y-6">
                     <div className="p-6 bg-white border border-slate-200 rounded-lg">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Client</label>
                                 <select value={currentInvoice.clientId || ''} onChange={e => handleClientSelect(e.target.value)} className={`mt-1 ${inputClasses}`}>
@@ -196,6 +320,24 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
                                 <select value={currentInvoice.projectId || ''} onChange={e => handleInvoiceChange('projectId', e.target.value || undefined)} className={`mt-1 ${inputClasses}`} disabled={!currentInvoice.clientId}>
                                     <option value="">Select a project</option>
                                     {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">
+                                    Service Package
+                                    <span className="text-xs text-slate-500 ml-1">(Auto-fills pricing)</span>
+                                </label>
+                                <select 
+                                    value={selectedPackageId} 
+                                    onChange={e => handlePackageSelect(e.target.value)} 
+                                    className={`mt-1 ${inputClasses}`}
+                                >
+                                    <option value="">Select a package</option>
+                                    {packages.map(pkg => (
+                                        <option key={pkg.id} value={pkg.id}>
+                                            {pkg.name} - ₹{pkg.price?.toLocaleString('en-IN')}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -236,7 +378,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
                                         <input type="number" placeholder="Price" value={item.unitPrice} onChange={e => handleItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className={inputClasses} />
                                     </div>
                                     <div className="col-span-3 sm:col-span-1 text-right font-medium self-center pt-5 sm:pt-0">
-                                        <span className="sm:hidden text-xs text-slate-500">Total: </span>${(item.quantity * item.unitPrice).toFixed(2)}
+                                        <span className="sm:hidden text-xs text-slate-500">Total: </span>{currentInvoice.currencySymbol || '₹'}{(item.quantity * item.unitPrice).toFixed(2)}
                                     </div>
                                     <div className="col-span-1 text-right self-center pt-5 sm:pt-0">
                                         <button onClick={() => removeItem(item.id)} className="text-slate-400 hover:text-red-500"><XCircleIcon className="w-5 h-5"/></button>

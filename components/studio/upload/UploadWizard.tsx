@@ -252,7 +252,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             clientPhone = state.projectDetails.newClientDetails.phone || '';
           }
           
-          const project = await projectService.createProject({
+          const createProjectData = {
             name: state.projectDetails.title || 'Untitled Project',
             client_id: state.projectDetails.clientId !== 'new' ? String(state.projectDetails.clientId) : undefined,
             client_name: clientName,
@@ -260,6 +260,21 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             client_phone: clientPhone,
             shoot_date: state.projectDetails.shootDate,
             project_type: 'photo_shoot',
+            package_id: state.projectDetails.packageId || undefined,
+          };
+          
+          console.log('[UploadWizard] Creating project with data:', {
+            ...createProjectData,
+            packageIdFromState: state.projectDetails.packageId,
+            packageIdType: typeof state.projectDetails.packageId,
+          });
+          
+          const project = await projectService.createProject(createProjectData);
+          
+          console.log('[UploadWizard] Project created, response:', {
+            id: project.id,
+            package_id: project.package_id,
+            title: project.title,
           });
           
           // Store the backend project ID

@@ -57,8 +57,8 @@ const ClassicTemplate: React.FC<TemplateProps> = ({ invoice, logo }) => {
                 <tr key={item.id}>
                   <td className="py-3 pr-4 font-semibold">{item.description}</td>
                   <td className="py-3 px-4 text-center">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right">${item.unitPrice.toFixed(2)}</td>
-                  <td className="py-3 pl-4 text-right font-semibold">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right">{invoice.currencySymbol || '₹'}{item.unitPrice.toFixed(2)}</td>
+                  <td className="py-3 pl-4 text-right font-semibold">{invoice.currencySymbol || '₹'}{(item.quantity * item.unitPrice).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -69,15 +69,15 @@ const ClassicTemplate: React.FC<TemplateProps> = ({ invoice, logo }) => {
             <div className="w-full max-w-xs space-y-2 text-sm">
                 <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-semibold">${invoice.subtotal.toFixed(2)}</span>
+                    <span className="font-semibold">{invoice.currencySymbol || '₹'}{invoice.subtotal.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax (8%):</span>
-                    <span className="font-semibold">${invoice.tax.toFixed(2)}</span>
+                    <span className="text-gray-600">{invoice.taxLabel || 'Tax'}:</span>
+                    <span className="font-semibold">{invoice.currencySymbol || '₹'}{invoice.tax.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-bold text-base pt-2 border-t-2 border-gray-800 mt-2">
                     <span>Amount Due:</span>
-                    <span>${invoice.total.toFixed(2)}</span>
+                    <span>{invoice.currencySymbol || '₹'}{invoice.total.toFixed(2)}</span>
                 </div>
             </div>
         </section>

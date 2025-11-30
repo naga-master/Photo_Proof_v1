@@ -64,8 +64,8 @@ const ModernTemplate: React.FC<TemplateProps> = ({ invoice, logo, brandColor }) 
                 <tr key={item.id}>
                   <td className="py-3 pr-4 font-medium">{item.description}</td>
                   <td className="py-3 px-4 text-center text-gray-600">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right text-gray-600">${item.unitPrice.toFixed(2)}</td>
-                  <td className="py-3 pl-4 text-right font-medium">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-gray-600">{invoice.currencySymbol || '₹'}{item.unitPrice.toFixed(2)}</td>
+                  <td className="py-3 pl-4 text-right font-medium">{invoice.currencySymbol || '₹'}{(item.quantity * item.unitPrice).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -76,15 +76,15 @@ const ModernTemplate: React.FC<TemplateProps> = ({ invoice, logo, brandColor }) 
             <div className="w-full max-w-xs space-y-2 text-sm">
                 <div className="flex justify-between">
                     <span className="text-gray-500">Subtotal:</span>
-                    <span className="font-medium">${invoice.subtotal.toFixed(2)}</span>
+                    <span className="font-medium">{invoice.currencySymbol || '₹'}{invoice.subtotal.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between">
-                    <span className="text-gray-500">Tax (8%):</span>
-                    <span className="font-medium">${invoice.tax.toFixed(2)}</span>
+                    <span className="text-gray-500">{invoice.taxLabel || 'Tax'}:</span>
+                    <span className="font-medium">{invoice.currencySymbol || '₹'}{invoice.tax.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-bold text-base pt-2 border-t mt-2">
                     <span style={{ color: brandColor }}>Total:</span>
-                    <span style={{ color: brandColor }}>${invoice.total.toFixed(2)}</span>
+                    <span style={{ color: brandColor }}>{invoice.currencySymbol || '₹'}{invoice.total.toFixed(2)}</span>
                 </div>
             </div>
         </section>

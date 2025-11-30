@@ -203,6 +203,9 @@ export interface Invoice {
     notes?: string;
     subtotal: number;
     tax: number;
+    taxRate?: number;
+    taxLabel?: string;
+    currencySymbol?: string;
     total: number;
     status: InvoiceStatus;
     template: InvoiceTemplateId;
@@ -215,6 +218,12 @@ export interface InvoiceTemplate {
     name: string;
     description: string;
     imageUrl: string;
+}
+export interface InvoiceInitialData {
+    client: Client;
+    project: Album;
+    package?: ServicePackage | null;
+    billingConfig?: BillingConfiguration;
 }
 
 export interface ProjectDetails {

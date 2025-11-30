@@ -1308,17 +1308,59 @@ const AppContent: React.FC = () => {
         return newAlbum;
     };
 
-    const handleSaveInvoice = (invoice: Invoice) => {
-        setAllInvoices(prevInvoices => {
-            const index = prevInvoices.findIndex(inv => inv.id === invoice.id);
-            if (index > -1) {
-                const newInvoices = [...prevInvoices];
-                newInvoices[index] = invoice;
-                return newInvoices;
+    const handleSaveInvoice = async (invoice: Invoice) => {
+        try {
+            // Map frontend Invoice to backend CreateInvoiceRequest format
+            const backendData = {
+                client_id: invoice.clientId || '',
+                project_id: invoice.projectId,
+                invoice_date: invoice.invoiceDate,
+                due_date: invoice.dueDate,
+                items: invoice.items.map(item => ({
+                    description: item.description,
+                    quantity: item.quantity,
+                    unit_price: item.unitPrice,
+                })),
+                notes: invoice.notes,
+                template: invoice.template,
+            };
+            
+            console.log('[App] Saving invoice to backend:', backendData);
+            
+            // Check if it's a new invoice (frontend-generated IDs start with 'inv_')
+            const isNew = invoice.id.startsWith('inv_');
+            
+            if (isNew) {
+                const savedInvoice = await invoiceService.createInvoice(backendData);
+                console.log('[App] Invoice created in backend:', savedInvoice);
+                
+                // Update local state with backend response
+                const mappedInvoice = mapInvoiceResponse(savedInvoice);
+                setAllInvoices(prev => [...prev, mappedInvoice]);
+                toast.success(`Invoice ${savedInvoice.invoice_number} saved!`);
+            } else {
+                // Update existing invoice
+                await invoiceService.updateInvoice(invoice.id, backendData);
+                setAllInvoices(prev => prev.map(inv => 
+                    inv.id === invoice.id ? invoice : inv
+                ));
+                toast.success(`Invoice ${invoice.invoiceNumber} updated!`);
             }
-            return [...prevInvoices, invoice];
-        });
-        toast.success(`Invoice ${invoice.invoiceNumber} saved successfully!`);
+        } catch (error: any) {
+            console.error('[App] Failed to save invoice:', error);
+            toast.error(error?.message || 'Failed to save invoice');
+            
+            // Still update local state as fallback
+            setAllInvoices(prevInvoices => {
+                const index = prevInvoices.findIndex(inv => inv.id === invoice.id);
+                if (index > -1) {
+                    const newInvoices = [...prevInvoices];
+                    newInvoices[index] = invoice;
+                    return newInvoices;
+                }
+                return [...prevInvoices, invoice];
+            });
+        }
     };
 
     // Store Handlers

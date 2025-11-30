@@ -24,10 +24,21 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
     const errors = validation.errors;
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setTouched({ ...touched, [e.target.name]: true });
+        const { name, value } = e.target;
+        
+        // Debug logging for package selection
+        if (name === 'packageId') {
+            console.log('[Step1_ProjectSetup] Package selected:', {
+                name,
+                value,
+                packageName: packages.find(p => p.id === value)?.name,
+            });
+        }
+        
+        setTouched({ ...touched, [name]: true });
         dispatch({
             type: 'SET_PROJECT_DETAILS',
-            payload: { [e.target.name]: e.target.value }
+            payload: { [name]: value }
         });
     };
     

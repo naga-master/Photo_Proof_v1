@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import type { Album, Client, Invoice, LayoutId, ServicePackage, InvoiceTemplateId, DashboardView, ProjectDetails, UploadFile, CommunicationSettings } from '../../types';
+import type { Album, Client, Invoice, LayoutId, ServicePackage, InvoiceTemplateId, DashboardView, ProjectDetails, UploadFile, CommunicationSettings, InvoiceInitialData } from '../../types';
 import StudioSidebar from './StudioSidebar';
 import StudioOverview from './StudioOverview';
 import StudioProjects from './StudioProjects';
@@ -78,7 +78,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     const [uploadInitialClientId, setUploadInitialClientId] = useState<string | undefined>();
     const [uploadExistingProjectId, setUploadExistingProjectId] = useState<string | undefined>();
     const [uploadInitialStep, setUploadInitialStep] = useState<number>(0);
-    const [invoiceInitialData, setInvoiceInitialData] = useState<{client: Client, project: Album} | null>(null);
+    const [invoiceInitialData, setInvoiceInitialData] = useState<InvoiceInitialData | null>(null);
     const [editedUploadProject, setEditedUploadProject] = useState<Album | null>(null);
 
     useEffect(() => {
@@ -292,7 +292,12 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     };
     
     const handleCreateInvoiceForProject = (client: Client, project: Album) => {
-        setInvoiceInitialData({client, project});
+        // Normalize ID comparison (handle string/number mismatch)
+        const pkg = project.packageId 
+            ? packages.find(p => String(p.id) === String(project.packageId)) 
+            : null;
+        const billingConfig = JSON.parse(localStorage.getItem('billingConfig') || '{}');
+        setInvoiceInitialData({client, project, package: pkg, billingConfig});
         setView('invoiceEditor');
     };
 
@@ -302,7 +307,24 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
             toast.error('Client not found for this project');
             return;
         }
-        setInvoiceInitialData({client, project: album});
+        
+        // Normalize ID comparison (handle string/number mismatch)
+        const pkg = album.packageId 
+            ? packages.find(p => String(p.id) === String(album.packageId)) 
+            : null;
+        const billingConfig = JSON.parse(localStorage.getItem('billingConfig') || '{}');
+        
+        console.log('[handleGenerateInvoice] Invoice data:', {
+            albumId: album.id,
+            albumPackageId: album.packageId,
+            albumPackageIdType: typeof album.packageId,
+            albumPrice: album.price,
+            availablePackages: packages.map(p => ({ id: p.id, idType: typeof p.id, name: p.name, price: p.price })),
+            foundPackage: pkg ? { id: pkg.id, name: pkg.name, price: pkg.price } : null,
+            billingConfig: billingConfig?.tax,
+        });
+        
+        setInvoiceInitialData({client, project: album, package: pkg, billingConfig});
         setView('invoiceEditor');
     };
 
