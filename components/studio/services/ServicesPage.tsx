@@ -3,6 +3,7 @@ import type { ServicePackage } from '../../../types';
 import { PlusIcon, CheckIcon, PhotoIcon, BookOpenIcon, ClockIcon, ArchiveBoxIcon } from '../../icons';
 import { servicePackageService } from '../../../services/servicePackageService';
 import type { ServicePackage as ApiServicePackage } from '../../../services/servicePackageService';
+import { packageTypeService } from '../../../services/packageTypeService';
 import DynamicPackageForm from './DynamicPackageForm';
 
 interface ServicesPageProps {
@@ -106,7 +107,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
 
     const handleFormSubmit = async (values: Record<string, any>) => {
         try {
-            const { package_type_id, name, category, description, price, features, ...otherValues } = values;
+            const { package_type_id, name, description, price, features, ...otherValues } = values;
 
             // Parse features from textarea
             const featuresList = features
@@ -138,9 +139,24 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                 }
             });
 
+            // Derive category from package type
+            let categoryName = 'Custom';
+            if (package_type_id && package_type_id !== 'custom-package') {
+                try {
+                    const packageType = await packageTypeService.getPackageType(package_type_id);
+                    categoryName = packageType.display_name || 'Custom';
+                } catch {
+                    // Fallback to formatting the ID
+                    categoryName = package_type_id
+                        .split('-')
+                        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                }
+            }
+
             const packageData = {
                 name,
-                category: category || 'Custom',
+                category: categoryName,
                 description: description || '',
                 price: Number(price),
                 package_type_id,
