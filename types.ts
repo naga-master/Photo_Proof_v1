@@ -221,8 +221,7 @@ export interface ProjectDetails {
     title?: string;
     clientId?: string;
     newClientDetails?: {
-        firstName?: string;
-        lastName?: string;
+        name?: string;
         email?: string;
         phone?: string;
         profilePicture?: string;

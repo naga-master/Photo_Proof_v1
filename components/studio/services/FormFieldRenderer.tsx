@@ -1,5 +1,13 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { FieldSchema } from '../../../services/packageTypeService';
+
+const formatPhone = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
 
 interface FormFieldRendererProps {
   field: FieldSchema;
@@ -39,6 +47,22 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
             required={field.required}
             disabled={disabled}
             className={inputClasses}
+          />
+        );
+
+      case 'phone':
+        return (
+          <input
+            type="tel"
+            name={field.name}
+            inputMode="tel"
+            value={value || ''}
+            onChange={(e) => handleChange(formatPhone(e.target.value))}
+            placeholder={field.placeholder || '(555) 123-4567'}
+            required={field.required}
+            disabled={disabled}
+            className={inputClasses}
+            autoComplete="tel"
           />
         );
 

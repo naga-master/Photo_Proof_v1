@@ -130,7 +130,7 @@ export default function SendContractModal({
               disabled={sending}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {sending ? 'Sending...' : 'Send Contract'}
+              {sending ? 'Sending...' : 'Send to Client'}
             </button>
           </div>
         </form>

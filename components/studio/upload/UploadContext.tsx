@@ -97,8 +97,7 @@ const uploadReducer = (state: UploadState, action: UploadAction): UploadState =>
         // Initialize newClientDetails when switching to 'new' client
         if (updatedDetails.clientId === 'new' && !updatedDetails.newClientDetails) {
             updatedDetails.newClientDetails = {
-                firstName: '',
-                lastName: '',
+                name: '',
                 email: '',
                 phone: '',
                 profilePicture: ''

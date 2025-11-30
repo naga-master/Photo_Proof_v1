@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserRole } from '../types';
+import { PasswordInput } from './common/PasswordInput';
 
 interface LoginPageProps {
   onLogin: (role: UserRole) => void;
@@ -75,12 +76,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <label className="block text-sm font-medium text-gray-300" htmlFor="password">
               Password
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full bg-gray-800/50 border border-gray-600 rounded-lg shadow-sm py-2.5 px-3 text-white focus-visible:border-studio-primary focus-visible:ring-2 focus-visible:ring-studio-primary/20 outline-none transition-all duration-fast sm:text-sm"
+              className="mt-1 bg-gray-800/50 border border-gray-600 rounded-lg shadow-sm py-2.5 px-3 text-white focus-visible:border-studio-primary focus-visible:ring-2 focus-visible:ring-studio-primary/20 outline-none transition-all duration-fast sm:text-sm"
               required
             />
           </div>
@@ -91,7 +91,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-gray-900 bg-white hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-white outline-none transition-all duration-fast disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </div>
         </form>

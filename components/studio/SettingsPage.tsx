@@ -247,7 +247,7 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
                 
                 <div className="p-6 space-y-6 overflow-y-auto flex-1">
                     {/* Basic Info */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Full Name</label>
                             <input 

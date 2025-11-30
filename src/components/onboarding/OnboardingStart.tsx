@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import OnboardingLayout from './OnboardingLayout';
 import { onboardingService } from '../../services/onboarding/onboardingService';
+import { PasswordInput } from '../../../components/common/PasswordInput';
 
 interface OnboardingStartProps {
   onComplete: (studioId: string, subdomain: string) => void;
@@ -178,14 +179,15 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Password <span className="text-red-500">*</span>
           </label>
-          <input
-            type="password"
+          <PasswordInput
+            id="onboarding-password"
             required
             minLength={8}
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
             placeholder="At least 8 characters"
+            autoComplete="new-password"
           />
           <p className="mt-1 text-xs text-slate-500">
             Must be at least 8 characters long

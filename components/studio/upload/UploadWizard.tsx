@@ -124,7 +124,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
         try {
           // Toast removed - widget shows upload progress
           const newClient = await clientService.createClient({
-            name: `${state.projectDetails.newClientDetails.firstName} ${state.projectDetails.newClientDetails.lastName}`,
+            name: state.projectDetails.newClientDetails.name || '',
             email: state.projectDetails.newClientDetails.email,
             phone: state.projectDetails.newClientDetails.phone,
           });
@@ -247,8 +247,8 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
             }
           } else if (state.projectDetails.newClientDetails) {
             // Use new client details
-            clientName = `${state.projectDetails.newClientDetails.firstName} ${state.projectDetails.newClientDetails.lastName}`;
-            clientEmail = state.projectDetails.newClientDetails.email;
+            clientName = state.projectDetails.newClientDetails.name || '';
+            clientEmail = state.projectDetails.newClientDetails.email || '';
             clientPhone = state.projectDetails.newClientDetails.phone || '';
           }
           

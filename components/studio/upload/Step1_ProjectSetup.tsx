@@ -187,35 +187,20 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
                                 </label>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-gray-500">
-                                    First Name <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="firstName" 
-                                    value={projectDetails.newClientDetails?.firstName || ''} 
-                                    onChange={handleNewClientChange}
-                                    onBlur={() => setTouched({ ...touched, firstName: true })}
-                                    className={newClientInputClasses('firstName')} 
-                                />
-                                <ErrorMessage fieldName="firstName" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500">
-                                    Last Name <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="lastName" 
-                                    value={projectDetails.newClientDetails?.lastName || ''} 
-                                    onChange={handleNewClientChange}
-                                    onBlur={() => setTouched({ ...touched, lastName: true })}
-                                    className={newClientInputClasses('lastName')} 
-                                />
-                                <ErrorMessage fieldName="lastName" />
-                            </div>
+                        <div>
+                            <label className="text-xs text-gray-500">
+                                Full Name <span className="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="name" 
+                                value={projectDetails.newClientDetails?.name || ''} 
+                                onChange={handleNewClientChange}
+                                onBlur={() => setTouched({ ...touched, name: true })}
+                                className={newClientInputClasses('name')} 
+                                placeholder="John Smith"
+                            />
+                            <ErrorMessage fieldName="name" />
                         </div>
                         <div>
                              <label className="text-xs text-gray-500">

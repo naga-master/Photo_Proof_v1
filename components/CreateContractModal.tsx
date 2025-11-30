@@ -29,6 +29,38 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
     expires_days: 30,
   });
 
+  // Field-level validation
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateField = (name: string, value: any): string => {
+    switch (name) {
+      case 'client_id':
+        return !value ? 'Please select a client' : '';
+      case 'title':
+        return !value?.trim() ? 'Contract title is required' : '';
+      case 'content':
+        return !value?.trim() ? 'Contract content is required' : '';
+      case 'recipient_email':
+        if (formData.send_immediately && !value?.trim()) return 'Email is required';
+        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const handleBlur = (name: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, formData[name as keyof typeof formData]);
+    setFieldErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const getInputClasses = (fieldName: string) => {
+    const hasError = touched[fieldName] && fieldErrors[fieldName];
+    return `w-full px-4 py-2 border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`;
+  };
+
   // Load clients when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -168,7 +200,8 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
               <select
                 value={formData.client_id}
                 onChange={(e) => handleClientChange(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={() => handleBlur('client_id')}
+                className={getInputClasses('client_id')}
                 required
               >
                 <option value="">-- Select a client --</option>
@@ -178,6 +211,9 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
                   </option>
                 ))}
               </select>
+            )}
+            {touched.client_id && fieldErrors.client_id && (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.client_id}</p>
             )}
           </div>
 
@@ -190,10 +226,14 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onBlur={() => handleBlur('title')}
               placeholder="e.g., Wedding Photography Contract - John & Jane"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={getInputClasses('title')}
               required
             />
+            {touched.title && fieldErrors.title && (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.title}</p>
+            )}
           </div>
 
           {/* Contract Content */}
@@ -204,14 +244,19 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
             <textarea
               value={formData.content}
               onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+              onBlur={() => handleBlur('content')}
               placeholder="Enter the contract terms and conditions here..."
               rows={10}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+              className={`${getInputClasses('content')} font-mono text-sm`}
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              You can format this text as needed. The client will sign this contract digitally.
-            </p>
+            {touched.content && fieldErrors.content ? (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.content}</p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                You can format this text as needed. The client will sign this contract digitally.
+              </p>
+            )}
           </div>
 
           {/* Expiration Days */}
@@ -268,10 +313,14 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
                 type="email"
                 value={formData.recipient_email}
                 onChange={(e) => setFormData(prev => ({ ...prev, recipient_email: e.target.value }))}
+                onBlur={() => handleBlur('recipient_email')}
                 placeholder="client@example.com"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={getInputClasses('recipient_email')}
                 required={formData.send_immediately}
               />
+              {touched.recipient_email && fieldErrors.recipient_email && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.recipient_email}</p>
+              )}
             </div>
           )}
 

@@ -14,8 +14,7 @@ export interface Step1ValidationData {
   packageId?: string;
   layout?: string;
   newClientDetails?: {
-    firstName?: string;
-    lastName?: string;
+    name?: string;
     email?: string;
     phone?: string;
   };
@@ -52,12 +51,8 @@ export const validateStep1 = (data: Step1ValidationData): ValidationResult => {
 
   // If creating new client, validate new client details
   if (data.clientId === 'new') {
-    if (!data.newClientDetails?.firstName || data.newClientDetails.firstName.trim() === '') {
-      errors.firstName = 'First name is required';
-    }
-
-    if (!data.newClientDetails?.lastName || data.newClientDetails.lastName.trim() === '') {
-      errors.lastName = 'Last name is required';
+    if (!data.newClientDetails?.name || data.newClientDetails.name.trim() === '') {
+      errors.name = 'Full name is required';
     }
 
     if (!data.newClientDetails?.email || data.newClientDetails.email.trim() === '') {
