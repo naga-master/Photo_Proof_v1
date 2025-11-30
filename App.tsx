@@ -307,10 +307,6 @@ const AppContent: React.FC = () => {
         };
 
         initializeUploadManager();
-
-        return () => {
-            mounted = false;
-        };
     }, []);
 
     // Sync authentication state with AuthContext
@@ -1410,7 +1406,17 @@ const AppContent: React.FC = () => {
                 if (!currentAlbum) {
                     component = <AlbumsPage albums={visibleAlbums} onSelectAlbum={handleSelectAlbum} />;
                 } else {
-                    component = <CoverPage onOpenGallery={handleOpenGalleryFromCover} album={currentAlbum} />;
+                    component = (
+                        <CoverPage 
+                            album={currentAlbum}
+                            onOpenGallery={handleOpenGalleryFromCover}
+                            onNavigate={handleNavigate}
+                            onBack={handleBack}
+                            onLogout={handleLogout}
+                            cartCount={cart.length}
+                            userRole={userRole}
+                        />
+                    );
                 }
                 break;
             case 'albums':
@@ -1707,7 +1713,7 @@ const AppContent: React.FC = () => {
                 </div>
             )}
             
-            {page !== 'login' && page !== 'dashboard' && (
+            {page !== 'login' && page !== 'dashboard' && page !== 'cover' && (
                 <TopNavBar 
                     onNavigate={handleNavigate} 
                     cartCount={cart.length} 

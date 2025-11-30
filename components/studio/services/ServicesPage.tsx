@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { ServicePackage } from '../../../types';
-import { PlusIcon, CheckIcon } from '../../icons';
+import { PlusIcon, CheckIcon, PhotoIcon, BookOpenIcon, ClockIcon, ArchiveBoxIcon } from '../../icons';
 import { servicePackageService } from '../../../services/servicePackageService';
 import type { ServicePackage as ApiServicePackage } from '../../../services/servicePackageService';
 import DynamicPackageForm from './DynamicPackageForm';
-import RestrictionBadges from './RestrictionBadges';
 
 interface ServicesPageProps {
     packages?: ServicePackage[];
@@ -243,43 +242,73 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                 {pkgs.map(pkg => (
                                     <div
                                         key={pkg.id}
-                                        className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col hover:shadow-md transition-shadow"
+                                        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
                                     >
+                                        {/* Top Section: Package Info + Features */}
                                         <div className="p-6">
-                                            <h3 className="text-xl font-bold text-gray-900">{pkg.name}</h3>
-                                            <p className="text-sm text-gray-500 mt-1 h-10 overflow-hidden">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <h3 className="text-xl font-bold text-gray-900">{pkg.name}</h3>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mb-4 line-clamp-2">
                                                 {pkg.description}
                                             </p>
-                                            <p className="text-4xl font-extrabold text-gray-900 my-4">
-                                                {formatCurrency(pkg.price)}
-                                            </p>
-                                            <RestrictionBadges
-                                                restrictions={pkg.restrictions}
-                                                lifecycleConfig={pkg.lifecycleConfig}
-                                            />
-                                        </div>
-                                        <div className="p-6 bg-gray-50 flex-1">
-                                            <p className="text-sm font-semibold uppercase tracking-wider text-gray-600 mb-3">
-                                                What's included
-                                            </p>
+                                            
+                                            <p className="text-sm font-semibold text-gray-600 mb-3">What's included</p>
                                             <ul className="space-y-2">
-                                                {pkg.features.slice(0, 5).map((feature, i) => (
-                                                    <li key={i} className="flex items-start">
-                                                        <CheckIcon className="w-4 h-4 text-green-500 mt-1 mr-3 flex-shrink-0" />
-                                                        <span className="text-sm text-gray-700">{feature.name}</span>
+                                                {pkg.features.slice(0, 4).map((feature, i) => (
+                                                    <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                                        <CheckIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                                                        <span>{feature.name}</span>
                                                     </li>
                                                 ))}
-                                                {pkg.features.length > 5 && (
-                                                    <li className="text-sm text-gray-500 italic">
-                                                        +{pkg.features.length - 5} more features
+                                                {pkg.features.length > 4 && (
+                                                    <li className="text-sm text-gray-500 italic pl-7">
+                                                        +{pkg.features.length - 4} more
                                                     </li>
                                                 )}
                                             </ul>
                                         </div>
-                                        <div className="p-4 bg-white border-t">
+                                        
+                                        {/* Nested Card: Pricing + Limits */}
+                                        <div className="mx-4 mb-4 bg-gray-50 border border-gray-200 rounded-xl p-5">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <p className="text-3xl font-extrabold text-gray-900">
+                                                    {formatCurrency(pkg.price)}
+                                                </p>
+                                                <span className="w-4 h-4 rounded-full border-4 border-indigo-500"></span>
+                                            </div>
+                                            
+                                            <div className="space-y-2 text-sm text-gray-600">
+                                                {pkg.restrictions?.photo_selection_limit && (
+                                                    <div className="flex items-center gap-2">
+                                                        <PhotoIcon className="w-4 h-4 text-gray-400" />
+                                                        <span>{pkg.restrictions.photo_selection_limit} Photos</span>
+                                                    </div>
+                                                )}
+                                                {pkg.restrictions?.album_enabled && (
+                                                    <div className="flex items-center gap-2">
+                                                        <BookOpenIcon className="w-4 h-4 text-gray-400" />
+                                                        <span>{pkg.restrictions.album_quality || 'Standard'} Album</span>
+                                                    </div>
+                                                )}
+                                                {pkg.lifecycleConfig?.editing_period_months && (
+                                                    <div className="flex items-center gap-2">
+                                                        <ClockIcon className="w-4 h-4 text-gray-400" />
+                                                        <span>{pkg.lifecycleConfig.editing_period_months} months editing</span>
+                                                    </div>
+                                                )}
+                                                {pkg.lifecycleConfig?.retention_years && (
+                                                    <div className="flex items-center gap-2">
+                                                        <ArchiveBoxIcon className="w-4 h-4 text-gray-400" />
+                                                        <span>{pkg.lifecycleConfig.retention_years} year retention</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* CTA Button */}
                                             <button
                                                 onClick={() => handleEdit(pkg)}
-                                                className="w-full text-center text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+                                                className="w-full mt-4 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
                                             >
                                                 Edit Package
                                             </button>
