@@ -94,7 +94,7 @@ export default function SendContractModal({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="client@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-2 py-2 input-focus-filled"
               required
               disabled={sending}
             />

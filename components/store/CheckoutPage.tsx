@@ -21,7 +21,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onConfirm, onBack }) => {
         cardCvc: '',
     });
 
-    const inputClasses = "mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3";
+    const inputClasses = "mt-1 block w-full text-gray-900 input-focus-filled py-2.5 px-3";
 
     const handleChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, [field]: e.target.value }));

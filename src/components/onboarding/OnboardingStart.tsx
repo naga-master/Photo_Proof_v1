@@ -95,7 +95,7 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
             required
             value={formData.studio_name}
             onChange={(e) => setFormData({ ...formData, studio_name: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full px-2 py-2 input-focus"
             placeholder="e.g., Awesome Photography Studio"
           />
         </div>
@@ -114,7 +114,7 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
                 const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
                 setFormData({ ...formData, subdomain: value });
               }}
-              className="flex-1 px-4 py-2 border border-slate-300 rounded-l-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="flex-1 px-2 py-2 input-focus"
               placeholder="mystudio"
               minLength={3}
               maxLength={50}
@@ -154,7 +154,7 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
             required
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full px-2 py-2 input-focus"
             placeholder="you@yourstudio.com"
           />
         </div>
@@ -169,7 +169,7 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
             required
             value={formData.owner_name}
             onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full px-2 py-2 input-focus"
             placeholder="John Doe"
           />
         </div>
@@ -185,7 +185,7 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
             minLength={8}
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full px-2 py-2 input-focus"
             placeholder="At least 8 characters"
             autoComplete="new-password"
           />
@@ -203,7 +203,7 @@ export default function OnboardingStart({ onComplete }: OnboardingStartProps) {
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full px-2 py-2 input-focus"
             placeholder="+1 (555) 123-4567"
           />
         </div>

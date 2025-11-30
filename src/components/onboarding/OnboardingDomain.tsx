@@ -86,7 +86,7 @@ export default function OnboardingDomain({ studioId, subdomain, onComplete, onBa
                   type="text"
                   value={customDomain}
                   onChange={(e) => setCustomDomain(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-2 py-2 input-focus"
                   placeholder="photos.yourstudio.com"
                 />
               </div>

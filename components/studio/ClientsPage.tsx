@@ -316,19 +316,19 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                            <input type="text" name="name" value={clientData.name} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500 focus:border-transparent" required />
+                            <input type="text" name="name" value={clientData.name} onChange={handleChange} className="w-full px-2 py-3 text-base sm:text-sm min-h-[44px] input-focus-filled" required />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                            <input type="email" name="email" value={clientData.email} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500 focus:border-transparent" required />
+                            <input type="email" name="email" value={clientData.email} onChange={handleChange} className="w-full px-2 py-3 text-base sm:text-sm min-h-[44px] input-focus-filled" required />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                            <input type="tel" name="phone" value={clientData.phone} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500 focus:border-transparent" />
+                            <input type="tel" name="phone" value={clientData.phone} onChange={handleChange} className="w-full px-2 py-3 text-base sm:text-sm min-h-[44px] input-focus-filled" />
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                            <textarea name="address" value={clientData.address} onChange={handleChange} rows={3} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"></textarea>
+                            <textarea name="address" value={clientData.address} onChange={handleChange} rows={3} className="w-full px-2 py-3 text-base sm:text-sm input-focus-filled"></textarea>
                         </div>
                         
                         <div className="pt-2">

@@ -116,6 +116,54 @@
 }
 
 /* ========================================
+   INPUT FOCUS STYLES
+   Material Design - bottom border only
+   ======================================== */
+
+/* Material Design style - bottom border focus */
+.input-focus {
+  border: none;
+  border-bottom: 2px solid #d1d5db;
+  border-radius: 0;
+  background-color: transparent;
+  transition: border-color 0.2s ease;
+}
+
+.input-focus:focus, .input-focus:focus-visible {
+  outline: none;
+  border-bottom-color: var(--brand-primary, #6366f1);
+}
+
+/* Filled variant - with background (for cards/modals) */
+.input-focus-filled {
+  border: none;
+  border-bottom: 2px solid #d1d5db;
+  border-radius: 4px 4px 0 0;
+  background-color: #f9fafb;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.input-focus-filled:focus, .input-focus-filled:focus-visible {
+  outline: none;
+  border-bottom-color: var(--brand-primary, #6366f1);
+  background-color: #f3f4f6;
+}
+
+/* For dark backgrounds */
+.input-focus-dark {
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  background-color: transparent;
+  transition: border-color 0.2s ease;
+}
+
+.input-focus-dark:focus, .input-focus-dark:focus-visible {
+  outline: none;
+  border-bottom-color: rgba(255, 255, 255, 0.8);
+}
+
+/* ========================================
    DESIGN SYSTEM UTILITY CLASSES
    ======================================== */
 

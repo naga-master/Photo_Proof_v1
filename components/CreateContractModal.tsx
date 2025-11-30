@@ -58,7 +58,7 @@ export default function CreateContractModal({ isOpen, onClose, onSuccess }: Crea
 
   const getInputClasses = (fieldName: string) => {
     const hasError = touched[fieldName] && fieldErrors[fieldName];
-    return `w-full px-4 py-2 border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`;
+    return `w-full px-2 py-2 input-focus-filled ${hasError ? 'border-b-red-500' : ''}`;
   };
 
   // Load clients when modal opens

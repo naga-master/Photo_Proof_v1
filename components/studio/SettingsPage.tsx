@@ -196,7 +196,7 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
 
     if (!isOpen) return null;
 
-    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
+    const inputClasses = "mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2";
 
     const permissionGroups = {
         'Projects': [
@@ -605,7 +605,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
         alert('Settings saved successfully!');
     };
 
-    const inputClasses = "mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
+    const inputClasses = "mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2";
     const tabButtonClasses = (tab: SettingsTab) => `px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center ${activeTab === tab ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-200'}`;
 
     const renderContent = () => {
@@ -649,7 +649,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                         value={localStudioDescription}
                                         onChange={(e) => setLocalStudioDescription(e.target.value)}
                                         rows={6}
-                                        className="mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
+                                        className="mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2"
                                         placeholder="Tell clients about your studio, your experience, your passion for photography..."
                                     />
                                 </div>
@@ -696,7 +696,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                     <select
                                         value={localDefaultTemplateId}
                                         onChange={(e) => setLocalDefaultTemplateId(e.target.value as InvoiceTemplateId)}
-                                        className="mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm"
+                                        className="mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2"
                                     >
                                         <option value="modern">Modern</option>
                                         <option value="classic">Classic</option>

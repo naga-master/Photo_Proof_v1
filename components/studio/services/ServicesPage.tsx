@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { ServicePackage } from '../../../types';
-import { PlusIcon, CheckIcon, PhotoIcon, BookOpenIcon, ClockIcon, ArchiveBoxIcon } from '../../icons';
+import { PlusIcon, CheckIcon, PhotoIcon, BookOpenIcon, ClockIcon, ArchiveBoxIcon, TrashIcon } from '../../icons';
 import { servicePackageService } from '../../../services/servicePackageService';
 import type { ServicePackage as ApiServicePackage } from '../../../services/servicePackageService';
 import { packageTypeService } from '../../../services/packageTypeService';
@@ -14,6 +14,7 @@ interface ServicesPageProps {
 const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onUpdatePackages }) => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [editingPackage, setEditingPackage] = useState<ServicePackage | null>(null);
+    const [deletingPackage, setDeletingPackage] = useState<ServicePackage | null>(null);
     const [packages, setPackages] = useState<ServicePackage[]>(propPackages || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -103,6 +104,26 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
     const handleEdit = (pkg: ServicePackage) => {
         setEditingPackage(pkg);
         setModalOpen(true);
+    };
+
+    const handleDelete = (pkg: ServicePackage) => {
+        setDeletingPackage(pkg);
+    };
+
+    const confirmDelete = async () => {
+        if (!deletingPackage) return;
+        try {
+            await servicePackageService.deleteServicePackage(deletingPackage.id);
+            const newPackages = packages.filter(p => p.id !== deletingPackage.id);
+            setPackages(newPackages);
+            if (onUpdatePackages) {
+                onUpdatePackages(newPackages);
+            }
+            setDeletingPackage(null);
+        } catch (err) {
+            console.error('Failed to delete package:', err);
+            alert('Failed to delete package. Please try again.');
+        }
     };
 
     const handleFormSubmit = async (values: Record<string, any>) => {
@@ -208,6 +229,91 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
         }).format(amount);
     };
 
+    // Generate display features from restrictions and lifecycle config
+    const generateDisplayFeatures = (
+        restrictions: Record<string, any> | null,
+        lifecycleConfig: Record<string, any> | null
+    ): { name: string }[] => {
+        const features: { name: string }[] = [];
+        if (!restrictions) return features;
+
+        // Map field names to readable labels
+        const fieldLabels: Record<string, (v: any) => string | null> = {
+            // Product photography
+            product_count: (v) => `${v} Products`,
+            images_per_product: (v) => `${v} Images/Product`,
+            turnaround_days: (v) => `${v} Day Turnaround`,
+            revision_rounds: (v) => `${v} Revisions`,
+            // Maternity/Newborn
+            maternity_sessions: (v) => `${v} Maternity Sessions`,
+            newborn_sessions: (v) => `${v} Newborn Sessions`,
+            // Event
+            coverage_hours: (v) => `${v} Hours Coverage`,
+            photographer_count: (v) => `${v} Photographers`,
+            // Corporate
+            headshot_count: (v) => `${v} Headshots`,
+            session_hours: (v) => `${v} Hour Session`,
+            // Portrait
+            outfit_changes: (v) => `${v} Outfit Changes`,
+            backdrop_options: (v) => `${v} Backdrop Options`,
+            // Wedding
+            candid_photo_count: (v) => `${v} Candid Photos`,
+            candid_video_count: (v) => `${v} Candid Videos`,
+            traditional_photo_count: (v) => `${v} Traditional Photos`,
+            traditional_video_count: (v) => `${v} Traditional Videos`,
+            frame_count: (v) => `${v} Framed Photos`,
+            album_pages: (v) => `${v} Album Pages`,
+            // Common prints
+            print_count: (v) => `${v} Prints`,
+            // Boolean features
+            video_support_enabled: (v) => v ? 'Video Support' : null,
+            reception_coverage: (v) => v ? 'Reception Coverage' : null,
+            wedding_coverage: (v) => v ? 'Wedding Ceremony' : null,
+            prewedding_coverage: (v) => v ? 'Pre-Wedding Shoot' : null,
+            outdoor_coverage: (v) => v ? 'Outdoor Shoot' : null,
+            whatsapp_integration: (v) => v ? 'WhatsApp Notifications' : null,
+            three_sixty_view: (v) => v ? '360° View' : null,
+            drone_coverage: (v) => v ? 'Drone Coverage' : null,
+            same_day_preview: (v) => v ? 'Same-Day Preview' : null,
+            live_streaming: (v) => v ? 'Live Streaming' : null,
+            photo_booth: (v) => v ? 'Photo Booth' : null,
+            video_highlights: (v) => v ? 'Video Highlights' : null,
+            high_res_access: (v) => v ? 'High Resolution Files' : null,
+            team_photo: (v) => v ? 'Team Photo' : null,
+            onsite_enabled: (v) => v ? 'On-site Service' : null,
+            studio_enabled: (v) => v ? 'Studio Session' : null,
+            wardrobe_access: (v) => v ? 'Wardrobe Access' : null,
+            props_included: (v) => v ? 'Props Included' : null,
+            family_photos: (v) => v ? 'Family Photos' : null,
+            milestone_sessions: (v) => v ? 'Milestone Sessions' : null,
+            pendrive_enabled: (v) => v ? 'Pendrive Included' : null,
+            dvd_enabled: (v) => v ? 'DVD Included' : null,
+            model_mannequin: (v) => v ? 'Model/Mannequin' : null,
+            outdoor_session: (v) => v ? 'Outdoor Session' : null,
+            home_session: (v) => v ? 'Home Session' : null,
+            digital_files_all: (v) => v ? 'All Digital Files' : null,
+            // Select fields with values
+            retouching_level: (v) => v ? `${v.charAt(0).toUpperCase() + v.slice(1)} Retouching` : null,
+            usage_rights: (v) => v ? `${v.charAt(0).toUpperCase() + v.slice(1)} Usage Rights` : null,
+            customer_support: (v) => v ? `${v === '24x7' ? '24/7' : v.replace('_', ' ')} Support` : null,
+        };
+
+        Object.entries(restrictions).forEach(([key, value]) => {
+            // Skip null, undefined, empty string, false, and 0 values
+            if (value === null || value === undefined || value === '' || value === false || value === 0) {
+                return;
+            }
+            if (fieldLabels[key]) {
+                const label = fieldLabels[key](value);
+                if (label) {
+                    features.push({ name: label });
+                }
+            }
+        });
+
+        return features;
+    };
+
     return (
         <div className="p-8 animate-fade-in">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -270,19 +376,22 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                             </p>
                                             
                                             <p className="text-sm font-semibold text-gray-600 mb-3">What's included</p>
-                                            <ul className="space-y-2">
-                                                {pkg.features.slice(0, 4).map((feature, i) => (
-                                                    <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                                                        <CheckIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-                                                        <span>{feature.name}</span>
-                                                    </li>
-                                                ))}
-                                                {pkg.features.length > 4 && (
-                                                    <li className="text-sm text-gray-500 italic pl-7">
-                                                        +{pkg.features.length - 4} more
-                                                    </li>
-                                                )}
-                                            </ul>
+                                            {(() => {
+                                                const allFeatures = [
+                                                    ...pkg.features,
+                                                    ...generateDisplayFeatures(pkg.restrictions, pkg.lifecycleConfig)
+                                                ];
+                                                return (
+                                                    <ul className="space-y-2">
+                                                        {allFeatures.map((feature, i) => (
+                                                            <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                                                <CheckIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                                                                <span>{feature.name}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                );
+                                            })()}
                                         </div>
                                         
                                         {/* Nested Card: Pricing + Limits */}
@@ -321,13 +430,22 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                                 )}
                                             </div>
                                             
-                                            {/* CTA Button */}
-                                            <button
-                                                onClick={() => handleEdit(pkg)}
-                                                className="w-full mt-4 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
-                                            >
-                                                Edit Package
-                                            </button>
+                                            {/* Action Buttons */}
+                                            <div className="flex gap-2 mt-4">
+                                                <button
+                                                    onClick={() => handleEdit(pkg)}
+                                                    className="flex-1 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
+                                                >
+                                                    Edit Package
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(pkg)}
+                                                    className="px-4 py-3 bg-white border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Package"
+                                                >
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -359,6 +477,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                         </div>
                         <div className="p-6 overflow-y-auto flex-1">
                             <DynamicPackageForm
+                                key={editingPackage?.id || 'new-package'}
                                 packageTypeId={editingPackage?.packageTypeId}
                                 initialValues={editingPackage ? extractFormValues(editingPackage) : {}}
                                 onSubmit={handleFormSubmit}
@@ -369,6 +488,38 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                 submitLabel={editingPackage ? 'Update Package' : 'Create Package'}
                                 isEditMode={!!editingPackage}
                             />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingPackage && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+                    onClick={() => setDeletingPackage(null)}
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 className="text-lg font-semibold text-gray-900">Delete Package?</h3>
+                        <p className="mt-2 text-gray-600">
+                            Are you sure you want to delete "{deletingPackage.name}"? This action cannot be undone.
+                        </p>
+                        <div className="mt-6 flex gap-3 justify-end">
+                            <button
+                                onClick={() => setDeletingPackage(null)}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                            >
+                                Delete
+                            </button>
                         </div>
                     </div>
                 </div>

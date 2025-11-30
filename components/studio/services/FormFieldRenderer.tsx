@@ -24,9 +24,9 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   error,
   disabled = false,
 }) => {
-  const inputClasses = `mt-1 block w-full bg-white text-gray-900 border ${
-    error ? 'border-red-500' : 'border-gray-300'
-  } rounded-md shadow-sm focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed`;
+  const inputClasses = `mt-1 block w-full text-gray-900 ${
+    error ? 'border-b-red-500' : ''
+  } input-focus sm:text-sm px-1 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed`;
 
   const labelClasses = `block text-sm font-medium text-gray-700 ${field.required ? 'after:content-["*"] after:ml-0.5 after:text-red-500' : ''}`;
 

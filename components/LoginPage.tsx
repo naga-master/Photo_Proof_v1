@@ -68,7 +68,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="your.email@example.com"
-              className="mt-1 block w-full bg-gray-800/50 border border-gray-600 rounded-lg shadow-sm py-2.5 px-3 text-white placeholder-gray-500 focus-visible:border-studio-primary focus-visible:ring-2 focus-visible:ring-studio-primary/20 outline-none transition-all duration-fast sm:text-sm"
+              className="mt-1 block w-full bg-gray-800/50 py-2.5 px-3 text-white placeholder-gray-500 input-focus-dark sm:text-sm"
               required
             />
           </div>
@@ -80,7 +80,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 bg-gray-800/50 border border-gray-600 rounded-lg shadow-sm py-2.5 px-3 text-white focus-visible:border-studio-primary focus-visible:ring-2 focus-visible:ring-studio-primary/20 outline-none transition-all duration-fast sm:text-sm"
+              className="mt-1 bg-gray-800/50 py-2.5 px-3 text-white input-focus-dark sm:text-sm"
               required
             />
           </div>

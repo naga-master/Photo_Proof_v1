@@ -34,13 +34,22 @@ const DynamicPackageForm: React.FC<DynamicPackageFormProps> = ({
       loadSchema(packageTypeId);
     } else {
       setSchema(null);
+      // Clear form when no package type (creating new)
+      if (!isEditMode) {
+        setFormValues({});
+      }
     }
-  }, [packageTypeId]);
+  }, [packageTypeId, isEditMode]);
 
   // Initialize form values from initial values
   useEffect(() => {
     setFormValues(initialValues);
   }, [initialValues]);
+  
+  // Clear errors when form values change significantly
+  useEffect(() => {
+    setErrors({});
+  }, [packageTypeId]);
 
   const loadSchema = async (typeId: string) => {
     try {

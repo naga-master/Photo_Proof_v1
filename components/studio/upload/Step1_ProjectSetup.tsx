@@ -88,17 +88,17 @@ const Step1_ProjectSetup: React.FC<Step1ProjectSetupProps> = ({ clients, package
     }, [packages]);
 
     const inputClasses = (fieldName: string) => {
-        const baseClasses = "mt-1 block w-full bg-white text-gray-900 rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm";
+        const baseClasses = "mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2";
         const hasError = touched[fieldName] && errors[fieldName];
-        const borderClass = hasError ? "border-red-500 focus-visible:border-red-500" : "border-gray-300 focus-visible:border-gray-500";
-        return `${baseClasses} ${borderClass}`;
+        const errorClass = hasError ? "border-b-red-500" : "";
+        return `${baseClasses} ${errorClass}`;
     };
     
     const newClientInputClasses = (fieldName: string) => {
-        const baseClasses = "mt-1 block w-full bg-gray-50/50 text-gray-800 rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors sm:text-sm placeholder-gray-400";
+        const baseClasses = "mt-1 block w-full text-gray-800 input-focus sm:text-sm placeholder-gray-400 px-1 py-2";
         const hasError = touched[fieldName] && errors[fieldName];
-        const borderClass = hasError ? "border-red-500 focus-visible:border-red-500" : "border-gray-300 focus-visible:border-gray-500";
-        return `${baseClasses} ${borderClass}`;
+        const errorClass = hasError ? "border-b-red-500" : "";
+        return `${baseClasses} ${errorClass}`;
     };
 
     const ErrorMessage: React.FC<{ fieldName: string }> = ({ fieldName }) => {
