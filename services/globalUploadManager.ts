@@ -19,7 +19,6 @@ import { uploadQueueManager, type QueuedUpload } from './uploadQueueManager';
 import { uploadStateStore, type StoredUpload, type UploadSession } from './uploadStateStore';
 import { networkDetectionService } from './networkDetectionService';
 import { notificationService } from './notificationService';
-import { uploadHistoryStore } from './uploadHistoryStore';
 import ApiNotificationService from './apiNotificationService';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -175,6 +174,16 @@ class GlobalUploadManager {
             
             this.updateSessionProgress(session);
             this.notifySubscribers();
+            
+            // Debug: Log completion check
+            console.log(`[GlobalUploadManager] 📊 Session progress:`, {
+              sessionId: session.sessionId,
+              completedFiles: session.completedFiles,
+              failedFiles: session.failedFiles,
+              totalFiles: session.totalFiles,
+              sum: session.completedFiles + session.failedFiles,
+              isComplete: session.completedFiles + session.failedFiles >= session.totalFiles,
+            });
             
             if (session.completedFiles + session.failedFiles >= session.totalFiles) {
               console.log(`[GlobalUploadManager] ✅ Session ${session.sessionId} complete!`);
@@ -1135,30 +1144,35 @@ class GlobalUploadManager {
       this.state.isPaused = false;
     }
 
-    // Save to upload history for NotificationsPage (local backup)
-    console.log('[GlobalUploadManager] Saving to upload history...');
-    uploadHistoryStore.addEntry({
-      projectId: projectId || '',
-      projectName: projectName || 'Untitled Project',
+    // Create upload notification in backend (syncs across browsers/devices)
+    console.log('[GlobalUploadManager] 📬 Creating upload notification:', {
+      projectId,
+      projectIdType: typeof projectId,
+      projectName,
+      status,
       totalFiles,
       completedFiles,
       failedFiles,
-      status,
     });
-    console.log('[GlobalUploadManager] Upload history entry added');
-
-    // Create upload notification in backend (persistent storage)
+    
     if (projectId) {
+      const numericProjectId = parseInt(projectId, 10);
+      console.log('[GlobalUploadManager] 📬 Calling API with projectId:', numericProjectId);
+      
       ApiNotificationService.createUploadNotification({
-        projectId: parseInt(projectId, 10),
+        projectId: numericProjectId,
         projectName: projectName || 'Untitled Project',
         status,
         totalFiles,
         completedFiles,
         failedFiles,
+      }).then(() => {
+        console.log('[GlobalUploadManager] ✅ Upload notification created successfully');
       }).catch(error => {
-        console.error('[GlobalUploadManager] Failed to create API notification:', error);
+        console.error('[GlobalUploadManager] ❌ Failed to create API notification:', error);
       });
+    } else {
+      console.warn('[GlobalUploadManager] ⚠️ No projectId, skipping notification');
     }
 
     // Show browser notification

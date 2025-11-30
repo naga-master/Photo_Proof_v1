@@ -17,6 +17,7 @@ import { chunkedUploadService } from './chunkedUploadService';
 import { imageOptimizationConfig } from './imageOptimizationConfigLoader';
 import { uploadHistoryStore } from './uploadHistoryStore';
 import { notificationService } from './notificationService';
+import ApiNotificationService from './apiNotificationService';
 import { v4 as uuidv4 } from 'uuid';
 
 // ============================================================================
@@ -616,7 +617,7 @@ class UnifiedUploadManager {
             session.failedFiles === 0 ? 'success' :
             session.completedFiles > 0 ? 'partial' : 'failed';
 
-        // Save to history
+        // Save to history (localStorage - for local UI)
         uploadHistoryStore.addEntry({
             projectId: session.projectId,
             projectName: session.projectName,
@@ -625,6 +626,31 @@ class UnifiedUploadManager {
             failedFiles: session.failedFiles,
             status,
         });
+
+        // Create upload notification in backend (syncs across browsers/devices)
+        const numericProjectId = parseInt(session.projectId, 10);
+        if (!isNaN(numericProjectId)) {
+            console.log('[UnifiedUploadManager] 📬 Creating API notification:', {
+                projectId: numericProjectId,
+                projectName: session.projectName,
+                status,
+            });
+            
+            ApiNotificationService.createUploadNotification({
+                projectId: numericProjectId,
+                projectName: session.projectName || 'Untitled Project',
+                status,
+                totalFiles: session.totalFiles,
+                completedFiles: session.completedFiles,
+                failedFiles: session.failedFiles,
+            }).then(() => {
+                console.log('[UnifiedUploadManager] ✅ API notification created');
+            }).catch(error => {
+                console.error('[UnifiedUploadManager] ❌ Failed to create API notification:', error);
+            });
+        } else {
+            console.warn('[UnifiedUploadManager] ⚠️ Invalid projectId, skipping API notification:', session.projectId);
+        }
 
         // Browser notification
         notificationService.notifyUploadComplete(
