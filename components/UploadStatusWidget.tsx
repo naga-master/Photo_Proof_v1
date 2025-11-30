@@ -178,19 +178,22 @@ const SessionWidget: React.FC<SessionWidgetProps> = ({
         </div>
         
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-white/20 rounded transition-colors"
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isExpanded ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              )}
-            </svg>
-          </button>
+          {/* Only show expand button if upload in progress OR there are failed files to show */}
+          {(!isComplete || session.failedFiles > 0) && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              title={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isExpanded ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                )}
+              </svg>
+            </button>
+          )}
           {!isComplete && (
             <button
               onClick={toggleMinimize}
