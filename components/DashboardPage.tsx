@@ -11,6 +11,7 @@ interface DashboardPageProps {
   onUpdateClients: (clients: Client[]) => void;
   onUpdatePackages: (packages: ServicePackage[]) => void;
   onSaveInvoice: (invoice: Invoice) => void;
+  onDeleteInvoice: (invoiceId: string) => Promise<void>;
   onLogout: () => void;
   onNavigateToGallery: (album: Album) => void;
   branding: {

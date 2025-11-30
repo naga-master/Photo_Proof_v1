@@ -1,15 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Invoice, Client } from '../../../types';
-import { PlusIcon } from '../../icons';
+import { PlusIcon, TrashIcon } from '../../icons';
 
 interface InvoicesPageProps {
   invoices: Invoice[];
   clients: Client[];
   onNewInvoice: () => void;
   onPreviewInvoice: (invoice: Invoice) => void;
+  onDeleteInvoice?: (invoiceId: string) => Promise<void>;
 }
 
-const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInvoice, onPreviewInvoice }) => {
+const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInvoice, onPreviewInvoice, onDeleteInvoice }) => {
+  const [deleteModalInvoice, setDeleteModalInvoice] = useState<Invoice | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (e: React.MouseEvent, invoice: Invoice) => {
+    e.stopPropagation();
+    setDeleteModalInvoice(invoice);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModalInvoice || !onDeleteInvoice) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteInvoice(deleteModalInvoice.id);
+      setDeleteModalInvoice(null);
+    } catch (error) {
+      console.error('Failed to delete invoice:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getClientName = (clientId?: number) => {
     if (!clientId) return 'N/A';
@@ -63,7 +84,18 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={(e) => { e.stopPropagation(); onPreviewInvoice(invoice); }} className="text-sky-600 hover:text-sky-800">View</button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={(e) => { e.stopPropagation(); onPreviewInvoice(invoice); }} className="text-sky-600 hover:text-sky-800">View</button>
+                      {onDeleteInvoice && (
+                        <button 
+                          onClick={(e) => handleDeleteClick(e, invoice)} 
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Delete invoice"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -111,21 +143,58 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
                 </div>
               </div>
               
-              <div className="pt-3 border-t border-slate-100">
+              <div className="pt-3 border-t border-slate-100 flex gap-2">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     onPreviewInvoice(invoice);
                   }}
-                  className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors min-h-[44px]"
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors min-h-[44px]"
                 >
                   View Invoice
                 </button>
+                {onDeleteInvoice && (
+                  <button 
+                    onClick={(e) => handleDeleteClick(e, invoice)}
+                    className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors min-h-[44px]"
+                    title="Delete invoice"
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setDeleteModalInvoice(null)}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Delete Invoice</h3>
+            <p className="text-slate-600 mb-6">
+              Are you sure you want to delete invoice <span className="font-semibold">{deleteModalInvoice.invoiceNumber}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setDeleteModalInvoice(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

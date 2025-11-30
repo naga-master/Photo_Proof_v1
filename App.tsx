@@ -1366,6 +1366,18 @@ const AppContent: React.FC = () => {
         }
     };
 
+    const handleDeleteInvoice = async (invoiceId: string) => {
+        try {
+            await invoiceService.deleteInvoice(invoiceId);
+            setAllInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+            toast.success('Invoice deleted successfully');
+        } catch (error: any) {
+            console.error('[App] Failed to delete invoice:', error);
+            toast.error(error?.message || 'Failed to delete invoice');
+            throw error; // Re-throw to let the calling component know it failed
+        }
+    };
+
     // Store Handlers
     const handleSelectProduct = (product: Product) => {
         setCurrentProduct(product);
@@ -1521,6 +1533,7 @@ const AppContent: React.FC = () => {
                     onUpdateClients={setAllClients}
                     onUpdatePackages={setAllPackages}
                     onSaveInvoice={handleSaveInvoice}
+                    onDeleteInvoice={handleDeleteInvoice}
                     onLogout={handleLogout}
                     onNavigateToGallery={handleNavigateToGallery}
                     branding={{
