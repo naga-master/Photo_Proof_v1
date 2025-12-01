@@ -8,6 +8,8 @@ interface StudioTheme {
   brand_color: string;
   typography: string;
   custom_css: string | null;
+  studio_photo: string | null;
+  studio_description: string | null;
 }
 
 interface StudioThemeContextType {

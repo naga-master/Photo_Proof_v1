@@ -11,9 +11,8 @@ import { projectService } from '../../services/projectService';
 import { clientService } from '../../services/clientService';
 import { servicePackageService } from '../../services/servicePackageService';
 import { invoiceService } from '../../services/invoiceService';
-import { photoService } from '../../services/photoService';
 import { mapProjectToAlbum, mapClientResponse, mapServicePackageResponse, mapInvoiceResponse } from '../../lib/mappers';
-import type { Album, Photo } from '../../types';
+import type { Album } from '../../types';
 
 export function useAppData() {
     const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
@@ -41,31 +40,11 @@ export function useAppData() {
             const projects = projectsResponse.projects || [];
             const albums: Album[] = projects.map(mapProjectToAlbum);
 
-            // Load photos for each project
-            const albumsWithPhotos = await Promise.all(
-                albums.map(async (album) => {
-                    try {
-                        const photosResponse = await photoService.getProjectPhotos(album.id);
-                        const photos: Photo[] = photosResponse.photos.map((p: any) => ({
-                            id: String(p.id),
-                            src: p.src && !p.src.startsWith('http')
-                                ? `http://localhost:8000${p.src}`
-                                : p.src || '',
-                            alt: p.original_filename || p.alt || 'Photo',
-                            width: p.width || 0,
-                            height: p.height || 0,
-                            comments: []
-                        }));
-                        return { ...album, photos };
-                    } catch (photoError) {
-                        console.error(`[useAppData] Error loading photos for project ${album.id}:`, photoError);
-                        return { ...album, photos: [] };
-                    }
-                })
-            );
+            // PERFORMANCE: Don't load photos on startup - lazy load when user navigates to project
+            const albumsWithPhotos = albums.map(album => ({ ...album, photos: [] }));
 
             setAlbums(albumsWithPhotos);
-            console.log(`[useAppData] Loaded ${albumsWithPhotos.length} projects`);
+            console.log(`[useAppData] Loaded ${albumsWithPhotos.length} projects (photos will load on-demand)`);
 
             // Load clients
             try {

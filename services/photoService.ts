@@ -304,20 +304,6 @@ class PhotoService {
   }
 
   /**
-   * Toggle favorite status
-   */
-  async toggleFavorite(photoId: string): Promise<Photo> {
-    return apiClient.post<Photo>(`/v2/photos/${photoId}/favorite`);
-  }
-
-  /**
-   * Toggle selection status
-   */
-  async toggleSelection(photoId: string): Promise<Photo> {
-    return apiClient.post<Photo>(`/v2/photos/${photoId}/select`);
-  }
-
-  /**
    * Bulk update photos (favorite/select multiple)
    */
   async bulkUpdatePhotos(photoIds: string[], updates: UpdatePhotoRequest): Promise<void> {

@@ -364,10 +364,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                 {pkgs.map(pkg => (
                                     <div
                                         key={pkg.id}
-                                        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
+                                        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
                                     >
                                         {/* Top Section: Package Info + Features */}
-                                        <div className="p-6">
+                                        <div className="p-6 flex-1">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <h3 className="text-xl font-bold text-gray-900">{pkg.name}</h3>
                                             </div>
@@ -396,11 +396,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                         
                                         {/* Nested Card: Pricing + Limits */}
                                         <div className="mx-4 mb-4 bg-gray-50 border border-gray-200 rounded-xl p-5">
-                                            <div className="flex items-center justify-between mb-4">
+                                            <div className="mb-4">
                                                 <p className="text-3xl font-extrabold text-gray-900">
                                                     {formatCurrency(pkg.price)}
                                                 </p>
-                                                <span className="w-4 h-4 rounded-full border-4 border-indigo-500"></span>
                                             </div>
                                             
                                             <div className="space-y-2 text-sm text-gray-600">

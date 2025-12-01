@@ -373,6 +373,18 @@ const AppContent: React.FC = () => {
       whatsapp: { phoneNumberId: '', businessAccountId: '', accessToken: '' }
     });
 
+    // Sync branding state with theme from StudioThemeProvider
+    useEffect(() => {
+        if (theme) {
+            console.log('[App] Syncing branding state with theme:', theme.name);
+            if (theme.logo_url) setLogo(theme.logo_url);
+            if (theme.brand_color) setBrandColor(theme.brand_color);
+            if (theme.typography) setTypography(theme.typography);
+            if (theme.studio_photo) setStudioPhoto(theme.studio_photo);
+            if (theme.studio_description) setStudioDescription(theme.studio_description);
+        }
+    }, [theme]);
+
     // Load initial data from API when user is authenticated
     useEffect(() => {
         const loadInitialData = async () => {
@@ -393,53 +405,12 @@ const AppContent: React.FC = () => {
                 const projects = projectsResponse.projects || [];
                 const albums: Album[] = projects.map(mapProjectToAlbum);
                 
-                // Load photos for each project/album
-                console.log(`[App] Loading photos for ${albums.length} projects...`);
-                const albumsWithPhotos = await Promise.all(
-                    albums.map(async (album) => {
-                        try {
-                            const photosResponse = await photoService.getProjectPhotos(album.id);
-                            console.log(`[App] Photo response for project ${album.id}:`, photosResponse.photos[0]);
-                            const photos: Photo[] = photosResponse.photos.map((p: any) => ({
-                                id: String(p.id),
-                                src: p.src && !p.src.startsWith('http')
-                                    ? `http://localhost:8000${p.src}`
-                                    : p.src || '',
-                                alt: p.original_filename || p.alt || 'Photo',
-                                width: p.width || 0,
-                                height: p.height || 0,
-                                comments: []
-                            }));
-                            console.log(`[App] Loaded ${photos.length} photos for project ${album.id}`);
-                            console.log(`[App] First photo mapped:`, photos[0]);
-                            
-                            // TEMPORARILY DISABLED: Comment loading causes 403 errors and logout
-                            // TODO: Fix backend comment endpoint authentication
-                            // Load comments for each photo
-                            // console.log(`[App] Loading comments for ${photos.length} photos in project ${album.id}...`);
-                            // const photosWithComments = await Promise.all(
-                            //     photos.map(async (photo) => {
-                            //         try {
-                            //             const comments = await CommentService.getPhotoComments(Number(photo.id));
-                            //             return { ...photo, comments };
-                            //         } catch (error) {
-                            //             console.error(`[App] Failed to load comments for photo ${photo.id}:`, error);
-                            //             return photo;
-                            //         }
-                            //     })
-                            // );
-                            
-                            return { ...album, photos }; // photosWithComments
-                        } catch (photoError) {
-                            console.error(`[App] Error loading photos for project ${album.id}:`, photoError);
-                            return { ...album, photos: [] };
-                        }
-                    })
-                );
+                // PERFORMANCE: Don't load photos on startup - lazy load when user navigates to project
+                // Photos will be loaded via loadPhotos() when user opens a project/gallery
+                const albumsWithPhotos = albums.map(album => ({ ...album, photos: [] }));
                 
                 setAllAlbums(albumsWithPhotos);
-                console.log(`[App] Loaded ${albumsWithPhotos.length} projects/albums with photos from API`);
-                console.log('[App] First album with photos:', albumsWithPhotos[0]);
+                console.log(`[App] Loaded ${albumsWithPhotos.length} projects (photos will load on-demand)`);
 
                 // Load clients from API
                 try {
@@ -1014,17 +985,30 @@ const AppContent: React.FC = () => {
               console.log('[App] ✅ Stored in IndexedDB');
             }
             
-            // Map backend photos to frontend Photo type
-            const photos = response.photos.map((photo: any) => ({
-                id: String(photo.id),
-                src: photo.src && !photo.src.startsWith('http')
-                    ? `http://localhost:8000${photo.src}`
-                    : photo.src || '',
-                alt: photo.original_filename || photo.alt,
-                width: photo.width || 800,
-                height: photo.height || 1200,
-                comments: []
-            }));
+            // Map backend photos to frontend Photo type and update selections/favorites
+            const newSelections: string[] = [];
+            const newFavorites: string[] = [];
+            
+            const photos = response.photos.map((photo: any) => {
+                const photoId = String(photo.id);
+                if (photo.is_selected) newSelections.push(photoId);
+                if (photo.is_favorite) newFavorites.push(photoId);
+                
+                return {
+                    id: photoId,
+                    src: photo.src && !photo.src.startsWith('http')
+                        ? `http://localhost:8000${photo.src}`
+                        : photo.src || '',
+                    alt: photo.original_filename || photo.alt,
+                    width: photo.width || 800,
+                    height: photo.height || 1200,
+                    comments: []
+                };
+            });
+            
+            // Update selections and favorites
+            setSelections(prev => [...new Set([...prev, ...newSelections])]);
+            setFavorites(prev => [...new Set([...prev, ...newFavorites])]);
             
             // Load comments for each photo
             console.log('[App] Loading comments for folder photos...');
@@ -1059,17 +1043,30 @@ const AppContent: React.FC = () => {
             const response = await photoService.getProjectPhotos(currentAlbum!.id);
             console.log('[App] Fetched photos:', response);
             
-            // Map backend photos to frontend Photo type
-            const photos = response.photos.map((photo: any) => ({
-                id: String(photo.id),
-                src: photo.src && !photo.src.startsWith('http')
-                    ? `http://localhost:8000${photo.src}`
-                    : photo.src || '',
-                alt: photo.original_filename || photo.alt,
-                width: photo.width || 800,
-                height: photo.height || 1200,
-                comments: []
-            }));
+            // Map backend photos to frontend Photo type and update selections/favorites
+            const newSelections: string[] = [];
+            const newFavorites: string[] = [];
+            
+            const photos = response.photos.map((photo: any) => {
+                const photoId = String(photo.id);
+                if (photo.is_selected) newSelections.push(photoId);
+                if (photo.is_favorite) newFavorites.push(photoId);
+                
+                return {
+                    id: photoId,
+                    src: photo.src && !photo.src.startsWith('http')
+                        ? `http://localhost:8000${photo.src}`
+                        : photo.src || '',
+                    alt: photo.original_filename || photo.alt,
+                    width: photo.width || 800,
+                    height: photo.height || 1200,
+                    comments: []
+                };
+            });
+            
+            // Update selections and favorites
+            setSelections(prev => [...new Set([...prev, ...newSelections])]);
+            setFavorites(prev => [...new Set([...prev, ...newFavorites])]);
             
             // Load comments for each photo
             console.log('[App] Loading comments for all photos...');
@@ -1118,12 +1115,8 @@ const AppContent: React.FC = () => {
                 isFavorited ? prev.filter(id => id !== photoId) : [...prev, photoId]
             );
             
-            // Call backend API
-            if (isFavorited) {
-                await photoService.updatePhoto(photoId, { is_favorite: false });
-            } else {
-                await photoService.updatePhoto(photoId, { is_favorite: true });
-            }
+            // Call backend API - PATCH photo with is_favorite
+            await photoService.updatePhoto(photoId, { is_favorite: !isFavorited });
             
             console.log(`[App] ✅ Toggled favorite for photo ${photoId}: ${!isFavorited}`);
             
@@ -1156,12 +1149,8 @@ const AppContent: React.FC = () => {
                 isSelected ? prev.filter(id => id !== photoId) : [...prev, photoId]
             );
             
-            // Call backend API
-            if (isSelected) {
-                await photoService.updatePhoto(photoId, { is_selected: false });
-            } else {
-                await photoService.updatePhoto(photoId, { is_selected: true });
-            }
+            // Call backend API - PATCH photo with is_selected
+            await photoService.updatePhoto(photoId, { is_selected: !isSelected });
             
             console.log(`[App] ✅ Toggled selection for photo ${photoId}: ${!isSelected}`);
             

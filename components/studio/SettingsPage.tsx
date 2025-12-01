@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { CommunicationSettings, LayoutId, InvoiceTemplateId, StudioUser, StudioUserRole, StudioUserPermissions, BillingConfiguration, TaxConfiguration, PaymentMethodConfig, PaymentMethod } from '../../types';
 import { PlusIcon, CheckIcon, XCircleIcon, EyeIcon } from '../icons';
+import { useStudioTheme } from '../../src/providers/StudioThemeProvider';
 
 interface SettingsPageProps {
     settings: CommunicationSettings;
@@ -363,12 +364,14 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
 };
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings, branding, onUpdateBranding }) => {
+    const { refreshTheme } = useStudioTheme();
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [localSettings, setLocalSettings] = useState(settings);
     const [localStudioPhoto, setLocalStudioPhoto] = useState(branding.studioPhoto);
     const [localStudioDescription, setLocalStudioDescription] = useState(branding.studioDescription);
     const [localStudioDisplayImage, setLocalStudioDisplayImage] = useState(branding.studioDisplayImage);
     const [localDefaultTemplateId, setLocalDefaultTemplateId] = useState(branding.defaultTemplateId);
+    const [isSaving, setIsSaving] = useState(false);
     
     // Studio users state - Initialize with sample data
     const [studioUsers, setStudioUsers] = useState<StudioUser[]>([
@@ -591,18 +594,62 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
         }
     };
 
-    const handleSaveChanges = () => {
-        onUpdateSettings(localSettings);
-        onUpdateBranding.setStudioPhoto(localStudioPhoto);
-        onUpdateBranding.setStudioDescription(localStudioDescription);
-        onUpdateBranding.setStudioDisplayImage(localStudioDisplayImage);
-        onUpdateBranding.setDefaultTemplateId(localDefaultTemplateId);
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
         
-        // Save billing configuration (would integrate with backend in production)
-        console.log('Billing Configuration:', billingConfig);
-        localStorage.setItem('billingConfig', JSON.stringify(billingConfig));
-        
-        alert('Settings saved successfully!');
+        try {
+            // Save branding to backend API
+            const brandingPayload: Record<string, any> = {};
+            
+            // Only include fields that have values
+            if (localStudioPhoto) {
+                brandingPayload.studio_photo = localStudioPhoto;
+            }
+            if (localStudioDescription) {
+                brandingPayload.studio_description = localStudioDescription;
+            }
+            
+            // Make API call to save branding
+            if (Object.keys(brandingPayload).length > 0) {
+                console.log('[Settings] Saving branding to API:', Object.keys(brandingPayload));
+                const response = await fetch('/api/studio/branding', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                    },
+                    body: JSON.stringify(brandingPayload),
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to save branding');
+                }
+                
+                console.log('[Settings] Branding saved successfully');
+                
+                // Refresh theme to update across the app
+                await refreshTheme();
+            }
+            
+            // Update local state
+            onUpdateSettings(localSettings);
+            onUpdateBranding.setStudioPhoto(localStudioPhoto);
+            onUpdateBranding.setStudioDescription(localStudioDescription);
+            onUpdateBranding.setStudioDisplayImage(localStudioDisplayImage);
+            onUpdateBranding.setDefaultTemplateId(localDefaultTemplateId);
+            
+            // Save billing configuration (would integrate with backend in production)
+            console.log('Billing Configuration:', billingConfig);
+            localStorage.setItem('billingConfig', JSON.stringify(billingConfig));
+            
+            alert('Settings saved successfully!');
+        } catch (error) {
+            console.error('[Settings] Failed to save:', error);
+            alert(`Failed to save settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const inputClasses = "mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2";
@@ -734,7 +781,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">"From" Email Address</label>
-                                    <input type="email" name="fromAddress" value={localSettings.email.fromAddress} onChange={handleEmailChange} className={inputClasses} placeholder="studio@thescobeys.com" />
+                                    <input type="email" name="fromAddress" value={localSettings.email.fromAddress} onChange={handleEmailChange} className={inputClasses} placeholder="studio@example.com" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Email Provider API Key</label>
@@ -1334,8 +1381,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Studio Settings</h1>
                     <p className="mt-1 text-sm sm:text-base text-gray-600">Configure your studio preferences and integrations.</p>
                 </div>
-                <button onClick={handleSaveChanges} className="w-full sm:w-auto px-5 py-3 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover min-h-[44px]">
-                    Save Changes
+                <button 
+                    onClick={handleSaveChanges} 
+                    disabled={isSaving}
+                    className="w-full sm:w-auto px-5 py-3 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
             </header>
 

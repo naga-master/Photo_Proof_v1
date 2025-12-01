@@ -18,6 +18,8 @@ export interface OnboardingBrandingData {
   studio_id: string;
   brand_color: string;
   typography: string;
+  studio_photo?: string | null;  // Base64 data URL for About page image
+  logo?: string | null;          // Base64 data URL for studio logo
   custom_css?: string;
 }
 

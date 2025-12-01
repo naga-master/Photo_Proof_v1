@@ -19,7 +19,10 @@ const PhotoSelectionPage: React.FC<PhotoSelectionPageProps> = ({ albums, current
     ? galleryPhotos 
     : currentAlbum?.photos || currentAlbum?.folders?.flatMap(f => f.photos) || albums.flatMap(album => album.photos || []);
   
-  const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
+  // Initialize with photos that are already selected (from API data)
+  const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>(() => 
+    allPhotos.filter((p: any) => p.is_selected)
+  );
 
   const togglePhotoSelection = (photo: Photo) => {
     setSelectedPhotos(prev => 
@@ -47,6 +50,7 @@ const PhotoSelectionPage: React.FC<PhotoSelectionPageProps> = ({ albums, current
           photos={allPhotos} 
           onImageClick={(index) => togglePhotoSelection(allPhotos[index])} 
           selections={selectedPhotos.map(p => p.id)}
+          favorites={allPhotos.filter((p: any) => p.is_favorite).map(p => p.id)}
           isSelectable={true}
         />
       </main>

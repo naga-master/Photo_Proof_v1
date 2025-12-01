@@ -5,11 +5,14 @@ import {
 } from '../icons';
 import { uploadHistoryStore } from '../../services/uploadHistoryStore';
 import ApiNotificationService from '../../services/apiNotificationService';
+import { useStudioTheme } from '../../src/providers/StudioThemeProvider';
+import { StudioLogo, StudioLogoCollapsed } from '../StudioLogo';
 
 type IconProps = React.SVGProps<SVGSVGElement>;
+// Swatches icon - for Layouts & Brand (color palette / branding)
 const LayoutIcon = (props: IconProps) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c.251.023.501.05.75.082a2.25 2.25 0 012.25 2.25v2.812c0 .65-.25 1.25-.689 1.691L12 14.5M9.75 3.104a2.25 2.25 0 00-2.25 2.25v2.812c0 .65.25 1.25.689 1.691L12 14.5m-2.25-5.656a2.25 2.25 0 002.25 2.25h1.5a2.25 2.25 0 002.25-2.25V6.082a2.25 2.25 0 00-2.25-2.25h-1.5a2.25 2.25 0 00-2.25 2.25v2.812zM3 14.25a2.25 2.25 0 002.25 2.25h13.5a2.25 2.25 0 002.25-2.25V12a2.25 2.25 0 00-2.25-2.25H5.25a2.25 2.25 0 00-2.25 2.25v2.25z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z" />
     </svg>
 );
 const ServicesIcon = (props: IconProps) => (
@@ -39,6 +42,7 @@ interface StudioSidebarProps {
 }
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, isMobileOpen, setMobileOpen, isCollapsed, onToggleCollapse }) => {
+  const { theme } = useStudioTheme();
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [apiUnreadCount, setApiUnreadCount] = useState(0);
   const [uploadUnreadCount, setUploadUnreadCount] = useState(0);
@@ -139,7 +143,18 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
       `}>
         {/* Header / Logo */}
         <div className={`px-4 py-5 border-b border-gray-200 transition-all duration-300`}>
-          <h1 className="text-lg font-semibold tracking-wide truncate text-center text-gray-900">{isCollapsed ? 'NPL' : "NAPSTER's Photo Lab"}</h1>
+          {isCollapsed ? (
+            <div className="flex justify-center">
+              <StudioLogoCollapsed />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <StudioLogo size="md" />
+              <h1 className="text-sm font-semibold tracking-wide truncate text-center text-gray-900 mt-2 max-w-full">
+                {theme?.name || 'Studio'}
+              </h1>
+            </div>
+          )}
           <p className={`text-[11px] text-gray-400 mt-1 uppercase tracking-wider text-center ${isCollapsed ? 'lg:hidden' : ''}`}>STUDIO</p>
         </div>
 
