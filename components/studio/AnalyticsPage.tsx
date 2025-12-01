@@ -217,78 +217,78 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
-            <header className="mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Analytics & Insights</h1>
-                <p className="mt-1 text-sm sm:text-base text-gray-600">Track your studio's performance and growth metrics.</p>
+            <header className="mb-6">
+                <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Analytics & Insights</h1>
+                <p className="mt-1 text-sm text-gray-500">Track your studio's performance and growth metrics.</p>
             </header>
 
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {/* Revenue Card */}
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-4 sm:p-6 text-white">
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs sm:text-sm font-semibold uppercase opacity-90">Total Revenue</h3>
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 className="text-xs font-medium uppercase tracking-wide opacity-90">Total Revenue</h3>
+                        <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mb-1">{formatCurrency(analyticsData.revenue.totalRevenue)}</p>
-                    <p className="text-xs sm:text-sm opacity-90">
+                    <p className="text-2xl font-bold mb-1">{formatCurrency(analyticsData.revenue.totalRevenue)}</p>
+                    <p className="text-xs opacity-90">
                         {formatCurrency(analyticsData.revenue.monthlyRevenue)} this month
-                        <span className={`ml-2 ${analyticsData.revenue.revenueGrowth >= 0 ? 'text-green-200' : 'text-red-200'}`}>
+                        <span className={`ml-2 ${analyticsData.revenue.revenueGrowth >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
                             {formatPercentage(analyticsData.revenue.revenueGrowth)}
                         </span>
                     </p>
                 </div>
 
                 {/* Projects Card */}
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-4 sm:p-6 text-white">
+                <div className="bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl p-5 text-white">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs sm:text-sm font-semibold uppercase opacity-90">Projects</h3>
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 className="text-xs font-medium uppercase tracking-wide opacity-90">Projects</h3>
+                        <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mb-1">{analyticsData.projects.totalProjects}</p>
-                    <p className="text-xs sm:text-sm opacity-90">
+                    <p className="text-2xl font-bold mb-1">{analyticsData.projects.totalProjects}</p>
+                    <p className="text-xs opacity-90">
                         {analyticsData.projects.completedProjects} completed • {analyticsData.projects.ongoingProjects} ongoing
                     </p>
                 </div>
 
                 {/* Clients Card */}
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-4 sm:p-6 text-white">
+                <div className="bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl p-5 text-white">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs sm:text-sm font-semibold uppercase opacity-90">Clients</h3>
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 className="text-xs font-medium uppercase tracking-wide opacity-90">Clients</h3>
+                        <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mb-1">{analyticsData.clients.totalClients}</p>
-                    <p className="text-xs sm:text-sm opacity-90">
+                    <p className="text-2xl font-bold mb-1">{analyticsData.clients.totalClients}</p>
+                    <p className="text-xs opacity-90">
                         {analyticsData.clients.activeClients} active • {analyticsData.clients.clientRetentionRate.toFixed(0)}% retention
                     </p>
                 </div>
 
                 {/* Invoices Card */}
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-4 sm:p-6 text-white">
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-5 text-white">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs sm:text-sm font-semibold uppercase opacity-90">Invoices</h3>
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 className="text-xs font-medium uppercase tracking-wide opacity-90">Invoices</h3>
+                        <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mb-1">{analyticsData.invoices.totalInvoices}</p>
-                    <p className="text-xs sm:text-sm opacity-90">
+                    <p className="text-2xl font-bold mb-1">{analyticsData.invoices.totalInvoices}</p>
+                    <p className="text-xs opacity-90">
                         {analyticsData.invoices.paidInvoices} paid • {analyticsData.invoices.overdueInvoices} overdue
                     </p>
                 </div>
             </div>
 
             {/* Charts and Details Row */}
-            <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 mb-6 sm:mb-8">
+            <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 mb-6">
                 {/* Revenue Breakdown */}
-                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
+                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                             <div>
@@ -328,31 +328,31 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
                 </div>
 
                 {/* Payment Status */}
-                <div className="bg-white border border-gray-200 rounded-lg shadow p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Payment Status</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Status</h3>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
                             <div>
-                                <p className="text-sm font-medium text-green-900">Paid</p>
-                                <p className="text-xs text-green-700">{analyticsData.invoices.paidInvoices} invoices</p>
+                                <p className="text-sm font-medium text-emerald-900">Paid</p>
+                                <p className="text-xs text-emerald-700">{analyticsData.invoices.paidInvoices} invoices</p>
                             </div>
-                            <p className="text-xl font-bold text-green-600">{formatCurrency(analyticsData.invoices.totalPaid)}</p>
+                            <p className="text-lg font-bold text-emerald-600">{formatCurrency(analyticsData.invoices.totalPaid)}</p>
                         </div>
                         
-                        <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-lg">
                             <div>
-                                <p className="text-sm font-medium text-yellow-900">Pending</p>
-                                <p className="text-xs text-yellow-700">{analyticsData.invoices.pendingInvoices} invoices</p>
+                                <p className="text-sm font-medium text-amber-900">Pending</p>
+                                <p className="text-xs text-amber-700">{analyticsData.invoices.pendingInvoices} invoices</p>
                             </div>
-                            <p className="text-xl font-bold text-yellow-600">{formatCurrency(analyticsData.invoices.totalPending)}</p>
+                            <p className="text-lg font-bold text-amber-600">{formatCurrency(analyticsData.invoices.totalPending)}</p>
                         </div>
                         
-                        <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
                             <div>
                                 <p className="text-sm font-medium text-red-900">Overdue</p>
                                 <p className="text-xs text-red-700">{analyticsData.invoices.overdueInvoices} invoices</p>
                             </div>
-                            <p className="text-xl font-bold text-red-600">{formatCurrency(analyticsData.invoices.totalOverdue)}</p>
+                            <p className="text-lg font-bold text-red-600">{formatCurrency(analyticsData.invoices.totalOverdue)}</p>
                         </div>
                         
                         <div className="pt-3 border-t">
@@ -366,25 +366,25 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
             {/* Bottom Row */}
             <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
                 {/* Top Clients */}
-                <div className="bg-white border border-gray-200 rounded-lg shadow p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Top Clients by Revenue</h3>
-                    <div className="space-y-3">
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Clients by Revenue</h3>
+                    <div className="space-y-2">
                         {analyticsData.topClients.map((client, index) => (
-                            <div key={client.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <div key={client.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-all duration-fast">
                                 <div className="flex-shrink-0 w-8 text-center">
                                     <span className="text-lg font-bold text-gray-400">#{index + 1}</span>
                                 </div>
                                 <img 
                                     src={client.avatarUrl || `https://i.pravatar.cc/150?u=${client.email}`} 
                                     alt={client.name}
-                                    className="w-12 h-12 rounded-full object-cover"
+                                    className="w-10 h-10 rounded-full object-cover"
                                 />
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-900">{client.name}</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 truncate">{client.name}</p>
                                     <p className="text-sm text-gray-500">{client.projectCount} projects</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold text-green-600">{formatCurrency(client.totalSpent)}</p>
+                                    <p className="font-bold text-emerald-600">{formatCurrency(client.totalSpent)}</p>
                                 </div>
                             </div>
                         ))}
@@ -395,9 +395,9 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
                 </div>
 
                 {/* Package Performance */}
-                <div className="bg-white border border-gray-200 rounded-lg shadow p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Package Performance</h3>
-                    <div className="space-y-3">
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Package Performance</h3>
+                    <div className="space-y-4">
                         {analyticsData.packagePerformance.map((pkg, index) => (
                             <div key={pkg.packageId} className="space-y-2">
                                 <div className="flex items-center justify-between">
@@ -406,13 +406,13 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
                                         <p className="text-sm text-gray-500">{pkg.bookings} bookings</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-blue-600">{formatCurrency(pkg.revenue)}</p>
+                                        <p className="font-bold text-sky-600">{formatCurrency(pkg.revenue)}</p>
                                         <p className="text-xs text-gray-500">{pkg.popularity.toFixed(1)}% share</p>
                                     </div>
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="w-full bg-gray-100 rounded-full h-2">
                                     <div 
-                                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all"
+                                        className="bg-gradient-to-r from-sky-500 to-sky-600 h-2 rounded-full transition-all"
                                         style={{ width: `${pkg.popularity}%` }}
                                     ></div>
                                 </div>
@@ -426,28 +426,28 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
             </div>
 
             {/* Additional Insights */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-blue-900 mb-2">💡 Revenue Insight</h4>
-                    <p className="text-sm text-blue-700">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-sky-900 mb-2">Revenue Insight</h4>
+                    <p className="text-sm text-sky-700">
                         Your average order value is {formatCurrency(analyticsData.revenue.averageOrderValue)}. 
                         {analyticsData.revenue.averageOrderValue < 50000 && " Consider upselling premium packages to increase AOV."}
                         {analyticsData.revenue.averageOrderValue >= 50000 && " Great work! Your AOV is above industry average."}
                     </p>
                 </div>
                 
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-purple-900 mb-2">📈 Growth Opportunity</h4>
-                    <p className="text-sm text-purple-700">
+                <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-violet-900 mb-2">Growth Opportunity</h4>
+                    <p className="text-sm text-violet-700">
                         You have {analyticsData.projects.ongoingProjects} ongoing projects. 
                         {analyticsData.projects.ongoingProjects > 5 && " Focus on delivering quality to maintain high client satisfaction."}
                         {analyticsData.projects.ongoingProjects <= 5 && " You have capacity for more bookings!"}
                     </p>
                 </div>
                 
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-orange-900 mb-2">⚡ Action Required</h4>
-                    <p className="text-sm text-orange-700">
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-amber-900 mb-2">Action Required</h4>
+                    <p className="text-sm text-amber-700">
                         {analyticsData.invoices.overdueInvoices > 0 
                             ? `${analyticsData.invoices.overdueInvoices} overdue invoices need follow-up. Send reminders to improve cash flow.`
                             : "All invoices are up to date! Great job managing payments."}

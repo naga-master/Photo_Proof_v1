@@ -11,17 +11,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Studio colors
+        // Primary color - SINGLE SOURCE via CSS variable
+        'primary': {
+          DEFAULT: 'var(--color-primary)',
+          hover: 'var(--color-primary-hover)',
+          active: 'var(--color-primary-active)',
+          light: 'var(--color-primary-light)',
+          lighter: 'var(--color-primary-lighter)',
+        },
+        
+        // Studio colors (references primary)
         'studio': {
           primary: designSystem.colors.studio.primary,
+          'primary-hover': designSystem.colors.studio.primaryHover,
+          'primary-active': designSystem.colors.studio.primaryActive,
           'primary-light': designSystem.colors.studio.primaryLight,
-          'primary-dark': designSystem.colors.studio.primaryDark,
           'primary-lighter': designSystem.colors.studio.primaryLighter,
-          'primary-darker': designSystem.colors.studio.primaryDarker,
           secondary: designSystem.colors.studio.secondary,
           accent: designSystem.colors.studio.accent,
           warning: designSystem.colors.studio.warning,
           danger: designSystem.colors.studio.danger,
+        },
+        
+        // Sidebar colors
+        'sidebar': {
+          bg: designSystem.colors.sidebar.bg,
+          border: designSystem.colors.sidebar.border,
+          text: designSystem.colors.sidebar.text,
+          'text-muted': designSystem.colors.sidebar.textMuted,
+          'text-hover': designSystem.colors.sidebar.textHover,
+          'item-hover': designSystem.colors.sidebar.itemHover,
+          'item-active': designSystem.colors.sidebar.itemActive,
+          'item-active-text': designSystem.colors.sidebar.itemActiveText,
         },
         
         // Client colors
@@ -44,27 +65,56 @@ export default {
         },
         
         // Semantic colors
-        success: designSystem.colors.semantic.success,
-        warning: designSystem.colors.semantic.warning,
-        error: designSystem.colors.semantic.error,
-        info: designSystem.colors.semantic.info,
+        'success': designSystem.colors.semantic.success,
+        'success-light': designSystem.colors.semantic.successLight,
+        'warning': designSystem.colors.semantic.warning,
+        'warning-light': designSystem.colors.semantic.warningLight,
+        'error': designSystem.colors.semantic.error,
+        'error-light': designSystem.colors.semantic.errorLight,
+        'info': designSystem.colors.semantic.info,
+        'info-light': designSystem.colors.semantic.infoLight,
+        
+        // Background colors
+        'bg': designSystem.colors.background,
+        
+        // Border colors
+        'border': designSystem.colors.border,
+        
+        // Text colors
+        'text': designSystem.colors.text,
+      },
+      
+      // Font families
+      fontFamily: {
+        sans: designSystem.typography.fonts.sans,
+        display: designSystem.typography.fonts.display,
+        mono: designSystem.typography.fonts.mono,
       },
       
       spacing: designSystem.spacing,
       borderRadius: designSystem.borderRadius,
-      boxShadow: designSystem.shadows,
+      boxShadow: {
+        ...designSystem.shadows,
+        'card-hover': '0 8px 25px -5px rgb(0 0 0 / 0.1), 0 4px 10px -6px rgb(0 0 0 / 0.05)',
+      },
       
       transitionDuration: {
+        instant: designSystem.animations.duration.instant,
         fast: designSystem.animations.duration.fast,
         normal: designSystem.animations.duration.normal,
         slow: designSystem.animations.duration.slow,
+        slower: designSystem.animations.duration.slower,
       },
       
       transitionTimingFunction: {
         'ease-out': designSystem.animations.easing.easeOut,
         'ease-in-out': designSystem.animations.easing.easeInOut,
         'spring': designSystem.animations.easing.spring,
+        'bounce': designSystem.animations.easing.bounce,
       },
+      
+      // Letter spacing
+      letterSpacing: designSystem.typography.letterSpacing,
     },
   },
   plugins: [],

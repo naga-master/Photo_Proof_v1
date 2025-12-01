@@ -71,7 +71,7 @@ const Step6_Complete: React.FC<Step6_CompleteProps> = ({ onClose, onViewGallery 
           {onViewGallery && allSuccess && (
             <button
               onClick={onViewGallery}
-              className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-md transition-colors"
+              className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-md transition-colors"
             >
               View Gallery
             </button>
@@ -90,7 +90,7 @@ const Step6_Complete: React.FC<Step6_CompleteProps> = ({ onClose, onViewGallery 
             className={`px-6 py-3 font-medium rounded-md transition-colors ${
               allSuccess
                 ? 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-700'
-                : 'bg-slate-800 hover:bg-slate-700 text-white'
+                : 'bg-primary hover:bg-primary-hover text-white'
             }`}
           >
             Close

@@ -118,7 +118,7 @@ const StudioToolsPage: React.FC = () => {
                             <p className="mt-2 text-gray-600 flex-1">{tool.description}</p>
                             <button 
                                 onClick={() => setActiveTool(tool.tool_id as ToolId)}
-                                className="mt-6 w-full px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                                className="mt-6 w-full px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-hover transition-colors"
                             >
                                 Launch Tool
                             </button>

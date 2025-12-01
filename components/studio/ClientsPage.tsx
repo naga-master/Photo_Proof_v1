@@ -352,8 +352,8 @@ const NewClientModal: React.FC<NewClientModalProps> = ({ isOpen, onClose, onCrea
                     </div>
                     <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t bg-gray-50">
                         <div className="flex gap-3">
-                            <button type="button" onClick={onClose} className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 min-h-[44px]">Cancel</button>
-                            <button type="submit" className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 min-h-[44px]">Save Client</button>
+                            <button type="button" onClick={onClose} className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-fast min-h-[44px]">Cancel</button>
+                            <button type="submit" className="flex-1 px-4 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover shadow-sm hover:shadow-md transition-all duration-fast min-h-[44px]">Save Client</button>
                         </div>
                     </div>
                 </form>
@@ -384,32 +384,32 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
   
   return (
     <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Clients</h1>
-            <p className="mt-1 text-sm sm:text-base text-gray-600">Manage your client relationships and projects.</p>
+            <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Clients</h1>
+            <p className="mt-1 text-sm text-gray-500">Manage your client relationships and projects.</p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors min-h-[44px]">
+        <button onClick={() => setModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-all duration-fast shadow-sm hover:shadow-md">
             <PlusIcon className="w-5 h-5" />
             <span>New Client</span>
         </button>
       </header>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="hidden md:block bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credentials</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credentials</th>
+                <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
+                <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-100">
               {clients.map((client) => (
-                  <tr key={client.id} onClick={() => onManageClient(client)} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                  <tr key={client.id} onClick={() => onManageClient(client)} className="hover:bg-gray-50 transition-all duration-fast cursor-pointer">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
@@ -427,10 +427,10 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div>
-                            <span className="font-semibold text-gray-700">User:</span> {client.username || client.email}
+                            <span className="font-medium text-gray-700">User:</span> {client.username || client.email}
                         </div>
                          <div className="flex items-center">
-                            <span className="font-semibold text-gray-700 mr-1">Pass:</span>
+                            <span className="font-medium text-gray-700 mr-1">Pass:</span>
                             <PasswordDisplay 
                                 clientId={client.id} 
                                 password={client.password} 
@@ -439,7 +439,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                             />
                         </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
                       {client.totalProjects ?? client.projects.length}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.lastActivity}</td>
@@ -451,9 +451,9 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
+      <div className="md:hidden bg-white border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
         {clients.map((client) => (
-          <div key={client.id} onClick={() => onManageClient(client)} className="p-4 active:bg-gray-50 transition-colors cursor-pointer">
+          <div key={client.id} onClick={() => onManageClient(client)} className="p-4 active:bg-gray-50 transition-all duration-fast cursor-pointer">
             <div className="flex items-start gap-3 mb-3">
               <Avatar 
                 name={client.name} 
@@ -461,8 +461,8 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                 size={48}
               />
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 truncate mb-1">{client.name}</h3>
-                <p className="text-sm text-gray-600 truncate">{client.email}</p>
+                <h3 className="font-medium text-gray-900 truncate mb-0.5">{client.name}</h3>
+                <p className="text-sm text-gray-500 truncate">{client.email}</p>
               </div>
             </div>
             
@@ -493,7 +493,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                   e.stopPropagation();
                   onManageClient(client);
                 }}
-                className="text-gray-600 hover:text-gray-900 font-medium"
+                className="text-primary hover:text-primary-hover font-medium transition-colors duration-fast"
               >
                 View Details →
               </button>

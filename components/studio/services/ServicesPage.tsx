@@ -323,7 +323,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                 </div>
                 <button
                     onClick={handleCreateNew}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-hover transition-colors"
                 >
                     <PlusIcon className="w-5 h-5" />
                     <span>New Package</span>
@@ -347,7 +347,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                     <p className="text-gray-500 mb-4">No service packages yet.</p>
                     <button
                         onClick={handleCreateNew}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-hover transition-colors"
                     >
                         <PlusIcon className="w-5 h-5" />
                         <span>Create Your First Package</span>
@@ -434,7 +434,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ packages: propPackages, onU
                                             <div className="flex gap-2 mt-4">
                                                 <button
                                                     onClick={() => handleEdit(pkg)}
-                                                    className="flex-1 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
+                                                    className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors"
                                                 >
                                                     Edit Package
                                                 </button>

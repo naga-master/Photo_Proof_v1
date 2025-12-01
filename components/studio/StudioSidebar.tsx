@@ -109,12 +109,12 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
         setMobileOpen(false);
       }}
       title={isCollapsed ? item.label : undefined}
-      className={`flex items-center w-full text-left py-2 rounded-md text-sm font-medium transition-all duration-fast ${
-        isCollapsed ? 'px-3 justify-center' : 'px-4'
+      className={`flex items-center w-full text-left py-2.5 rounded-lg text-sm font-medium transition-all duration-fast ${
+        isCollapsed ? 'px-3 justify-center' : 'px-3'
       } ${
         view === item.view
-          ? 'bg-studio-primary text-white shadow-md transform scale-[1.02]'
-          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+          ? 'bg-primary text-white shadow-[0_2px_8px_rgba(10,88,208,0.25)]'
+          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
       }`}
     >
       <span className="flex-shrink-0">{item.icon}</span>
@@ -131,33 +131,37 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
   return (
     <>
       {isMobileOpen && (
-          <div className="lg:hidden fixed inset-0 bg-black/60 z-30" onClick={() => setMobileOpen(false)}></div>
+          <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30" onClick={() => setMobileOpen(false)}></div>
       )}
-      <aside className={`fixed inset-y-0 left-0 bg-gray-800 text-white flex-shrink-0 flex flex-col z-40 transition-all duration-300
+      <aside className={`fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col z-40 transition-all duration-300
         ${isCollapsed ? 'w-20' : 'w-64'}
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
-        <div className={`px-4 py-6 border-b border-gray-700 text-center transition-all duration-300`}>
-          <h1 className="text-xl font-bold tracking-wider uppercase truncate">{isCollapsed ? 'NPL' : "NAPSTER's Photo Lab"}</h1>
-          <p className={`text-xs text-gray-400 mt-1 uppercase ${isCollapsed ? 'lg:hidden' : ''}`}>STUDIO</p>
+        {/* Header / Logo */}
+        <div className={`px-4 py-5 border-b border-gray-200 transition-all duration-300`}>
+          <h1 className="text-lg font-semibold tracking-wide truncate text-center text-gray-900">{isCollapsed ? 'NPL' : "NAPSTER's Photo Lab"}</h1>
+          <p className={`text-[11px] text-gray-400 mt-1 uppercase tracking-wider text-center ${isCollapsed ? 'lg:hidden' : ''}`}>STUDIO</p>
         </div>
 
+        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {mainNavItems.map(item => <NavButton key={item.view} item={item} />)}
           
-          <div className="pt-4 mt-4">
-              <h3 className={`px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ${isCollapsed ? 'lg:hidden' : ''}`}>Configuration</h3>
+          {/* Configuration Section */}
+          <div className="pt-5 mt-4 border-t border-gray-200">
+              <h3 className={`px-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 ${isCollapsed ? 'lg:hidden' : ''}`}>Configuration</h3>
               <div className="space-y-1">
                   {configNavItems.map(item => <NavButton key={item.view} item={item} />)}
               </div>
           </div>
         </nav>
 
-        <div className="px-3 py-3 border-t border-gray-700">
+        {/* Footer Actions */}
+        <div className="px-3 py-3 border-t border-gray-200">
           <button
             onClick={onToggleCollapse}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-            className={`hidden lg:flex items-center w-full text-left p-3 rounded-md text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition-all duration-fast ${isCollapsed ? 'justify-center' : ''}`}
+            className={`hidden lg:flex items-center w-full text-left p-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all duration-fast ${isCollapsed ? 'justify-center' : ''}`}
           >
             <ChevronDoubleLeftIcon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
             <span className={`ml-3 flex-1 ${isCollapsed ? 'lg:hidden' : ''}`}>Collapse</span>
@@ -165,7 +169,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
           <button
             onClick={onLogout}
             title="Logout"
-            className={`flex items-center w-full text-left p-3 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-fast mt-1 ${isCollapsed ? 'justify-center' : ''}`}
+            className={`flex items-center w-full text-left p-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all duration-fast mt-1 ${isCollapsed ? 'justify-center' : ''}`}
           >
             <ArrowLeftOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
             <span className={`ml-3 flex-1 ${isCollapsed ? 'lg:hidden' : ''}`}>Logout</span>

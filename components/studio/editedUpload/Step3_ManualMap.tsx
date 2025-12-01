@@ -532,8 +532,8 @@ const Step3_ManualMap: React.FC = () => {
                         />
                       )}
                       {hoveredPhotoId === Number(photo.id) && selectedFile && (
-                        <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-                          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                             <CheckIcon className="w-5 h-5 text-white" />
                           </div>
                         </div>
@@ -671,7 +671,7 @@ const UnmatchedFileCard: React.FC<UnmatchedFileCardProps> = ({
 
       {/* Selected Indicator */}
       {isSelected && (
-        <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+        <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
           <CheckIcon className="w-4 h-4 text-white" />
         </div>
       )}

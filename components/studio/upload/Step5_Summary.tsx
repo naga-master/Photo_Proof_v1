@@ -260,7 +260,7 @@ const Step5_Summary: React.FC<Step5_SummaryProps> = ({ onExit, onProjectCreated,
       <div className="mt-8 border-t pt-6">
         <h3 className="font-semibold text-gray-800">What's next?</h3>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button onClick={handlePublish} className="p-3 bg-gray-800 text-white rounded-md font-semibold hover:bg-gray-700">{publishButtonText}</button>
+            <button onClick={handlePublish} className="p-3 bg-primary text-white rounded-md font-semibold hover:bg-primary-hover">{publishButtonText}</button>
             <button onClick={handleNotifyClient} className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">Notify Client</button>
             <button onClick={handleViewGallery} className="p-3 bg-white border border-gray-300 rounded-md font-semibold hover:bg-gray-50">View Gallery</button>
         </div>

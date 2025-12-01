@@ -1,77 +1,181 @@
 @import "tailwindcss";
 
 /* ========================================
+   TAILWIND 4 THEME CONFIGURATION
+   Define colors using @theme directive
+   ======================================== */
+@theme {
+  /* PRIMARY COLORS - SINGLE SOURCE OF TRUTH */
+  /* Change these to update ALL buttons across the app */
+  --color-primary: #0a58d0;
+  --color-primary-hover: #0847a8;
+  --color-primary-active: #063a8c;
+  --color-primary-light: #e8f1fc;
+  --color-primary-lighter: #f0f7ff;
+}
+
+/* ========================================
    DESIGN SYSTEM CSS VARIABLES
+   Brisk CRM Inspired Theme
    Synced with /config/designSystem.ts
    ======================================== */
 
 :root {
-  /* Studio Colors */
-  --studio-primary: #2563eb;
-  --studio-primary-light: #3b82f6;
-  --studio-primary-dark: #1d4ed8;
+  /* ============ PRIMARY COLORS - SINGLE SOURCE OF TRUTH ============ */
+  /* Change these to update ALL buttons and accents across the app */
+  --color-primary: #0a58d0;           /* Main button/accent color */
+  --color-primary-hover: #0847a8;     /* Hover state */
+  --color-primary-active: #063a8c;    /* Active/pressed state */
+  --color-primary-light: #e8f1fc;     /* Light backgrounds */
+  --color-primary-lighter: #f0f7ff;   /* Very light backgrounds */
+
+  /* ============ STUDIO COLORS ============ */
+  --studio-primary: var(--color-primary);
+  --studio-primary-hover: var(--color-primary-hover);
+  --studio-primary-active: var(--color-primary-active);
+  --studio-primary-light: var(--color-primary-light);
+  --studio-primary-lighter: var(--color-primary-lighter);
   --studio-secondary: #64748b;
   --studio-accent: #10b981;
   --studio-warning: #f59e0b;
   --studio-danger: #ef4444;
 
-  /* Client Colors */
-  --client-primary: #1e293b;
-  --client-accent: #f59e0b;
-  --client-bg: #f8fafc;
+  /* ============ SIDEBAR COLORS (Light Theme) ============ */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
+  --sidebar-text: #475569;
+  --sidebar-text-muted: #94a3b8;
+  --sidebar-text-hover: #0f172a;
+  --sidebar-item-hover: #f1f5f9;
+  --sidebar-item-active: var(--color-primary);
+  --sidebar-item-active-text: #ffffff;
 
-  /* Store Colors */
-  --store-primary: #2563eb;
-  --store-accent: #f97316;
-  --store-accent-hover: #ea580c;
+  /* ============ GRAY SCALE ============ */
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  --gray-950: #020617;
 
-  /* Semantic */
+  /* ============ SEMANTIC COLORS ============ */
   --color-success: #10b981;
+  --color-success-light: #d1fae5;
   --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
   --color-error: #ef4444;
+  --color-error-light: #fee2e2;
   --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
 
-  /* Typography */
+  /* ============ STATUS PILL COLORS ============ */
+  --status-won-bg: #dcfce7;
+  --status-won-text: #15803d;
+  --status-won-border: #86efac;
+  --status-lost-bg: #fee2e2;
+  --status-lost-text: #dc2626;
+  --status-lost-border: #fca5a5;
+  --status-leads-bg: #f1f5f9;
+  --status-leads-text: #475569;
+  --status-leads-border: #cbd5e1;
+  --status-discovery-bg: #dbeafe;
+  --status-discovery-text: #1d4ed8;
+  --status-discovery-border: #93c5fd;
+  --status-pending-bg: #fef3c7;
+  --status-pending-text: #b45309;
+  --status-pending-border: #fcd34d;
+
+  /* ============ BACKGROUND COLORS ============ */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-sidebar: #0f172a;
+  --bg-overlay: rgba(15, 23, 42, 0.5);
+
+  /* ============ BORDER COLORS ============ */
+  --border-light: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-dark: #94a3b8;
+  --border-focus: var(--color-primary);
+
+  /* ============ TEXT COLORS ============ */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+  --text-link: var(--color-primary);
+  --text-link-hover: var(--color-primary-hover);
+
+  /* ============ TYPOGRAPHY ============ */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Spacing */
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
+  /* ============ SPACING ============ */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
 
-  /* Transitions */
-  --transition-fast: 200ms cubic-bezier(0, 0, 0.2, 1);
-  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* ============ TRANSITIONS (Brisk-style smooth) ============ */
+  --transition-instant: 100ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 300ms cubic-bezier(0.65, 0, 0.35, 1);
+  --transition-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  /* ============ SHADOWS ============ */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+  --shadow-card-hover: 0 8px 25px -5px rgb(0 0 0 / 0.1), 0 4px 10px -6px rgb(0 0 0 / 0.05);
 
-  /* Border Radius */
+  /* ============ BORDER RADIUS ============ */
+  --radius-none: 0;
   --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
 
-  /* Multi-Tenant CSS Variables - These are dynamically set by StudioThemeProvider */
-  /* Brand Colors - Overridden by studio theme */
-  --brand-primary: #6366f1;
-  --brand-primary-rgb: 99, 102, 241;
-  --brand-secondary: #4f46e5;
-  --brand-secondary-rgb: 79, 70, 229;
+  /* ============ MULTI-TENANT (Dynamic) ============ */
+  --brand-primary: #0ea5e9;
+  --brand-primary-rgb: 14, 165, 233;
+  --brand-secondary: #0284c7;
+  --brand-secondary-rgb: 2, 132, 199;
   
-  /* Typography - Overridden by studio theme */
   --font-family: 'Inter', system-ui, sans-serif;
-  --font-family-display: 'Cormorant Garamond', serif;
+  --font-family-display: 'Inter', system-ui, sans-serif;
   
-  /* Dynamic theme colors that adapt to brand */
   --theme-bg-primary: var(--brand-primary);
   --theme-text-primary: var(--brand-primary);
   --theme-border-primary: var(--brand-primary);
   --theme-hover-primary: var(--brand-secondary);
+
+  /* ============ CLIENT COLORS ============ */
+  --client-primary: #0f172a;
+  --client-accent: #0ea5e9;
+  --client-bg: #f8fafc;
+
+  /* ============ STORE COLORS ============ */
+  --store-primary: #0ea5e9;
+  --store-accent: #f97316;
+  --store-accent-hover: #ea580c;
 }
 
 /* Studio-specific styles */
@@ -165,43 +269,306 @@
 
 /* ========================================
    DESIGN SYSTEM UTILITY CLASSES
+   Brisk CRM Inspired Styling
    ======================================== */
 
-/* Studio Theme Buttons */
+/* ============ BUTTON STYLES ============ */
+
+/* Primary Button - Uses centralized color */
 .btn-studio-primary {
-  background-color: var(--studio-primary);
+  background-color: var(--color-primary);
   color: white;
-  padding: 12px 20px;
+  padding: 10px 20px;
   border-radius: var(--radius-lg);
   font-weight: 600;
+  font-size: 14px;
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-sm);
+  border: none;
+  cursor: pointer;
 }
 
 .btn-studio-primary:hover {
-  background-color: var(--studio-primary-dark);
+  background-color: var(--color-primary-hover);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
 .btn-studio-primary:active {
-  background-color: var(--studio-primary-dark);
-  transform: translateY(0);
+  background-color: var(--color-primary-active);
+  transform: translateY(0) scale(0.98);
 }
 
+.btn-studio-primary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Secondary Button - Outlined */
 .btn-studio-secondary {
   background: transparent;
-  color: var(--studio-primary);
-  border: 2px solid var(--studio-primary);
-  padding: 10px 18px;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  padding: 9px 18px;
   border-radius: var(--radius-lg);
   font-weight: 600;
+  font-size: 14px;
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .btn-studio-secondary:hover {
-  background: #f1f5f9;
+  background: var(--primary-50);
   border-color: var(--studio-primary-dark);
+}
+
+.btn-studio-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  background: var(--gray-100);
+  color: var(--text-primary);
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: var(--color-error);
+  color: white;
+  padding: 10px 20px;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  box-shadow: var(--shadow-md);
+}
+
+/* ============ CARD STYLES ============ */
+
+.card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  transition: all var(--transition-normal);
+}
+
+.card:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.card-flat {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+}
+
+.card-elevated {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+}
+
+/* ============ METRIC CARD (Brisk-style) ============ */
+
+.metric-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  transition: all var(--transition-normal);
+}
+
+.metric-card:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-lg);
+}
+
+.metric-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.metric-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.metric-delta-positive {
+  background: var(--color-success-light);
+  color: #15803d;
+}
+
+.metric-delta-negative {
+  background: var(--color-error-light);
+  color: #dc2626;
+}
+
+.metric-context {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* ============ STATUS PILLS ============ */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.status-won {
+  background: var(--status-won-bg);
+  color: var(--status-won-text);
+  border-color: var(--status-won-border);
+}
+
+.status-lost {
+  background: var(--status-lost-bg);
+  color: var(--status-lost-text);
+  border-color: var(--status-lost-border);
+}
+
+.status-leads {
+  background: var(--status-leads-bg);
+  color: var(--status-leads-text);
+  border-color: var(--status-leads-border);
+}
+
+.status-discovery {
+  background: var(--status-discovery-bg);
+  color: var(--status-discovery-text);
+  border-color: var(--status-discovery-border);
+}
+
+.status-pending, .status-in-progress {
+  background: var(--status-pending-bg);
+  color: var(--status-pending-text);
+  border-color: var(--status-pending-border);
+}
+
+.status-draft {
+  background: var(--status-leads-bg);
+  color: var(--status-leads-text);
+  border-color: var(--status-leads-border);
+}
+
+.status-sent {
+  background: var(--status-discovery-bg);
+  color: var(--status-discovery-text);
+  border-color: var(--status-discovery-border);
+}
+
+.status-paid {
+  background: var(--status-won-bg);
+  color: var(--status-won-text);
+  border-color: var(--status-won-border);
+}
+
+/* ============ SIDEBAR STYLES ============ */
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-300);
+  transition: all var(--transition-fast);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.sidebar-nav-item.active {
+  background: var(--studio-primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.sidebar-section-title {
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+/* ============ TABLE STYLES ============ */
+
+.table-row {
+  transition: background var(--transition-fast);
+}
+
+.table-row:hover {
+  background: var(--gray-50);
+}
+
+.table-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 /* Client Theme Buttons */

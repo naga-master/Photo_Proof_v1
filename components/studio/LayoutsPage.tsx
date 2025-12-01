@@ -71,15 +71,15 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
     
     return (
         <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
-            <header className="mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Layouts & Branding</h1>
-                <p className="mt-1 text-sm sm:text-base text-gray-600">Set the default gallery appearance for new projects.</p>
+            <header className="mb-6">
+                <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Layouts & Branding</h1>
+                <p className="mt-1 text-sm text-gray-500">Set the default gallery appearance for new projects.</p>
             </header>
 
             {/* Branding Section */}
-            <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Branding</h2>
-                <p className="text-sm text-gray-500 mt-1 mb-4 sm:mb-6">Customize the look and feel of your galleries to match your brand.</p>
+            <div className="bg-white p-5 border border-gray-200 rounded-xl">
+                <h2 className="text-lg font-semibold text-gray-900">Branding</h2>
+                <p className="text-sm text-gray-500 mt-1 mb-5">Customize the look and feel of your galleries to match your brand.</p>
                 <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Studio Logo</label>
@@ -146,24 +146,24 @@ const LayoutsPage: React.FC<LayoutsPageProps> = ({
             </div>
 
             {/* Layouts Section */}
-            <div className="mt-6 sm:mt-8">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Default Layout</h2>
-                <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
+            <div className="mt-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Default Layout</h2>
+                <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
                     {/* Controls */}
                     <div className="lg:col-span-1 space-y-4">
                         <p className="text-sm text-gray-500">Select a template to be used for all new projects. This can be overridden per project.</p>
                         <select
                             value={defaultLayoutId}
                             onChange={(e) => onSetDefaultLayout(e.target.value as LayoutId)}
-                            className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] bg-white text-gray-900 focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-gray-200 outline-none transition-colors"
+                            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-fast"
                         >
                             {layoutTemplates.map(template => (
                                 <option key={template.id} value={template.id}>{template.name}</option>
                             ))}
                         </select>
-                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="font-semibold text-sm text-gray-800">{selectedLayoutTemplate.name}</p>
-                            <p className="text-sm text-gray-600 mt-1">{selectedLayoutTemplate.description}</p>
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <p className="font-medium text-sm text-gray-900">{selectedLayoutTemplate.name}</p>
+                            <p className="text-sm text-gray-500 mt-1">{selectedLayoutTemplate.description}</p>
                         </div>
                     </div>
 

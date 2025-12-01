@@ -120,7 +120,7 @@ const FileRow: React.FC<FileRowProps> = ({ file }) => {
                     className={`h-1.5 rounded-full transition-all duration-200 ${
                       status === 'failed' ? 'bg-red-500' : 
                       status === 'success' ? 'bg-green-500' : 
-                      'bg-blue-600'
+                      'bg-primary'
                     }`} 
                     style={{ width: `${progress}%` }}
                 ></div>

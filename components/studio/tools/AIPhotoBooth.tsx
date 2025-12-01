@@ -103,7 +103,7 @@ const AIPhotoBooth: React.FC<AIPhotoBoothProps> = ({ onBack }) => {
                             </button>
                         ))}
                     </div>
-                    <button className="w-full mt-auto py-3 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700 disabled:bg-gray-400" disabled={!sourceImage && !isCameraActive}>
+                    <button className="w-full mt-auto py-3 bg-primary text-white font-semibold rounded-md hover:bg-primary-hover disabled:bg-gray-400" disabled={!sourceImage && !isCameraActive}>
                         Take Snapshot
                     </button>
                 </div>

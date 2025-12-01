@@ -111,7 +111,7 @@ const Step1_SelectFiles: React.FC = () => {
             
             <label
               htmlFor="file-upload"
-              className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-md cursor-pointer transition-colors"
+              className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-md cursor-pointer transition-colors"
             >
               Browse Files
             </label>

@@ -67,7 +67,7 @@ const HistoricImager: React.FC<HistoricImagerProps> = ({ onBack }) => {
                         <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">Describe the transformation</label>
                         <input type="text" id="prompt" className="mt-1 block w-full bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm" placeholder="e.g., A Roman senator, a 1920s flapper..." />
                     </div>
-                     <button className="w-full py-3 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700 disabled:bg-gray-400" disabled={!uploadedPhoto}>
+                     <button className="w-full py-3 bg-primary text-white font-semibold rounded-md hover:bg-primary-hover disabled:bg-gray-400" disabled={!uploadedPhoto}>
                         Generate Image
                     </button>
                 </div>

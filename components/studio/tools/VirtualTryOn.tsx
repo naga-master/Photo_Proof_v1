@@ -69,7 +69,7 @@ const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ onBack }) => {
                 </div>
             </div>
             <div className="mt-8">
-                 <button className="w-full max-w-xs mx-auto py-3 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-700 disabled:bg-gray-400" disabled={!modelImage || !garmentImage}>
+                 <button className="w-full max-w-xs mx-auto py-3 bg-primary text-white font-semibold rounded-md hover:bg-primary-hover disabled:bg-gray-400" disabled={!modelImage || !garmentImage}>
                     Generate Try-On
                 </button>
             </div>

@@ -275,7 +275,7 @@ const UploadFileRow: React.FC<UploadFileRowProps> = ({ file }) => {
           <div className="mt-1">
             <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 transition-all duration-300"
+                className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${file.progress}%` }}
               />
             </div>

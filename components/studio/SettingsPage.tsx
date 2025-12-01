@@ -352,7 +352,7 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
                     <button 
                         type="button" 
                         onClick={handleSave} 
-                        className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700"
+                        className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover"
                     >
                         {existingUser ? 'Update User' : 'Create User'}
                     </button>
@@ -606,7 +606,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     };
 
     const inputClasses = "mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2";
-    const tabButtonClasses = (tab: SettingsTab) => `px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center ${activeTab === tab ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-200'}`;
+    const tabButtonClasses = (tab: SettingsTab) => `px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center ${activeTab === tab ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'}`;
 
     const renderContent = () => {
         switch (activeTab) {
@@ -637,7 +637,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                         type="file"
                                         accept="image/*"
                                         onChange={handleStudioPhotoUpload}
-                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer"
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
                                     />
                                 </div>
 
@@ -680,7 +680,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                         type="file"
                                         accept="image/*"
                                         onChange={handleStudioDisplayImageUpload}
-                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer"
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
                                     />
                                 </div>
                             </div>
@@ -763,7 +763,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                 </div>
                                 <button 
                                     onClick={handleCreateUser}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700"
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-hover"
                                 >
                                     <PlusIcon className="w-4 h-4" />
                                     Add User
@@ -908,7 +908,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                         type="button"
                                         onClick={() => handleTaxChange('enableGST', !billingConfig.tax.enableGST)}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                            billingConfig.tax.enableGST ? 'bg-blue-600' : 'bg-gray-300'
+                                            billingConfig.tax.enableGST ? 'bg-primary' : 'bg-gray-300'
                                         }`}
                                     >
                                         <span
@@ -957,7 +957,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                         type="button"
                                         onClick={() => handleTaxChange('enableAdditionalTax', !billingConfig.tax.enableAdditionalTax)}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                            billingConfig.tax.enableAdditionalTax ? 'bg-blue-600' : 'bg-gray-300'
+                                            billingConfig.tax.enableAdditionalTax ? 'bg-primary' : 'bg-gray-300'
                                         }`}
                                     >
                                         <span
@@ -1266,7 +1266,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                         type="button"
                                         onClick={() => handleBillingGeneralChange('enablePartialPayments', !billingConfig.enablePartialPayments)}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                            billingConfig.enablePartialPayments ? 'bg-blue-600' : 'bg-gray-300'
+                                            billingConfig.enablePartialPayments ? 'bg-primary' : 'bg-gray-300'
                                         }`}
                                     >
                                         <span
@@ -1307,7 +1307,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Studio Settings</h1>
                     <p className="mt-1 text-sm sm:text-base text-gray-600">Configure your studio preferences and integrations.</p>
                 </div>
-                <button onClick={handleSaveChanges} className="w-full sm:w-auto px-5 py-3 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 min-h-[44px]">
+                <button onClick={handleSaveChanges} className="w-full sm:w-auto px-5 py-3 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover min-h-[44px]">
                     Save Changes
                 </button>
             </header>

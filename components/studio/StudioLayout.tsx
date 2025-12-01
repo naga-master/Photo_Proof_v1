@@ -457,7 +457,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
     };
 
     return (
-        <div className="h-full flex bg-slate-100 font-sans">
+        <div className="h-full flex bg-[#f8fafc] font-sans">
             <StudioSidebar
                 view={view}
                 setView={handleSetView}
@@ -468,11 +468,11 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
                 onToggleCollapse={() => setSidebarCollapsed(!isSidebarCollapsed)}
             />
             <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
-                 <header className="lg:hidden sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 z-20 flex justify-between items-center">
-                    <button onClick={() => setSidebarMobileOpen(true)} className="text-gray-600 p-1 hover:bg-gray-100 rounded-md transition-colors duration-fast">
+                 <header className="lg:hidden sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200/80 p-4 z-20 flex justify-between items-center">
+                    <button onClick={() => setSidebarMobileOpen(true)} className="text-gray-600 p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-fast">
                         <MenuIcon className="w-6 h-6" />
                     </button>
-                    <h1 className="text-lg font-semibold tracking-wider uppercase text-gray-800">NAPSTER's Photo Lab</h1>
+                    <h1 className="text-base font-semibold tracking-wide text-gray-900">NAPSTER's Photo Lab</h1>
                     <div className="w-7"></div>
                 </header>
                 <main className="flex-1 overflow-y-auto">

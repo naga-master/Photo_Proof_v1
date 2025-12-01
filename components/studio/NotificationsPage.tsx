@@ -133,45 +133,45 @@ const NotificationsPage: React.FC = () => {
     );
 
     return (
-        <div className="p-8 animate-fade-in">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-900">Notifications</h1>
-                <p className="mt-1 text-slate-600">Review recent activity from clients and your team.</p>
+        <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
+            <header className="mb-6">
+                <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Notifications</h1>
+                <p className="mt-1 text-sm text-gray-500">Review recent activity from clients and your team.</p>
             </header>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b bg-white z-10">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-gray-100 bg-white z-10">
                     {/* Top row: Read status filter + Mark all read */}
                     <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-fast ${filter === 'all' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                                 All
                             </button>
-                            <button onClick={() => setFilter('unread')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${filter === 'unread' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                            <button onClick={() => setFilter('unread')} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-fast ${filter === 'unread' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                                 Unread {apiUnreadCount > 0 && `(${apiUnreadCount})`}
                             </button>
                         </div>
-                        <button onClick={handleMarkAllAsRead} className="text-sm font-semibold text-sky-600 hover:text-sky-800">
+                        <button onClick={handleMarkAllAsRead} className="text-sm font-medium text-primary hover:text-primary-hover transition-colors duration-fast">
                             Mark all as read
                         </button>
                     </div>
                     
                     {/* Bottom row: Type filter */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                        <span className="text-xs text-slate-500 mr-1">Type:</span>
-                        <button onClick={() => setTypeFilter('all')} className={`px-2 py-1 text-xs font-medium rounded ${typeFilter === 'all' ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100 flex-wrap">
+                        <span className="text-xs text-gray-500 mr-1">Type:</span>
+                        <button onClick={() => setTypeFilter('all')} className={`px-2 py-1 text-xs font-medium rounded-lg transition-all duration-fast ${typeFilter === 'all' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'}`}>
                             All
                         </button>
-                        <button onClick={() => setTypeFilter('comment')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'comment' ? 'bg-sky-100 text-sky-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                        <button onClick={() => setTypeFilter('comment')} className={`px-2 py-1 text-xs font-medium rounded-lg flex items-center gap-1 transition-all duration-fast ${typeFilter === 'comment' ? 'bg-sky-100 text-sky-700' : 'text-gray-500 hover:bg-gray-100'}`}>
                             <ChatBubbleIcon className="w-3 h-3" /> Comments
                         </button>
-                        <button onClick={() => setTypeFilter('order')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'order' ? 'bg-green-100 text-green-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                        <button onClick={() => setTypeFilter('order')} className={`px-2 py-1 text-xs font-medium rounded-lg flex items-center gap-1 transition-all duration-fast ${typeFilter === 'order' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'}`}>
                             <ShoppingCartIcon className="w-3 h-3" /> Orders
                         </button>
-                        <button onClick={() => setTypeFilter('upload')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'upload' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                        <button onClick={() => setTypeFilter('upload')} className={`px-2 py-1 text-xs font-medium rounded-lg flex items-center gap-1 transition-all duration-fast ${typeFilter === 'upload' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'}`}>
                             <UploadIcon className="w-3 h-3" /> Uploads
                         </button>
-                        <button onClick={() => setTypeFilter('system')} className={`px-2 py-1 text-xs font-medium rounded flex items-center gap-1 ${typeFilter === 'system' ? 'bg-slate-200 text-slate-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                        <button onClick={() => setTypeFilter('system')} className={`px-2 py-1 text-xs font-medium rounded-lg flex items-center gap-1 transition-all duration-fast ${typeFilter === 'system' ? 'bg-gray-200 text-gray-700' : 'text-gray-500 hover:bg-gray-100'}`}>
                             <BellIcon className="w-3 h-3" /> System
                         </button>
                     </div>
@@ -181,8 +181,8 @@ const NotificationsPage: React.FC = () => {
                     {/* Loading State */}
                     {loading && (
                         <div className="text-center py-10">
-                            <div className="animate-spin w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full mx-auto"></div>
-                            <p className="mt-2 text-slate-500 text-sm">Loading notifications...</p>
+                            <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full mx-auto"></div>
+                            <p className="mt-2 text-gray-500 text-sm">Loading notifications...</p>
                         </div>
                     )}
 
@@ -194,10 +194,10 @@ const NotificationsPage: React.FC = () => {
                             {renderNotificationList(groupedNotifications.older, "Older")}
                         </>
                     ) : !loading && (
-                        <div className="text-center py-20 text-slate-500">
-                            <BellIcon className="w-12 h-12 mx-auto text-slate-300" />
-                            <h3 className="mt-4 text-lg font-medium">All caught up!</h3>
-                            <p className="mt-1">You have no {filter === 'unread' ? 'unread' : ''} {typeFilter !== 'all' ? typeFilter : ''} notifications.</p>
+                        <div className="text-center py-20 text-gray-500">
+                            <BellIcon className="w-12 h-12 mx-auto text-gray-300" />
+                            <h3 className="mt-4 text-lg font-medium text-gray-900">All caught up!</h3>
+                            <p className="mt-1 text-sm">You have no {filter === 'unread' ? 'unread' : ''} {typeFilter !== 'all' ? typeFilter : ''} notifications.</p>
                         </div>
                     )}
                 </div>

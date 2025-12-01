@@ -51,7 +51,7 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Invoices</h1>
           <p className="mt-1 text-sm sm:text-base text-slate-600">Manage all your client billing and payments.</p>
         </div>
-        <button onClick={onNewInvoice} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-slate-700 transition-colors min-h-[44px]">
+        <button onClick={onNewInvoice} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-primary-hover transition-colors min-h-[44px]">
           <PlusIcon className="w-5 h-5" />
           <span>New Invoice</span>
         </button>

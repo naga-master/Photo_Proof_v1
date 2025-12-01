@@ -96,7 +96,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                         <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
                         <p className="mt-1 text-gray-600">Managing client profile and associated projects.</p>
                     </div>
-                    <button onClick={handleSaveChanges} className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700">
+                    <button onClick={handleSaveChanges} className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover">
                         Save Changes
                     </button>
                 </div>

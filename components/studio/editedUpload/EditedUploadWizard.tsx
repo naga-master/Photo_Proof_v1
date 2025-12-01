@@ -212,7 +212,7 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
                 disabled={!canContinue()}
                 className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
                   canContinue() 
-                    ? 'bg-slate-800 hover:bg-slate-700' 
+                    ? 'bg-primary hover:bg-primary-hover' 
                     : 'bg-slate-400 cursor-not-allowed'
                 }`}
                 title={!canContinue() ? 'Please complete the current step' : ''}
@@ -223,7 +223,7 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
             {step === 5 && (
               <button 
                 onClick={onExit} 
-                className="px-4 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded-md transition-colors"
               >
                 Close
               </button>
@@ -232,7 +232,7 @@ const EditedUploadWizardContent: React.FC<EditedUploadWizardProps> = ({
         </div>
         <div className="w-full bg-slate-200 h-1">
           <div 
-            className="bg-slate-800 h-1 transition-all duration-300" 
+            className="bg-primary h-1 transition-all duration-300" 
             style={{ width: `${((step + 1) / steps.length) * 100}%` }}
           />
         </div>

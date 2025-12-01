@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import OnboardingLayout from './OnboardingLayout';
 import { onboardingService } from '../../services/onboarding/onboardingService';
+import { typography } from '../../../config/designSystem';
 
 interface OnboardingBrandingProps {
   studioId: string;
@@ -8,28 +9,24 @@ interface OnboardingBrandingProps {
   onBack: () => void;
 }
 
+// Color presets - Brisk-inspired palette
 const colorPresets = [
+  { name: 'Teal', value: '#0EA5E9' },      // Primary Brisk color
   { name: 'Indigo', value: '#6366F1' },
   { name: 'Purple', value: '#A855F7' },
   { name: 'Pink', value: '#EC4899' },
   { name: 'Rose', value: '#F43F5E' },
   { name: 'Orange', value: '#F97316' },
   { name: 'Emerald', value: '#10B981' },
-  { name: 'Sky', value: '#0EA5E9' },
   { name: 'Slate', value: '#64748B' },
 ];
 
-const typographyOptions = [
-  'System Default (Inter & Cormorant)',
-  'Modern (Poppins)',
-  'Classic (Playfair Display)',
-  'Elegant (Lora)',
-  'Minimal (Work Sans)',
-];
+// Typography options from design system config
+const typographyOptions = typography.options.map(opt => opt.name);
 
 export default function OnboardingBranding({ studioId, onComplete, onBack }: OnboardingBrandingProps) {
-  const [brandColor, setBrandColor] = useState('#6366F1');
-  const [typography, setTypography] = useState('System Default (Inter & Cormorant)');
+  const [brandColor, setBrandColor] = useState('#0EA5E9'); // Default to Brisk teal
+  const [selectedTypography, setSelectedTypography] = useState('Modern (Inter)');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,7 +38,7 @@ export default function OnboardingBranding({ studioId, onComplete, onBack }: Onb
       await onboardingService.updateBranding({
         studio_id: studioId,
         brand_color: brandColor,
-        typography: typography,
+        typography: selectedTypography,
       });
       
       onComplete();
@@ -61,7 +58,7 @@ export default function OnboardingBranding({ studioId, onComplete, onBack }: Onb
       <div className="space-y-8">
         {/* Brand Color */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-3">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
             Brand Color
           </label>
           
@@ -72,17 +69,17 @@ export default function OnboardingBranding({ studioId, onComplete, onBack }: Onb
                 key={preset.value}
                 type="button"
                 onClick={() => setBrandColor(preset.value)}
-                className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-fast ${
                   brandColor === preset.value
-                    ? 'border-slate-900 bg-slate-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'border-gray-900 bg-gray-50'
+                    : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <div
-                  className="w-8 h-8 rounded-full"
+                  className="w-8 h-8 rounded-full shadow-sm"
                   style={{ backgroundColor: preset.value }}
                 />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-gray-700">
                   {preset.name}
                 </span>
               </button>
@@ -91,26 +88,26 @@ export default function OnboardingBranding({ studioId, onComplete, onBack }: Onb
 
           {/* Custom Color Picker */}
           <div className="flex items-center gap-4">
-            <label className="text-sm text-slate-600">Or choose custom:</label>
+            <label className="text-sm text-gray-600">Or choose custom:</label>
             <input
               type="color"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
-              className="w-16 h-10 rounded border border-slate-300 cursor-pointer"
+              className="w-16 h-10 rounded-lg border border-gray-300 cursor-pointer"
             />
             <input
               type="text"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
-              className="px-3 py-2 border border-slate-300 rounded-lg font-mono text-sm"
-              placeholder="#6366F1"
+              className="px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] outline-none transition-all"
+              placeholder="#0EA5E9"
             />
           </div>
         </div>
 
         {/* Typography */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-3">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
             Typography
           </label>
           <div className="grid grid-cols-1 gap-3">
@@ -118,37 +115,37 @@ export default function OnboardingBranding({ studioId, onComplete, onBack }: Onb
               <button
                 key={option}
                 type="button"
-                onClick={() => setTypography(option)}
-                className={`p-4 rounded-lg border-2 text-left transition-all ${
-                  typography === option
-                    ? 'border-indigo-600 bg-indigo-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                onClick={() => setSelectedTypography(option)}
+                className={`p-4 rounded-xl border-2 text-left transition-all duration-fast ${
+                  selectedTypography === option
+                    ? 'border-[#0ea5e9] bg-sky-50'
+                    : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <span className="font-medium text-slate-900">{option}</span>
+                <span className="font-medium text-gray-900">{option}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Preview */}
-        <div className="border-2 border-slate-200 rounded-lg p-6">
-          <p className="text-sm font-medium text-slate-700 mb-4">Preview</p>
+        <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
+          <p className="text-sm font-medium text-gray-700 mb-4">Preview</p>
           <div className="space-y-4">
             <div
-              className="inline-block px-6 py-3 rounded-lg text-white font-semibold"
+              className="inline-block px-6 py-3 rounded-lg text-white font-semibold shadow-sm transition-transform hover:scale-[1.02]"
               style={{ backgroundColor: brandColor }}
             >
               View Gallery
             </div>
-            <p className="text-slate-600">
+            <p className="text-gray-600 text-sm">
               This is how your buttons and accents will look with your chosen colors.
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
             <p className="font-semibold">Error</p>
             <p className="text-sm">{error}</p>
           </div>
@@ -158,20 +155,20 @@ export default function OnboardingBranding({ studioId, onComplete, onBack }: Onb
         <div className="flex gap-4 pt-4">
           <button
             onClick={onBack}
-            className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg font-semibold hover:border-slate-400 hover:bg-slate-50 transition-colors"
+            className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all duration-fast"
           >
             Back
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 px-6 py-3 bg-[#0ea5e9] text-white rounded-xl font-semibold hover:bg-[#0284c7] disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-fast shadow-sm hover:shadow-md"
           >
             {loading ? 'Saving...' : 'Continue to Domain Setup'}
           </button>
         </div>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-gray-500">
           Don't worry, you can change these settings anytime from your dashboard.
         </p>
       </div>

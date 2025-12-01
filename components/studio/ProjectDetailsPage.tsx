@@ -133,7 +133,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                         <button onClick={onAddPhotos} className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 min-h-[44px]">Add Photos</button>
                         <button 
                             onClick={() => onUploadEditedPhotos(project)} 
-                            className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center justify-center gap-2 min-h-[44px]"
+                            className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-hover flex items-center justify-center gap-2 min-h-[44px]"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -144,7 +144,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                     </div>
                  </div>
                  <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
-                    <button onClick={handleSaveChanges} className="w-full mb-4 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 min-h-[44px]">Save Changes</button>
+                    <button onClick={handleSaveChanges} className="w-full mb-4 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-hover min-h-[44px]">Save Changes</button>
                     <button onClick={() => setDeleteModalOpen(true)} className="w-full py-3 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg font-medium min-h-[44px]">Delete Project</button>
                  </div>
             </div>

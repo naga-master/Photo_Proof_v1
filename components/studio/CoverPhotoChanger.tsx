@@ -260,7 +260,7 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
                           onClick={() => handlePageChange(pageNum)}
                           className={`min-w-[40px] h-10 px-3 rounded-md font-medium transition-colors ${
                             isCurrentPage
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-primary text-white'
                               : 'text-gray-700 hover:bg-gray-100'
                           }`}
                         >
@@ -307,7 +307,7 @@ const CoverPhotoChanger: React.FC<CoverPhotoChangerProps> = ({ project, onUpdate
             <button
               onClick={handleSave}
               disabled={!selectedPhotoSrc || isSaving || isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isSaving ? (
                 <>

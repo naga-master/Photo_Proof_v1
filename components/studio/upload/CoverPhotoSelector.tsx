@@ -272,7 +272,7 @@ const CoverPhotoSelector: React.FC<CoverPhotoSelectorProps> = ({
                       onClick={() => handlePageChange(pageNum)}
                       className={`min-w-[36px] h-9 px-3 rounded-md font-medium transition-colors ${
                         isCurrentPage
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary text-white'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >

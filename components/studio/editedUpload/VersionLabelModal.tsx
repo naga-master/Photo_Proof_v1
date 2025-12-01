@@ -72,7 +72,7 @@ const VersionLabelModal: React.FC<VersionLabelModalProps> = ({
                   onClick={() => handleQuickSelect(commonLabel)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     label === commonLabel && !customInput
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -129,7 +129,7 @@ const VersionLabelModal: React.FC<VersionLabelModalProps> = ({
             disabled={!label && !customInput.trim()}
             className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
               label || customInput.trim()
-                ? 'bg-blue-600 hover:bg-blue-700'
+                ? 'bg-primary hover:bg-primary-hover'
                 : 'bg-slate-400 cursor-not-allowed'
             }`}
           >

@@ -194,7 +194,7 @@ export default function ContractsManagementPage() {
                     e.stopPropagation();
                     handleSendContract(contract);
                   }}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-3 py-1 text-xs bg-primary text-white rounded hover:bg-primary-hover"
                   title={contract.status === 'draft' ? 'Send to Client' : 'Resend Contract'}
                 >
                   {contract.status === 'draft' ? '📤 Send' : '🔄 Resend'}
@@ -271,7 +271,7 @@ export default function ContractsManagementPage() {
               <button
                 onClick={handleSign}
                 disabled={!agreedToTerms || signing}
-                className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {signing ? 'Signing...' : 'Sign & Submit'}
               </button>
@@ -323,7 +323,7 @@ export default function ContractsManagementPage() {
             >
               <button
                 onClick={() => setShowSignature(true)}
-                className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold"
+                className="w-full bg-primary text-white px-6 py-4 rounded-lg hover:bg-primary-hover transition-colors text-lg font-semibold"
               >
                 ✍️ Sign Contract
               </button>
@@ -369,7 +369,7 @@ export default function ContractsManagementPage() {
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-hover transition-colors flex items-center gap-2"
           >
             <span>➕</span>
             <span>New Contract</span>
@@ -399,7 +399,7 @@ export default function ContractsManagementPage() {
               onClick={() => setFilter(status === 'all' ? undefined : status)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 (!filter && status === 'all') || filter === status
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -426,7 +426,7 @@ export default function ContractsManagementPage() {
               </p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-hover transition-colors"
               >
                 Create Contract
               </button>

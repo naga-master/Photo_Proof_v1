@@ -61,7 +61,7 @@ const Step4_UploadManager: React.FC = () => {
                     {!allCompleted && (
                         <button
                             onClick={isUploading ? pauseUpload : resumeUpload}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700"
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover"
                         >
                             {isUploading ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
                             <span>{isUploading ? 'Pause All' : 'Resume All'}</span>
@@ -70,7 +70,7 @@ const Step4_UploadManager: React.FC = () => {
                     {allCompleted && (
                         <button
                             onClick={handleContinue}
-                            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 shadow-md transition-all"
+                            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover shadow-md transition-all"
                         >
                             <span>Continue to Summary</span>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ const Step4_UploadManager: React.FC = () => {
             </div>
             
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${overallProgress}%` }}></div>
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${overallProgress}%` }}></div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 -mr-2">
