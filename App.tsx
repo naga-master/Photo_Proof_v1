@@ -365,7 +365,6 @@ const AppContent: React.FC = () => {
     const [defaultTemplateId, setDefaultTemplateId] = useState<InvoiceTemplateId>('modern');
     const [studioPhoto, setStudioPhoto] = useState<string | null>(null);
     const [studioDescription, setStudioDescription] = useState<string>('');
-    const [studioDisplayImage, setStudioDisplayImage] = useState<string | null>(null);
     
     // Communication Settings
     const [communicationSettings, setCommunicationSettings] = useState<CommunicationSettings>({
@@ -1533,7 +1532,6 @@ const AppContent: React.FC = () => {
                         defaultTemplateId,
                         studioPhoto,
                         studioDescription,
-                        studioDisplayImage,
                     }}
                     onUpdateBranding={{
                         setLogo,
@@ -1543,7 +1541,6 @@ const AppContent: React.FC = () => {
                         setDefaultTemplateId,
                         setStudioPhoto,
                         setStudioDescription,
-                        setStudioDisplayImage,
                     }}
                     communicationSettings={communicationSettings}
                     onUpdateCommunicationSettings={setCommunicationSettings}

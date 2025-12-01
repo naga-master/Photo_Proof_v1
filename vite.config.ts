@@ -58,6 +58,11 @@ export default defineConfig(({ mode }) => {
               'X-Forwarded-Host': '$host',
             },
           },
+          '/uploads': {
+            target: backendTarget,
+            changeOrigin: true,
+            secure: false,
+          },
         },
       },
       plugins: [react()],

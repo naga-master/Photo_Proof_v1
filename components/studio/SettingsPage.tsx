@@ -14,7 +14,6 @@ interface SettingsPageProps {
         defaultTemplateId: InvoiceTemplateId;
         studioPhoto: string | null;
         studioDescription: string;
-        studioDisplayImage: string | null;
     };
     onUpdateBranding: {
         setLogo: (logo: string | null) => void;
@@ -24,7 +23,6 @@ interface SettingsPageProps {
         setDefaultTemplateId: (templateId: InvoiceTemplateId) => void;
         setStudioPhoto: (photo: string | null) => void;
         setStudioDescription: (description: string) => void;
-        setStudioDisplayImage: (image: string | null) => void;
     };
 }
 
@@ -367,11 +365,23 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     const { refreshTheme } = useStudioTheme();
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [localSettings, setLocalSettings] = useState(settings);
+    const [localLogo, setLocalLogo] = useState(branding.logo);
     const [localStudioPhoto, setLocalStudioPhoto] = useState(branding.studioPhoto);
     const [localStudioDescription, setLocalStudioDescription] = useState(branding.studioDescription);
-    const [localStudioDisplayImage, setLocalStudioDisplayImage] = useState(branding.studioDisplayImage);
     const [localDefaultTemplateId, setLocalDefaultTemplateId] = useState(branding.defaultTemplateId);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Sync local state when branding props change (e.g., after theme loads from API)
+    React.useEffect(() => {
+        console.log('[Settings] Syncing branding from props:', {
+            logo: branding.logo,
+            studioPhoto: branding.studioPhoto,
+            studioDescription: branding.studioDescription
+        });
+        setLocalLogo(branding.logo);
+        setLocalStudioPhoto(branding.studioPhoto);
+        setLocalStudioDescription(branding.studioDescription);
+    }, [branding.logo, branding.studioPhoto, branding.studioDescription]);
     
     // Studio users state - Initialize with sample data
     const [studioUsers, setStudioUsers] = useState<StudioUser[]>([
@@ -495,12 +505,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
         reader.readAsDataURL(file);
     };
 
-    const handleStudioDisplayImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onloadend = () => {
-            setLocalStudioDisplayImage(reader.result as string);
+            setLocalLogo(reader.result as string);
         };
         reader.readAsDataURL(file);
     };
@@ -602,6 +612,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
             const brandingPayload: Record<string, any> = {};
             
             // Only include fields that have values
+            if (localLogo) {
+                brandingPayload.logo_url = localLogo;
+            }
             if (localStudioPhoto) {
                 brandingPayload.studio_photo = localStudioPhoto;
             }
@@ -634,9 +647,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
             
             // Update local state
             onUpdateSettings(localSettings);
+            onUpdateBranding.setLogo(localLogo);
             onUpdateBranding.setStudioPhoto(localStudioPhoto);
             onUpdateBranding.setStudioDescription(localStudioDescription);
-            onUpdateBranding.setStudioDisplayImage(localStudioDisplayImage);
             onUpdateBranding.setDefaultTemplateId(localDefaultTemplateId);
             
             // Save billing configuration (would integrate with backend in production)
@@ -674,7 +687,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                     <p className="text-xs text-gray-500 mb-3">This photo will be displayed on your client-facing About page.</p>
                                     {localStudioPhoto && (
                                         <div className="relative w-48 h-48 mb-3">
-                                            <img src={localStudioPhoto} alt="Studio photo" className="w-full h-full object-cover rounded-lg" />
+                                            <img 
+                                                src={localStudioPhoto} 
+                                                alt="Studio photo" 
+                                                className="w-full h-full object-cover rounded-lg" 
+                                                onError={(e) => console.error('[Settings] Failed to load studio photo:', localStudioPhoto, e)}
+                                                onLoad={() => console.log('[Settings] Studio photo loaded:', localStudioPhoto)}
+                                            />
                                             <button
                                                 onClick={() => setLocalStudioPhoto(null)}
                                                 className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
@@ -712,18 +731,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                 <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
                                 Studio Branding
                             </h3>
-                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Configure your studio's display image for branding throughout the app.</p>
+                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Configure your studio's logo for branding across the app.</p>
                             <div className="mt-4 p-6 bg-white border border-gray-200 hover:border-primary/30 rounded-lg space-y-4 transition-colors">
-                                {/* Studio Display Image */}
+                                {/* Studio Logo */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Studio Display Image</label>
-                                    <p className="text-xs text-gray-500 mb-3">This image can be used in place of your logo for branding purposes.</p>
-                                    {localStudioDisplayImage && (
-                                        <div className="relative w-48 h-32 mb-3">
-                                            <img src={localStudioDisplayImage} alt="Studio display" className="w-full h-full object-cover rounded-lg" />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Studio Logo</label>
+                                    <p className="text-xs text-gray-500 mb-3">Your logo appears on invoices, client portal header, sidebar, and emails.</p>
+                                    {localLogo && !localLogo.includes('placeholder') && (
+                                        <div className="relative w-48 h-16 mb-3">
+                                            <img 
+                                                src={localLogo} 
+                                                alt="Studio logo" 
+                                                className="h-full object-contain rounded-lg" 
+                                                onError={(e) => console.error('[Settings] Failed to load logo:', localLogo, e)}
+                                                onLoad={() => console.log('[Settings] Logo loaded:', localLogo)}
+                                            />
                                             <button
-                                                onClick={() => setLocalStudioDisplayImage(null)}
-                                                className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+                                                onClick={() => setLocalLogo(null)}
+                                                className="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
                                             >
                                                 Remove
                                             </button>
@@ -732,7 +757,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={handleStudioDisplayImageUpload}
+                                        onChange={handleLogoUpload}
                                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
                                     />
                                 </div>
