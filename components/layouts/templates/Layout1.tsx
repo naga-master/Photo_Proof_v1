@@ -23,7 +23,7 @@ const Layout1: React.FC<LayoutComponentProps> = (props) => {
             </AuthenticatedBackgroundImage>
 
             {/* Controls */}
-            <header className="sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b">
+            <header className={`sticky ${isStudioPreview ? 'top-0' : 'top-16'} z-30 bg-white/80 backdrop-blur-sm border-b`}>
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div/>
                     <GalleryControls 

@@ -23,7 +23,7 @@ const Layout4: React.FC<LayoutComponentProps> = (props) => {
             </AuthenticatedBackgroundImage>
 
             {/* Controls */}
-            <header className="sticky top-16 z-30 bg-[#FAF0E6]/80 backdrop-blur-sm border-b border-gray-300">
+            <header className={`sticky ${isStudioPreview ? 'top-0' : 'top-16'} z-30 bg-[#FAF0E6]/80 backdrop-blur-sm border-b border-gray-300`}>
                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div>
                         <h2 className="text-xl font-semibold">{title}</h2>

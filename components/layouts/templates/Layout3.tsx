@@ -9,7 +9,7 @@ const Layout3: React.FC<LayoutComponentProps> = (props) => {
     return (
         <div className="bg-gray-100 text-gray-800">
             {/* Controls */}
-            <header className="sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b">
+            <header className={`sticky ${isStudioPreview ? 'top-0' : 'top-16'} z-30 bg-white/80 backdrop-blur-sm border-b`}>
                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-semibold">{title}</h1>
