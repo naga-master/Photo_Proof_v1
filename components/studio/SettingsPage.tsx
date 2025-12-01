@@ -606,7 +606,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     };
 
     const inputClasses = "mt-1 block w-full text-gray-900 input-focus-filled sm:text-sm px-2 py-2";
-    const tabButtonClasses = (tab: SettingsTab) => `px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center ${activeTab === tab ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'}`;
+    const tabButtonClasses = (tab: SettingsTab) => `px-4 py-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap min-h-[44px] flex items-center ${activeTab === tab ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`;
 
     const renderContent = () => {
         switch (activeTab) {
@@ -615,9 +615,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                     <div className="space-y-8">
                         {/* Studio Information */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">Studio Information</h3>
-                            <p className="text-sm text-gray-500 mt-1">Manage your studio's public-facing content for the About page.</p>
-                            <div className="mt-4 p-6 bg-gray-50 border rounded-lg space-y-6">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                Studio Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Manage your studio's public-facing content for the About page.</p>
+                            <div className="mt-4 p-6 bg-white border border-gray-200 hover:border-primary/30 rounded-lg space-y-6 transition-colors">
                                 {/* About Page Photo */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">About Page Photo</label>
@@ -658,9 +661,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
 
                         {/* Studio Branding */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">Studio Branding</h3>
-                            <p className="text-sm text-gray-500 mt-1">Configure your studio's display image for branding throughout the app.</p>
-                            <div className="mt-4 p-6 bg-gray-50 border rounded-lg space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                Studio Branding
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Configure your studio's display image for branding throughout the app.</p>
+                            <div className="mt-4 p-6 bg-white border border-gray-200 hover:border-primary/30 rounded-lg space-y-4 transition-colors">
                                 {/* Studio Display Image */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Studio Display Image</label>
@@ -688,9 +694,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
 
                         {/* Invoice Settings */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">Invoice Settings</h3>
-                            <p className="text-sm text-gray-500 mt-1">Set your default invoice template.</p>
-                            <div className="mt-4 p-6 bg-gray-50 border rounded-lg space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                Invoice Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Set your default invoice template.</p>
+                            <div className="mt-4 p-6 bg-white border border-gray-200 hover:border-primary/30 rounded-lg space-y-4 transition-colors">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Default Invoice Template</label>
                                     <select
@@ -713,9 +722,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                     <div className="space-y-8">
                         {/* Email Settings */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">Email Settings</h3>
-                            <p className="text-sm text-gray-500 mt-1">Configure your outbound email for notifications and invoices.</p>
-                            <div className="mt-4 p-6 bg-gray-50 border rounded-lg space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                Email Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Configure your outbound email for notifications and invoices.</p>
+                            <div className="mt-4 p-6 bg-white border border-gray-200 hover:border-primary/30 rounded-lg space-y-4 transition-colors">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">"From" Name</label>
                                     <input type="text" name="fromName" value={localSettings.email.fromName} onChange={handleEmailChange} className={inputClasses} placeholder="NAPSTER's Photo Lab" />
@@ -732,9 +744,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         </div>
                         {/* WhatsApp Settings */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">WhatsApp Settings</h3>
-                            <p className="text-sm text-gray-500 mt-1">Connect your WhatsApp Business account for client messaging.</p>
-                             <div className="mt-4 p-6 bg-gray-50 border rounded-lg space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                WhatsApp Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1 ml-3.5">Connect your WhatsApp Business account for client messaging.</p>
+                             <div className="mt-4 p-6 bg-white border border-gray-200 hover:border-primary/30 rounded-lg space-y-4 transition-colors">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">WhatsApp Business Phone Number ID</label>
                                     <input type="text" name="phoneNumberId" value={localSettings.whatsapp.phoneNumberId} onChange={handleWhatsAppChange} className={inputClasses} placeholder="From your Meta Business dashboard" />
@@ -758,8 +773,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         <div>
                             <div className="flex justify-between items-center mb-4">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-800">Studio Users</h3>
-                                    <p className="text-sm text-gray-500 mt-1">Manage studio team members and their access permissions.</p>
+                                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                        Studio Users
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1 ml-3.5">Manage studio team members and their access permissions.</p>
                                 </div>
                                 <button 
                                     onClick={handleCreateUser}
@@ -894,8 +912,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                 return (
                     <div className="space-y-6">
                         {/* Tax Configuration Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tax Configuration</h2>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-primary/30 p-6 transition-colors">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                Tax Configuration
+                            </h2>
                             
                             {/* GST Settings */}
                             <div className="space-y-4">
@@ -999,9 +1020,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         </div>
 
                         {/* Payment Methods Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h2>
-                            <p className="text-sm text-gray-600 mb-6">Configure how you accept payments from clients</p>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-primary/30 p-6 transition-colors">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                Payment Methods
+                            </h2>
+                            <p className="text-sm text-gray-600 mb-6 ml-3.5">Configure how you accept payments from clients</p>
                             
                             <div className="space-y-6">
                                 {billingConfig.paymentMethods.map((pm) => (
@@ -1013,7 +1037,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                                         type="button"
                                                         onClick={() => handlePaymentMethodToggle(pm.method)}
                                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                                            pm.enabled ? 'bg-green-600' : 'bg-gray-300'
+                                                            pm.enabled ? 'bg-primary' : 'bg-gray-300'
                                                         }`}
                                                     >
                                                         <span
@@ -1177,8 +1201,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         </div>
 
                         {/* General Billing Settings */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">General Billing Settings</h2>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-primary/30 p-6 transition-colors">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                                General Billing Settings
+                            </h2>
                             
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
@@ -1280,16 +1307,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         </div>
 
                         {/* Information Banner */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="bg-primary-light border border-primary/20 rounded-lg p-4">
                             <div className="flex">
                                 <div className="flex-shrink-0">
-                                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-blue-800">Billing Configuration</h3>
-                                    <div className="mt-2 text-sm text-blue-700">
+                                    <h3 className="text-sm font-medium text-primary">Billing Configuration</h3>
+                                    <div className="mt-2 text-sm text-gray-700">
                                         <p>These settings will be applied to all new invoices. Payment methods enabled here will be displayed on invoices for client convenience. Make sure to save changes after updating any configuration.</p>
                                     </div>
                                 </div>
@@ -1314,7 +1341,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
 
             {/* Mobile: Horizontal scrolling tabs */}
             <div className="overflow-x-auto -mx-4 sm:mx-0 mb-6 sm:mb-8">
-                <div className="flex gap-2 sm:gap-4 border-b px-4 sm:px-0 min-w-max sm:min-w-0">
+                <div className="flex gap-2 sm:gap-4 border-b border-gray-200 px-4 sm:px-0 min-w-max sm:min-w-0">
                     <button className={tabButtonClasses('general')} onClick={() => setActiveTab('general')}>General</button>
                     <button className={tabButtonClasses('communication')} onClick={() => setActiveTab('communication')}>Communication</button>
                     <button className={tabButtonClasses('administration')} onClick={() => setActiveTab('administration')}>Administration</button>
