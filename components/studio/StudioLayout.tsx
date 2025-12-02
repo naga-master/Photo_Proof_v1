@@ -183,9 +183,27 @@ const StudioLayout: React.FC<StudioLayoutProps> = (props) => {
         handleSetView('projects');
     };
 
-    const handleUpdateProject = (updatedAlbum: Album) => {
-        onUpdateAlbums(albums.map(a => a.id === updatedAlbum.id ? updatedAlbum : a));
-        setManagingProject(updatedAlbum);
+    const handleUpdateProject = async (updatedAlbum: Album) => {
+        try {
+            // Call API to save changes
+            await projectService.updateProject(updatedAlbum.id, {
+                title: updatedAlbum.title,
+                shoot_date: updatedAlbum.shootDate,
+                layout: updatedAlbum.layout,
+                status: updatedAlbum.status,
+                is_locked: updatedAlbum.isLocked,
+                is_password_protected: updatedAlbum.isPasswordProtected,
+                gallery_password: updatedAlbum.galleryPassword,
+            });
+            
+            // Update local state after successful save
+            onUpdateAlbums(albums.map(a => a.id === updatedAlbum.id ? updatedAlbum : a));
+            setManagingProject(updatedAlbum);
+            toast.success('Project updated successfully');
+        } catch (error: any) {
+            console.error('Error updating project:', error);
+            toast.error(error?.message || 'Failed to update project');
+        }
     };
 
     const handleDeleteProject = async (albumId: string) => {

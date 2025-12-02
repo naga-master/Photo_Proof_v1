@@ -5,18 +5,8 @@
  * Used for comment notifications, order updates, etc.
  */
 
-import axios from 'axios';
+import { apiClient } from '../lib/api-client';
 import type { Notification, NotificationType } from '../types';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('auth_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 interface NotificationApiResponse {
   id: string;
@@ -101,20 +91,15 @@ class ApiNotificationService {
     unreadOnly?: boolean
   ): Promise<{ notifications: Notification[]; unreadCount: number }> {
     try {
-      const params = new URLSearchParams();
-      if (type) params.append('type', type);
-      if (unreadOnly) params.append('unread', 'true');
+      const params: Record<string, string> = {};
+      if (type) params.type = type;
+      if (unreadOnly) params.unread = 'true';
       
-      const queryString = params.toString();
-      const url = `${API_BASE_URL}/api/notifications${queryString ? `?${queryString}` : ''}`;
-      
-      const response = await axios.get<NotificationListResponse>(url, {
-        headers: getAuthHeaders(),
-      });
+      const response = await apiClient.get<NotificationListResponse>('/api/notifications', params);
       
       return {
-        notifications: response.data.notifications.map(mapNotification),
-        unreadCount: response.data.unread_count,
+        notifications: response.notifications.map(mapNotification),
+        unreadCount: response.unread_count,
       };
     } catch (error) {
       console.error('[ApiNotificationService] Failed to fetch notifications:', error);
@@ -127,11 +112,8 @@ class ApiNotificationService {
    */
   static async getUnreadCount(): Promise<number> {
     try {
-      const response = await axios.get<NotificationCountResponse>(
-        `${API_BASE_URL}/api/notifications/count`,
-        { headers: getAuthHeaders() }
-      );
-      return response.data.unread_count;
+      const response = await apiClient.get<NotificationCountResponse>('/api/notifications/count');
+      return response.unread_count;
     } catch (error) {
       console.error('[ApiNotificationService] Failed to fetch unread count:', error);
       return 0;
@@ -143,11 +125,7 @@ class ApiNotificationService {
    */
   static async markAsRead(notificationId: string): Promise<boolean> {
     try {
-      await axios.post(
-        `${API_BASE_URL}/api/notifications/${notificationId}/read`,
-        {},
-        { headers: getAuthHeaders() }
-      );
+      await apiClient.post(`/api/notifications/${notificationId}/read`, {});
       return true;
     } catch (error) {
       console.error('[ApiNotificationService] Failed to mark notification as read:', error);
@@ -160,11 +138,7 @@ class ApiNotificationService {
    */
   static async markAllRead(): Promise<boolean> {
     try {
-      await axios.post(
-        `${API_BASE_URL}/api/notifications/read-all`,
-        {},
-        { headers: getAuthHeaders() }
-      );
+      await apiClient.post('/api/notifications/read-all', {});
       return true;
     } catch (error) {
       console.error('[ApiNotificationService] Failed to mark all as read:', error);
@@ -193,11 +167,7 @@ class ApiNotificationService {
         failed_files: params.failedFiles,
       };
       
-      await axios.post(
-        `${API_BASE_URL}/api/notifications/upload`,
-        request,
-        { headers: getAuthHeaders() }
-      );
+      await apiClient.post('/api/notifications/upload', request);
       
       console.log('[ApiNotificationService] Upload notification created:', params.status);
       return true;

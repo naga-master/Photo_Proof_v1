@@ -52,6 +52,8 @@ export interface UpdateProjectRequest {
   package_id?: string;
   status?: string;
   is_locked?: boolean;
+  is_password_protected?: boolean;
+  gallery_password?: string;
 }
 
 export interface ProjectListResponse {

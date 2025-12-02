@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Album, Client } from '../../types';
 import { ArrowLeftIcon, PlusIcon, CameraIcon } from '../icons';
 import CoverPhotoChanger from './CoverPhotoChanger';
+import ProjectTeamModal from './ProjectTeamModal';
 import { useAccessControl } from '../../contexts/AccessControlContext';
 
 interface ProjectDetailsPageProps {
@@ -20,6 +21,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
   const [details, setDetails] = useState(project);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isCoverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
+  const [isTeamModalOpen, setTeamModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { hasPermission } = useAccessControl();
   
@@ -34,7 +36,6 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
 
   const handleSaveChanges = () => {
     onUpdateProject(details);
-    alert('Changes saved!');
   };
 
   const handleUpdateCover = async (newCoverSrc: string) => {
@@ -116,6 +117,45 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                             <label htmlFor="shootDate" className="block text-sm font-medium text-gray-700 mb-2">Shoot Date</label>
                             <input type="date" id="shootDate" name="shootDate" value={details.shootDate || ''} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500" />
                         </div>
+                        
+                        {/* Gallery Protection Section */}
+                        <div className="pt-4 mt-4 border-t border-gray-200">
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">Gallery Protection</h3>
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={details.isPasswordProtected || false}
+                                        onChange={(e) => setDetails(prev => ({ 
+                                            ...prev, 
+                                            isPasswordProtected: e.target.checked,
+                                            galleryPassword: e.target.checked ? prev.galleryPassword : ''
+                                        }))}
+                                        className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+                                    />
+                                    <span className="text-sm text-gray-700">Password protect this gallery</span>
+                                </label>
+                                {details.isPasswordProtected && (
+                                    <div>
+                                        <label htmlFor="galleryPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Gallery Password
+                                        </label>
+                                        <input 
+                                            type="password" 
+                                            id="galleryPassword" 
+                                            name="galleryPassword" 
+                                            value={details.galleryPassword || ''} 
+                                            onChange={handleChange}
+                                            placeholder="Enter a password for clients"
+                                            className="w-full px-3 sm:px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-lg min-h-[44px] focus:ring-2 focus:ring-gray-500" 
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            Clients will need to enter this password to view the gallery.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -145,6 +185,17 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                             Upload Edited Photos
                         </button>
                         <button onClick={() => onViewGallery(project)} className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 min-h-[44px]">View Gallery</button>
+                        {hasPermission('canManageUsers') && (
+                            <button 
+                                onClick={() => setTeamModalOpen(true)} 
+                                className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 flex items-center justify-center gap-2 min-h-[44px]"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                Manage Team
+                            </button>
+                        )}
                     </div>
                  </div>
                  <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
@@ -216,6 +267,13 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                 onClose={() => setCoverPhotoModalOpen(false)}
             />
         )}
+
+        <ProjectTeamModal
+            projectId={project.id}
+            projectTitle={project.title}
+            isOpen={isTeamModalOpen}
+            onClose={() => setTeamModalOpen(false)}
+        />
     </div>
   );
 };

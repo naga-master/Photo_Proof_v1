@@ -71,6 +71,9 @@ export interface Album {
   status?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Gallery password protection
+  isPasswordProtected?: boolean;
+  galleryPassword?: string;  // Only for sending to API, never stored in frontend
 }
 
 export interface Client {
