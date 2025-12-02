@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CommunicationSettings, LayoutId, InvoiceTemplateId, StudioUser, StudioUserRole, StudioUserPermissions, BillingConfiguration, TaxConfiguration, PaymentMethodConfig, PaymentMethod } from '../../types';
 import { PlusIcon, CheckIcon, XCircleIcon, EyeIcon } from '../icons';
 import { useStudioTheme } from '../../src/providers/StudioThemeProvider';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SettingsPageProps {
     settings: CommunicationSettings;
@@ -363,6 +364,7 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings, branding, onUpdateBranding }) => {
     const { refreshTheme } = useStudioTheme();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [localSettings, setLocalSettings] = useState(settings);
     const [localLogo, setLocalLogo] = useState(branding.logo);
@@ -383,21 +385,91 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
         setLocalStudioDescription(branding.studioDescription);
     }, [branding.logo, branding.studioPhoto, branding.studioDescription]);
     
-    // Studio users state - Initialize with sample data
-    const [studioUsers, setStudioUsers] = useState<StudioUser[]>([
-        {
-            id: 'user_1',
-            name: 'Admin User',
-            email: 'admin@napsterphotolab.com',
-            username: 'admin',
-            role: 'admin',
-            permissions: getDefaultPermissions('admin'),
-            avatarUrl: 'https://i.pravatar.cc/150?u=admin',
-            isActive: true,
-            lastLogin: new Date().toISOString(),
-            createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-    ]);
+    // Studio users state
+    const [studioUsers, setStudioUsers] = useState<StudioUser[]>([]);
+    const [usersLoading, setUsersLoading] = useState(true);
+    const [invitationLink, setInvitationLink] = useState<string | null>(null);
+    
+    // Fetch studio users from API
+    useEffect(() => {
+        const fetchStudioUsers = async () => {
+            try {
+                setUsersLoading(true);
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch('/api/studio/users', {
+                    credentials: 'include',
+                    headers: {
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    },
+                });
+                
+                if (response.ok) {
+                    const apiUsers = await response.json();
+                    // Map API response to StudioUser format
+                    const mappedUsers: StudioUser[] = apiUsers.map((u: any) => ({
+                        id: u.id,
+                        name: u.name,
+                        email: u.email,
+                        username: u.username,
+                        role: mapApiRoleToStudioRole(u.role),
+                        permissions: getDefaultPermissions(mapApiRoleToStudioRole(u.role)),
+                        avatarUrl: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=6366f1&color=fff&size=150`,
+                        isActive: u.is_active,
+                        lastLogin: u.last_login_at,
+                        createdAt: u.created_at,
+                        invitationAccepted: u.invitation_accepted,
+                    }));
+                    setStudioUsers(mappedUsers);
+                } else {
+                    console.error('Failed to fetch studio users');
+                    // Fallback to current user if API fails
+                    if (user) {
+                        setStudioUsers([{
+                            id: user.id || 'user_1',
+                            name: user.name || 'Studio Owner',
+                            email: user.email || '',
+                            username: user.username || user.email || '',
+                            role: 'admin' as StudioUserRole,
+                            permissions: getDefaultPermissions('admin'),
+                            avatarUrl: user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=6366f1&color=fff&size=150`,
+                            isActive: true,
+                            lastLogin: new Date().toISOString(),
+                            createdAt: user.created_at || new Date().toISOString(),
+                        }]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching studio users:', error);
+            } finally {
+                setUsersLoading(false);
+            }
+        };
+        
+        if (user) {
+            fetchStudioUsers();
+        }
+    }, [user]);
+    
+    // Helper function to map API roles to frontend roles
+    const mapApiRoleToStudioRole = (apiRole: string): StudioUserRole => {
+        const roleMap: Record<string, StudioUserRole> = {
+            'studio_owner': 'admin',
+            'studio_admin': 'admin',
+            'studio_photographer': 'editor',
+        };
+        return roleMap[apiRole] || 'viewer';
+    };
+    
+    // Helper function to map frontend roles to API roles
+    const mapStudioRoleToApiRole = (studioRole: StudioUserRole): string => {
+        const roleMap: Record<StudioUserRole, string> = {
+            'admin': 'studio_admin',
+            'manager': 'studio_admin',
+            'editor': 'studio_photographer',
+            'viewer': 'studio_photographer',
+        };
+        return roleMap[studioRole] || 'studio_photographer';
+    };
     const [isUserModalOpen, setUserModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<StudioUser | null>(null);
 
@@ -526,26 +598,132 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
         setUserModalOpen(true);
     };
 
-    const handleSaveUser = (user: StudioUser) => {
-        const existingIndex = studioUsers.findIndex(u => u.id === user.id);
-        if (existingIndex > -1) {
-            const newUsers = [...studioUsers];
-            newUsers[existingIndex] = user;
-            setStudioUsers(newUsers);
-        } else {
-            setStudioUsers([...studioUsers, user]);
+    const handleSaveUser = async (userToSave: StudioUser) => {
+        const existingIndex = studioUsers.findIndex(u => u.id === userToSave.id);
+        const token = localStorage.getItem('auth_token');
+        
+        try {
+            if (existingIndex > -1) {
+                // Update existing user
+                const response = await fetch(`/api/studio/users/${userToSave.id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        name: userToSave.name,
+                        role: mapStudioRoleToApiRole(userToSave.role),
+                        is_active: userToSave.isActive,
+                    }),
+                });
+                
+                if (response.ok) {
+                    const newUsers = [...studioUsers];
+                    newUsers[existingIndex] = userToSave;
+                    setStudioUsers(newUsers);
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to update user: ${error.detail || 'Unknown error'}`);
+                }
+            } else {
+                // Invite new user
+                const response = await fetch('/api/studio/users', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: userToSave.email,
+                        name: userToSave.name,
+                        role: mapStudioRoleToApiRole(userToSave.role),
+                    }),
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Show invitation link
+                    setInvitationLink(data.invitation_link);
+                    alert(`Invitation created! Share this link with ${userToSave.email}:\n\n${data.invitation_link}`);
+                    
+                    // Add user to local state
+                    const newUser: StudioUser = {
+                        ...userToSave,
+                        id: data.id,
+                    };
+                    setStudioUsers([...studioUsers, newUser]);
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to invite user: ${error.detail || 'Unknown error'}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error saving user:', error);
+            alert('An error occurred while saving the user');
         }
     };
 
-    const handleToggleUserStatus = (userId: string) => {
-        setStudioUsers(studioUsers.map(u => 
-            u.id === userId ? { ...u, isActive: !u.isActive } : u
-        ));
+    const handleToggleUserStatus = async (userId: string) => {
+        const userToToggle = studioUsers.find(u => u.id === userId);
+        if (!userToToggle) return;
+        
+        const token = localStorage.getItem('auth_token');
+        
+        try {
+            const response = await fetch(`/api/studio/users/${userId}`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    is_active: !userToToggle.isActive,
+                }),
+            });
+            
+            if (response.ok) {
+                setStudioUsers(studioUsers.map(u => 
+                    u.id === userId ? { ...u, isActive: !u.isActive } : u
+                ));
+            } else {
+                const error = await response.json();
+                alert(`Failed to toggle user status: ${error.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error toggling user status:', error);
+            alert('An error occurred while toggling user status');
+        }
     };
 
-    const handleDeleteUser = (userId: string) => {
-        if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            setStudioUsers(studioUsers.filter(u => u.id !== userId));
+    const handleDeleteUser = async (userId: string) => {
+        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            return;
+        }
+        
+        const token = localStorage.getItem('auth_token');
+        
+        try {
+            const response = await fetch(`/api/studio/users/${userId}`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+            });
+            
+            if (response.ok) {
+                setStudioUsers(studioUsers.filter(u => u.id !== userId));
+            } else {
+                const error = await response.json();
+                alert(`Failed to delete user: ${error.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert('An error occurred while deleting the user');
         }
     };
 

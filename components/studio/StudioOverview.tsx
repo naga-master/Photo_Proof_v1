@@ -4,6 +4,7 @@ import { PlusIcon, ChatBubbleIcon, ShoppingCartIcon, BellIcon, UploadCloudIcon, 
 import { AuthenticatedImage } from '../common/AuthenticatedImage';
 import { ImagePlaceholder } from '../common/ImagePlaceholder';
 import ApiNotificationService from '../../services/apiNotificationService';
+import { studioService, DashboardMetrics } from '../../services/studioService';
 
 interface StudioOverviewProps {
   albums: Album[];
@@ -24,10 +25,30 @@ const activityIcons: Record<string, React.ReactNode> = {
 const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     const [recentActivity, setRecentActivity] = useState<Notification[]>([]);
     const [activityLoading, setActivityLoading] = useState(true);
+    const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+    const [metricsLoading, setMetricsLoading] = useState(true);
 
-    const totalProjects = albums.length;
-    const totalImages = albums.reduce((sum, album) => sum + album.photoCount, 0);
-    const totalComments = albums.reduce((sum, album) => sum + (album.totalComments || 0), 0);
+    // Fetch dashboard metrics from API (accurate counts)
+    useEffect(() => {
+        const fetchMetrics = async () => {
+            try {
+                const data = await studioService.getDashboardMetrics();
+                setMetrics(data);
+            } catch (err) {
+                console.error('[StudioOverview] Failed to fetch metrics:', err);
+                // Fallback to calculated values from albums prop
+                setMetrics({
+                    total_projects: albums.length,
+                    total_photos: albums.reduce((sum, album) => sum + album.photoCount, 0),
+                    total_comments: albums.reduce((sum, album) => sum + (album.totalComments || 0), 0),
+                    active_clients: new Set(albums.map(a => a.clientId)).size
+                });
+            } finally {
+                setMetricsLoading(false);
+            }
+        };
+        fetchMetrics();
+    }, [albums]);
 
     // Fetch recent activity from API
     useEffect(() => {
@@ -44,12 +65,48 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
         fetchActivity();
     }, []);
 
-    // Calculate deltas (mock data - in real app, compare with previous period)
+    // Use dynamic metrics or fallback to calculated values
+    const totalProjects = metrics?.total_projects ?? albums.length;
+    const totalImages = metrics?.total_photos ?? albums.reduce((sum, album) => sum + album.photoCount, 0);
+    const totalComments = metrics?.total_comments ?? albums.reduce((sum, album) => sum + (album.totalComments || 0), 0);
+    const activeClients = metrics?.active_clients ?? new Set(albums.map(a => a.clientId)).size;
+
+    // Format delta for display
+    const formatDelta = (delta: number | undefined): string => {
+        if (delta === undefined) return '—';
+        return delta >= 0 ? `+${delta}` : `${delta}`;
+    };
+
+    // Stats with loading state and dynamic deltas
     const stats = [
-        { label: 'Total Projects', value: totalProjects, delta: '+3', deltaType: 'positive' as const, context: 'vs last month' },
-        { label: 'Total Images', value: totalImages.toLocaleString(), delta: '+128', deltaType: 'positive' as const, context: 'vs last month' },
-        { label: 'Total Comments', value: totalComments.toLocaleString(), delta: '+24', deltaType: 'positive' as const, context: 'vs last week' },
-        { label: 'Active Clients', value: new Set(albums.map(a => a.clientId)).size, delta: '+2', deltaType: 'positive' as const, context: 'vs last month' },
+        { 
+            label: 'Total Projects', 
+            value: metricsLoading ? '...' : totalProjects, 
+            delta: formatDelta(metrics?.projects_delta), 
+            deltaType: (metrics?.projects_delta ?? 0) >= 0 ? 'positive' as const : 'negative' as const, 
+            context: 'vs last month' 
+        },
+        { 
+            label: 'Total Images', 
+            value: metricsLoading ? '...' : totalImages.toLocaleString(), 
+            delta: formatDelta(metrics?.photos_delta), 
+            deltaType: (metrics?.photos_delta ?? 0) >= 0 ? 'positive' as const : 'negative' as const, 
+            context: 'vs last month' 
+        },
+        { 
+            label: 'Total Comments', 
+            value: metricsLoading ? '...' : totalComments.toLocaleString(), 
+            delta: formatDelta(metrics?.comments_delta), 
+            deltaType: (metrics?.comments_delta ?? 0) >= 0 ? 'positive' as const : 'negative' as const, 
+            context: 'vs last month' 
+        },
+        { 
+            label: 'Active Clients', 
+            value: metricsLoading ? '...' : activeClients, 
+            delta: formatDelta(metrics?.clients_delta), 
+            deltaType: (metrics?.clients_delta ?? 0) >= 0 ? 'positive' as const : 'negative' as const, 
+            context: 'vs last month' 
+        },
     ];
 
     const quickActions = [

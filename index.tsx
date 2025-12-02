@@ -8,6 +8,7 @@ import App from './App';
 import OnboardingPage from './src/pages/OnboardingPage';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
+import AcceptInvitationPage from './components/AcceptInvitationPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { StudioThemeProvider } from './src/providers/StudioThemeProvider';
 
@@ -30,6 +31,11 @@ root.render(
         <Route path="/reset-password" element={
           <StudioThemeProvider>
             <ResetPasswordPage />
+          </StudioThemeProvider>
+        } />
+        <Route path="/accept-invitation" element={
+          <StudioThemeProvider>
+            <AcceptInvitationPage />
           </StudioThemeProvider>
         } />
         <Route path="/*" element={
