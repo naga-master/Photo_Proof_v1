@@ -104,8 +104,8 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
   const allConfigNavItems: (NavItem & { permission?: string; feature?: string })[] = [
     { view: 'layouts', label: 'Layouts & Brand', icon: <LayoutIcon className="w-5 h-5" />, permission: 'canManageBranding' },
     { view: 'services', label: 'Services', icon: <ServicesIcon className="w-5 h-5" />, permission: 'canManageServices', feature: 'services_module' },
-    { view: 'tools', label: 'AI Tools', icon: <AIToolsIcon className="w-5 h-5" /> },
-    { view: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" />, feature: 'notifications_module' },
+    { view: 'tools', label: 'AI Tools', icon: <AIToolsIcon className="w-5 h-5" />, permission: 'canUseAITools' },
+    { view: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" />, permission: 'canViewNotifications', feature: 'notifications_module' },
     { view: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" />, feature: 'settings_module' },
   ];
 

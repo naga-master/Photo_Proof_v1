@@ -400,6 +400,7 @@ export interface StudioUserPermissions {
   // Communication
   canSendNotifications: boolean;
   canManageCommunication: boolean;
+  canViewNotifications: boolean;
   
   // Advanced / Fine-grained
   canDownloadOriginals: boolean;
@@ -407,6 +408,9 @@ export interface StudioUserPermissions {
   canApplyDiscounts: boolean;
   canViewRevenue: boolean;
   canShareExternally: boolean;
+  
+  // AI Tools
+  canUseAITools: boolean;
 }
 
 export interface StudioUser {

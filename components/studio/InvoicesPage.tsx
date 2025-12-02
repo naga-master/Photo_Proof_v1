@@ -300,7 +300,7 @@ const InvoiceEditor: React.FC<InvoicesPageProps> = (props) => {
                         <h1 className="text-3xl font-bold text-slate-900">Create Invoice</h1>
                         <p className="mt-1 text-slate-600">Fill in the details to generate a new invoice.</p>
                     </div>
-                    <button onClick={handleSaveInvoice} className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-md hover:bg-slate-700">
+                    <button onClick={handleSaveInvoice} className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover">
                         Save Invoice
                     </button>
                 </header>

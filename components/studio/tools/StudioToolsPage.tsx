@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AIPhotoBooth from './AIPhotoBooth';
 import HistoricImager from './HistoricImager';
 import VirtualTryOn from './VirtualTryOn';
+import { apiClient } from '../../../lib/api-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -27,17 +28,15 @@ const StudioToolsPage: React.FC = () => {
         const fetchTools = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${API_URL}/v2/ai-tools?active_only=true`);
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch AI tools');
-                }
-                
-                const data = await response.json();
+                const data = await apiClient.get<{ tools: AITool[]; total: number }>('/v2/ai-tools', { active_only: 'true' });
                 setTools(data.tools || []);
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Error fetching AI tools:', err);
-                setError('Failed to load AI tools. Please try again later.');
+                if (err.status === 403) {
+                    setError('You do not have permission to access AI tools.');
+                } else {
+                    setError('Failed to load AI tools. Please try again later.');
+                }
             } finally {
                 setLoading(false);
             }

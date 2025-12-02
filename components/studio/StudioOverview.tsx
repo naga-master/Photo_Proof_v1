@@ -5,6 +5,7 @@ import { AuthenticatedImage } from '../common/AuthenticatedImage';
 import { ImagePlaceholder } from '../common/ImagePlaceholder';
 import ApiNotificationService from '../../services/apiNotificationService';
 import { studioService, DashboardMetrics } from '../../services/studioService';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 interface StudioOverviewProps {
   albums: Album[];
@@ -23,6 +24,7 @@ const activityIcons: Record<string, React.ReactNode> = {
 };
 
 const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
+    const { hasPermission } = useAccessControl();
     const [recentActivity, setRecentActivity] = useState<Notification[]>([]);
     const [activityLoading, setActivityLoading] = useState(true);
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -110,11 +112,11 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     ];
 
     const quickActions = [
-        { label: 'New Project', action: () => setView('upload') },
-        { label: 'Create Invoice', action: () => setView('invoices') },
-        { label: 'Invite Client', action: () => setView('clients') },
+        hasPermission('canCreateProjects') && { label: 'New Project', action: () => setView('upload') },
+        hasPermission('canCreateInvoices') && { label: 'Create Invoice', action: () => setView('invoices') },
+        hasPermission('canCreateClients') && { label: 'Invite Client', action: () => setView('clients') },
         { label: 'New Layout', action: () => setView('layouts') },
-    ]
+    ].filter(Boolean) as { label: string; action: () => void }[]
 
     return (
         <div className="p-6 lg:p-8 animate-fade-in space-y-8">
@@ -124,12 +126,14 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
                     <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Studio Dashboard</h1>
                     <p className="mt-1 text-gray-500 text-sm">Welcome back, here's a summary of your studio.</p>
                 </div>
-                <div>
-                    <button onClick={() => setView('upload')} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-primary-hover hover:shadow-md transition-all duration-fast">
-                        <PlusIcon className="w-5 h-5"/>
-                        <span>Create Project</span>
-                    </button>
-                </div>
+                {hasPermission('canCreateProjects') && (
+                    <div>
+                        <button onClick={() => setView('upload')} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-primary-hover hover:shadow-md transition-all duration-fast">
+                            <PlusIcon className="w-5 h-5"/>
+                            <span>Create Project</span>
+                        </button>
+                    </div>
+                )}
             </header>
             
             {/* Stats Grid - Brisk Style */}

@@ -59,11 +59,13 @@ const getDefaultPermissions = (role: StudioUserRole): StudioUserPermissions => {
         canManageBranding: false,
         canSendNotifications: false,
         canManageCommunication: false,
+        canViewNotifications: false,
         canDownloadOriginals: false,
         canManageComments: false,
         canApplyDiscounts: false,
         canViewRevenue: false,
         canShareExternally: false,
+        canUseAITools: false,
     };
 
     switch (role) {
@@ -256,6 +258,8 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
             { key: 'canApplyDiscounts' as keyof StudioUserPermissions, label: 'Apply Discounts' },
             { key: 'canViewRevenue' as keyof StudioUserPermissions, label: 'View Revenue' },
             { key: 'canShareExternally' as keyof StudioUserPermissions, label: 'Share Externally' },
+            { key: 'canViewNotifications' as keyof StudioUserPermissions, label: 'View Notifications' },
+            { key: 'canUseAITools' as keyof StudioUserPermissions, label: 'Use AI Tools' },
         ],
     };
 
