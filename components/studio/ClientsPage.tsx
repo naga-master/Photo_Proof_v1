@@ -5,6 +5,8 @@ import { Avatar } from '../Avatar';
 import { clientService } from '../../services/clientService';
 import { DuplicateDetectionModal } from '../../src/components/DuplicateDetectionModal';
 import type { DuplicateInfo } from '../../services/photoService';
+import { CanCreate, CanEdit } from '../AccessGate';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 const PasswordDisplay: React.FC<{ 
     clientId?: string;
@@ -16,6 +18,8 @@ const PasswordDisplay: React.FC<{
     const [isRevealed, setIsRevealed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [displayPassword, setDisplayPassword] = useState(password);
+    const { hasPermission } = useAccessControl();
+    const canEditClients = hasPermission('canEditClients');
     
     // If we have a plain password (from creation or after reset), show it with view/reset options
     if (displayPassword) {
@@ -54,13 +58,15 @@ const PasswordDisplay: React.FC<{
                 >
                     {isRevealed ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                 </button>
-                <button
-                    onClick={handleReset}
-                    disabled={isLoading}
-                    className="text-xs text-orange-600 hover:text-orange-800 font-medium disabled:opacity-50"
-                >
-                    {isLoading ? '...' : 'Reset'}
-                </button>
+                {canEditClients && (
+                    <button
+                        onClick={handleReset}
+                        disabled={isLoading}
+                        className="text-xs text-orange-600 hover:text-orange-800 font-medium disabled:opacity-50"
+                    >
+                        {isLoading ? '...' : 'Reset'}
+                    </button>
+                )}
             </div>
         );
     }
@@ -90,14 +96,16 @@ const PasswordDisplay: React.FC<{
         return (
             <div className="flex items-center gap-2">
                 <span className="font-mono text-sm text-gray-400" title="Password is set but hidden. Click Reset to generate a new one.">••••••••</span>
-                <button
-                    onClick={handleReset}
-                    disabled={isLoading}
-                    className="text-xs text-orange-600 hover:text-orange-800 font-medium disabled:opacity-50"
-                    title="Generate a new password (replaces existing)"
-                >
-                    {isLoading ? '...' : 'Reset'}
-                </button>
+                {canEditClients && (
+                    <button
+                        onClick={handleReset}
+                        disabled={isLoading}
+                        className="text-xs text-orange-600 hover:text-orange-800 font-medium disabled:opacity-50"
+                        title="Generate a new password (replaces existing)"
+                    >
+                        {isLoading ? '...' : 'Reset'}
+                    </button>
+                )}
             </div>
         );
     }
@@ -121,6 +129,10 @@ const PasswordDisplay: React.FC<{
             setIsLoading(false);
         }
     };
+    
+    if (!canEditClients) {
+        return <span className="text-xs text-gray-400">No password</span>;
+    }
     
     return (
         <button
@@ -389,10 +401,12 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
             <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Clients</h1>
             <p className="mt-1 text-sm text-gray-500">Manage your client relationships and projects.</p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-all duration-fast shadow-sm hover:shadow-md">
-            <PlusIcon className="w-5 h-5" />
-            <span>New Client</span>
-        </button>
+        <CanCreate module="clients">
+          <button onClick={() => setModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-all duration-fast shadow-sm hover:shadow-md">
+              <PlusIcon className="w-5 h-5" />
+              <span>New Client</span>
+          </button>
+        </CanCreate>
       </header>
 
       {/* Desktop Table View */}

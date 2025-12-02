@@ -3,6 +3,7 @@ import type { Album, DashboardView, Client, ServicePackage } from '../../types';
 import { PlusIcon } from '../icons';
 import { AuthenticatedImage } from '../common/AuthenticatedImage';
 import { ImagePlaceholder } from '../common/ImagePlaceholder';
+import { CanCreate } from '../AccessGate';
 
 interface StudioProjectsProps {
   albums: Album[];
@@ -70,10 +71,12 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
             <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 tracking-tight">Projects</h1>
             <p className="mt-1 text-sm text-gray-500">Manage all your photography projects and galleries.</p>
         </div>
-        <button onClick={() => setView('upload')} className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-all duration-fast shadow-sm hover:shadow-md">
-            <PlusIcon className="w-5 h-5" />
-            <span>New Project</span>
-        </button>
+        <CanCreate module="projects">
+          <button onClick={() => setView('upload')} className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-all duration-fast shadow-sm hover:shadow-md">
+              <PlusIcon className="w-5 h-5" />
+              <span>New Project</span>
+          </button>
+        </CanCreate>
       </header>
 
       <div className="mb-6 flex flex-col gap-3">

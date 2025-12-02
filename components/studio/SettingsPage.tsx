@@ -407,20 +407,38 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                 if (response.ok) {
                     const apiUsers = await response.json();
                     // Map API response to StudioUser format
-                    const mappedUsers: StudioUser[] = apiUsers.map((u: any) => ({
-                        id: u.id,
-                        name: u.name,
-                        email: u.email,
-                        username: u.username,
-                        role: mapApiRoleToStudioRole(u.role),
-                        // Use permissions from API if available, otherwise use role defaults
-                        permissions: u.permissions || getDefaultPermissions(mapApiRoleToStudioRole(u.role)),
-                        avatarUrl: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=6366f1&color=fff&size=150`,
-                        isActive: u.is_active,
-                        lastLogin: u.last_login_at,
-                        createdAt: u.created_at,
-                        invitationAccepted: u.invitation_accepted,
-                    }));
+                    const mappedUsers: StudioUser[] = apiUsers.map((u: any) => {
+                        const role = mapApiRoleToStudioRole(u.role);
+                        const defaults = getDefaultPermissions(role);
+                        
+                        // If user has custom permissions, use them with missing ones as FALSE
+                        // Only use role defaults when NO custom permissions have been set
+                        let permissions: StudioUserPermissions;
+                        if (u.permissions && Object.keys(u.permissions).length > 0) {
+                            // Start with all false, then overlay stored permissions
+                            const allFalseBase = Object.keys(defaults).reduce((acc, key) => {
+                                acc[key as keyof StudioUserPermissions] = false;
+                                return acc;
+                            }, {} as StudioUserPermissions);
+                            permissions = { ...allFalseBase, ...u.permissions };
+                        } else {
+                            permissions = defaults;
+                        }
+                        
+                        return {
+                            id: u.id,
+                            name: u.name,
+                            email: u.email,
+                            username: u.username,
+                            role,
+                            permissions,
+                            avatarUrl: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=6366f1&color=fff&size=150`,
+                            isActive: u.is_active,
+                            lastLogin: u.last_login_at,
+                            createdAt: u.created_at,
+                            invitationAccepted: u.invitation_accepted,
+                        };
+                    });
                     setStudioUsers(mappedUsers);
                 } else {
                     console.error('Failed to fetch studio users');

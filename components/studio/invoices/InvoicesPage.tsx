@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Invoice, Client } from '../../../types';
 import { PlusIcon, TrashIcon } from '../../icons';
+import { CanCreate, CanDelete } from '../../AccessGate';
 
 interface InvoicesPageProps {
   invoices: Invoice[];
@@ -51,10 +52,12 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Invoices</h1>
           <p className="mt-1 text-sm sm:text-base text-slate-600">Manage all your client billing and payments.</p>
         </div>
-        <button onClick={onNewInvoice} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-primary-hover transition-colors min-h-[44px]">
-          <PlusIcon className="w-5 h-5" />
-          <span>New Invoice</span>
-        </button>
+        <CanCreate module="invoices">
+          <button onClick={onNewInvoice} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-primary-hover transition-colors min-h-[44px]">
+            <PlusIcon className="w-5 h-5" />
+            <span>New Invoice</span>
+          </button>
+        </CanCreate>
       </header>
       
       {/* Desktop Table View */}
@@ -86,15 +89,17 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-3">
                       <button onClick={(e) => { e.stopPropagation(); onPreviewInvoice(invoice); }} className="text-sky-600 hover:text-sky-800">View</button>
-                      {onDeleteInvoice && (
-                        <button 
-                          onClick={(e) => handleDeleteClick(e, invoice)} 
-                          className="text-red-500 hover:text-red-700 p-1"
-                          title="Delete invoice"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      )}
+                      <CanDelete module="invoices">
+                        {onDeleteInvoice && (
+                          <button 
+                            onClick={(e) => handleDeleteClick(e, invoice)} 
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Delete invoice"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                      </CanDelete>
                     </div>
                   </td>
                 </tr>
@@ -153,15 +158,17 @@ const InvoicesPage: React.FC<InvoicesPageProps> = ({ invoices, clients, onNewInv
                 >
                   View Invoice
                 </button>
-                {onDeleteInvoice && (
-                  <button 
-                    onClick={(e) => handleDeleteClick(e, invoice)}
-                    className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors min-h-[44px]"
-                    title="Delete invoice"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                )}
+                <CanDelete module="invoices">
+                  {onDeleteInvoice && (
+                    <button 
+                      onClick={(e) => handleDeleteClick(e, invoice)}
+                      className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors min-h-[44px]"
+                      title="Delete invoice"
+                    >
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                  )}
+                </CanDelete>
               </div>
             </div>
           ))

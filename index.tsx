@@ -10,6 +10,7 @@ import ForgotPasswordPage from './components/ForgotPasswordPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import AcceptInvitationPage from './components/AcceptInvitationPage';
 import { AuthProvider } from './contexts/AuthContext';
+import { AccessControlProvider } from './contexts/AccessControlContext';
 import { StudioThemeProvider } from './src/providers/StudioThemeProvider';
 
 const rootElement = document.getElementById('root');
@@ -40,7 +41,9 @@ root.render(
         } />
         <Route path="/*" element={
           <AuthProvider>
-            <App />
+            <AccessControlProvider>
+              <App />
+            </AccessControlProvider>
           </AuthProvider>
         } />
       </Routes>

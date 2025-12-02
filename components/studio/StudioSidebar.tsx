@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { DashboardView, NavItem } from '../../types';
 import {
   DashboardIcon, ProjectsIcon, ClientsIcon, InvoicesIcon, AnalyticsIcon, SettingsIcon, BellIcon, ChevronDoubleLeftIcon, ArrowLeftOnRectangleIcon,
@@ -7,6 +7,7 @@ import { uploadHistoryStore } from '../../services/uploadHistoryStore';
 import ApiNotificationService from '../../services/apiNotificationService';
 import { useStudioTheme } from '../../src/providers/StudioThemeProvider';
 import { StudioLogo, StudioLogoCollapsed } from '../StudioLogo';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 // Swatches icon - for Layouts & Brand (color palette / branding)
@@ -43,6 +44,7 @@ interface StudioSidebarProps {
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, isMobileOpen, setMobileOpen, isCollapsed, onToggleCollapse }) => {
   const { theme } = useStudioTheme();
+  const { hasPermission, isFeatureEnabled } = useAccessControl();
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [apiUnreadCount, setApiUnreadCount] = useState(0);
   const [uploadUnreadCount, setUploadUnreadCount] = useState(0);
@@ -89,22 +91,58 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
     setUnreadNotificationCount(apiUnreadCount + uploadUnreadCount);
   }, [apiUnreadCount, uploadUnreadCount]);
 
-  const mainNavItems: NavItem[] = [
+  // Define nav items with their required permissions
+  const allMainNavItems: (NavItem & { permission?: string; feature?: string })[] = [
     { view: 'overview', label: 'Dashboard', icon: <DashboardIcon className="w-5 h-5" /> },
-    { view: 'projects', label: 'Projects', icon: <ProjectsIcon className="w-5 h-5" /> },
-    { view: 'clients', label: 'Clients', icon: <ClientsIcon className="w-5 h-5" /> },
-    { view: 'invoices', label: 'Invoices', icon: <InvoicesIcon className="w-5 h-5" /> },
-    { view: 'contracts', label: 'Contracts', icon: <ContractsIcon className="w-5 h-5" /> },
-    { view: 'analytics', label: 'Analytics', icon: <AnalyticsIcon className="w-5 h-5" /> },
+    { view: 'projects', label: 'Projects', icon: <ProjectsIcon className="w-5 h-5" />, permission: 'canViewProjects', feature: 'projects_module' },
+    { view: 'clients', label: 'Clients', icon: <ClientsIcon className="w-5 h-5" />, permission: 'canViewClients', feature: 'clients_module' },
+    { view: 'invoices', label: 'Invoices', icon: <InvoicesIcon className="w-5 h-5" />, permission: 'canViewInvoices', feature: 'invoices_module' },
+    { view: 'contracts', label: 'Contracts', icon: <ContractsIcon className="w-5 h-5" />, feature: 'contracts_module' },
+    { view: 'analytics', label: 'Analytics', icon: <AnalyticsIcon className="w-5 h-5" />, permission: 'canViewAnalytics', feature: 'analytics_module' },
   ];
 
-  const configNavItems: NavItem[] = [
-    { view: 'layouts', label: 'Layouts & Brand', icon: <LayoutIcon className="w-5 h-5" /> },
-    { view: 'services', label: 'Services', icon: <ServicesIcon className="w-5 h-5" /> },
+  const allConfigNavItems: (NavItem & { permission?: string; feature?: string })[] = [
+    { view: 'layouts', label: 'Layouts & Brand', icon: <LayoutIcon className="w-5 h-5" />, permission: 'canManageBranding' },
+    { view: 'services', label: 'Services', icon: <ServicesIcon className="w-5 h-5" />, permission: 'canManageServices', feature: 'services_module' },
     { view: 'tools', label: 'AI Tools', icon: <AIToolsIcon className="w-5 h-5" /> },
-    { view: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" /> },
-    { view: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" /> },
+    { view: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" />, feature: 'notifications_module' },
+    { view: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" />, feature: 'settings_module' },
   ];
+
+  // Filter nav items based on permissions and features
+  const mainNavItems = useMemo(() => {
+    console.log('[Sidebar] Filtering mainNavItems...');
+    return allMainNavItems.filter(item => {
+      // Check feature flag first (if specified)
+      if (item.feature && !isFeatureEnabled(item.feature)) {
+        console.log(`[Sidebar] ${item.label}: HIDDEN (feature ${item.feature} disabled)`);
+        return false;
+      }
+      // Check permission (if specified)
+      if (item.permission) {
+        const hasPerm = hasPermission(item.permission);
+        console.log(`[Sidebar] ${item.label}: permission ${item.permission} = ${hasPerm}`);
+        if (!hasPerm) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [hasPermission, isFeatureEnabled]);
+
+  const configNavItems = useMemo(() => {
+    return allConfigNavItems.filter(item => {
+      // Check feature flag first (if specified)
+      if (item.feature && !isFeatureEnabled(item.feature)) {
+        return false;
+      }
+      // Check permission (if specified)
+      if (item.permission && !hasPermission(item.permission)) {
+        return false;
+      }
+      return true;
+    });
+  }, [hasPermission, isFeatureEnabled]);
 
   const NavButton: React.FC<{ item: NavItem }> = ({ item }) => (
     <button
