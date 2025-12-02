@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Client, Album, Invoice, ServicePackage } from '../../types';
 import { ArrowLeftIcon, PlusIcon } from '../icons';
 import { AvatarLarge } from '../Avatar';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 interface ClientDetailsPageProps {
     client: Client;
@@ -17,6 +18,7 @@ interface ClientDetailsPageProps {
 }
 
 const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, invoices, packages, onBack, onUpdateClient, onCreateProject, onCreateInvoice, onPreviewInvoice, onViewProject }) => {
+    const { hasPermission } = useAccessControl();
     const [details, setDetails] = useState(client);
     const [isEditingProfilePic, setIsEditingProfilePic] = useState(false);
     const [profilePicPreview, setProfilePicPreview] = useState<string>(client.profilePicture || client.avatarUrl || '');
@@ -96,9 +98,11 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                         <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
                         <p className="mt-1 text-gray-600">Managing client profile and associated projects.</p>
                     </div>
-                    <button onClick={handleSaveChanges} className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover">
-                        Save Changes
-                    </button>
+                    {hasPermission('canEditClients') && (
+                        <button onClick={handleSaveChanges} className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover">
+                            Save Changes
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -173,9 +177,11 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({ client, albums, i
                     <div className="bg-white p-6 border border-gray-200 rounded-lg">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-semibold text-gray-800">Projects</h3>
-                            <button onClick={() => onCreateProject(client.id)} className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                                <PlusIcon className="w-4 h-4" /> New Project
-                            </button>
+                            {hasPermission('canCreateProjects') && (
+                                <button onClick={() => onCreateProject(client.id)} className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                    <PlusIcon className="w-4 h-4" /> New Project
+                                </button>
+                            )}
                         </div>
                         <ul className="divide-y divide-gray-200">
                             {clientProjects.map(proj => (

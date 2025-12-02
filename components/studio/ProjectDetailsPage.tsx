@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Album, Client } from '../../types';
 import { ArrowLeftIcon, PlusIcon, CameraIcon } from '../icons';
 import CoverPhotoChanger from './CoverPhotoChanger';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 interface ProjectDetailsPageProps {
   project: Album;
@@ -20,6 +21,7 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isCoverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { hasPermission } = useAccessControl();
   
   useEffect(() => {
     setDetails(project);
@@ -121,15 +123,17 @@ const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({ project, client
                  <div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg">
                     <h3 className="font-semibold text-gray-800 mb-4">Actions</h3>
                     <div className="space-y-3">
-                        <button 
-                            onClick={() => onGenerateInvoice(project)} 
-                            className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2 min-h-[44px]"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Generate Invoice
-                        </button>
+                        {hasPermission('canCreateInvoices') && (
+                            <button 
+                                onClick={() => onGenerateInvoice(project)} 
+                                className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2 min-h-[44px]"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Generate Invoice
+                            </button>
+                        )}
                         <button onClick={onAddPhotos} className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 min-h-[44px]">Add Photos</button>
                         <button 
                             onClick={() => onUploadEditedPhotos(project)} 

@@ -4,6 +4,7 @@ import { PlusIcon } from '../icons';
 import { AuthenticatedImage } from '../common/AuthenticatedImage';
 import { ImagePlaceholder } from '../common/ImagePlaceholder';
 import { CanCreate } from '../AccessGate';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 interface StudioProjectsProps {
   albums: Album[];
@@ -18,6 +19,7 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
+  const { hasPermission } = useAccessControl();
 
   const getClientName = (clientId: string | number) => {
     return clients.find(c => String(c.id) === String(clientId))?.name || 'N/A';
@@ -175,16 +177,18 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{album.photoCount}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{commentCount}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onGenerateInvoice(album); }} 
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all duration-fast"
-                          title="Generate Invoice"
-                        >
-                          <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Invoice
-                        </button>
+                        {hasPermission('canCreateInvoices') && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); onGenerateInvoice(album); }} 
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all duration-fast"
+                            title="Generate Invoice"
+                          >
+                            <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Invoice
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -264,18 +268,20 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
                     </div>
                   </div>
 
-                  <button 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      onGenerateInvoice(album); 
-                    }} 
-                    className="w-full py-2.5 bg-emerald-50 text-emerald-700 rounded-lg font-medium hover:bg-emerald-100 transition-all duration-fast flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Generate Invoice
-                  </button>
+                  {hasPermission('canCreateInvoices') && (
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onGenerateInvoice(album); 
+                      }} 
+                      className="w-full py-2.5 bg-emerald-50 text-emerald-700 rounded-lg font-medium hover:bg-emerald-100 transition-all duration-fast flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Generate Invoice
+                    </button>
+                  )}
                 </div>
               </div>
             );

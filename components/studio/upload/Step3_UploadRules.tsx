@@ -22,7 +22,7 @@ const Step3_UploadRules: React.FC = () => {
                             <button
                                 key={size}
                                 onClick={() => handleRuleChange('imageSize', size)}
-                                className={`p-3 border rounded-md text-sm text-center transition-colors capitalize ${uploadRules.imageSize === size ? 'bg-gray-800 text-white border-gray-800' : 'bg-white hover:bg-gray-50'}`}
+                                className={`p-3 border rounded-md text-sm text-center transition-colors capitalize ${uploadRules.imageSize === size ? 'bg-primary text-white border-primary' : 'bg-white hover:bg-gray-50'}`}
                             >
                                 {size} Resolution
                             </button>

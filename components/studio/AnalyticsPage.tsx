@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Album, Client, Invoice, ServicePackage, AnalyticsData, RevenueMetrics, ClientMetrics, ProjectMetrics, InvoiceMetrics, PackagePerformance, MonthlyData, TopClient } from '../../types';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 interface AnalyticsPageProps {
     albums?: Album[];
@@ -9,6 +10,8 @@ interface AnalyticsPageProps {
 }
 
 const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = [], invoices = [], packages = [] }) => {
+    const { hasPermission } = useAccessControl();
+    const canViewRevenue = hasPermission('canViewRevenue');
     
     // Calculate analytics data
     const analyticsData = useMemo<AnalyticsData>(() => {
@@ -224,22 +227,24 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
 
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {/* Revenue Card */}
-                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs font-medium uppercase tracking-wide opacity-90">Total Revenue</h3>
-                        <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                {/* Revenue Card - only visible with canViewRevenue permission */}
+                {canViewRevenue && (
+                    <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-xs font-medium uppercase tracking-wide opacity-90">Total Revenue</h3>
+                            <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p className="text-2xl font-bold mb-1">{formatCurrency(analyticsData.revenue.totalRevenue)}</p>
+                        <p className="text-xs opacity-90">
+                            {formatCurrency(analyticsData.revenue.monthlyRevenue)} this month
+                            <span className={`ml-2 ${analyticsData.revenue.revenueGrowth >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
+                                {formatPercentage(analyticsData.revenue.revenueGrowth)}
+                            </span>
+                        </p>
                     </div>
-                    <p className="text-2xl font-bold mb-1">{formatCurrency(analyticsData.revenue.totalRevenue)}</p>
-                    <p className="text-xs opacity-90">
-                        {formatCurrency(analyticsData.revenue.monthlyRevenue)} this month
-                        <span className={`ml-2 ${analyticsData.revenue.revenueGrowth >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
-                            {formatPercentage(analyticsData.revenue.revenueGrowth)}
-                        </span>
-                    </p>
-                </div>
+                )}
 
                 {/* Projects Card */}
                 <div className="bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl p-5 text-white">
@@ -286,46 +291,48 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ albums = [], clients = []
 
             {/* Charts and Details Row */}
             <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 mb-6">
-                {/* Revenue Breakdown */}
-                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                {/* Revenue Breakdown - only visible with canViewRevenue permission */}
+                {canViewRevenue && (
+                    <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p className="text-sm text-gray-500">Average Order Value</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(analyticsData.revenue.averageOrderValue)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-500">Projected Annual</p>
+                                    <p className="text-2xl font-bold text-green-600">{formatCurrency(analyticsData.revenue.projectedRevenue)}</p>
+                                </div>
+                            </div>
+                            
                             <div>
-                                <p className="text-sm text-gray-500">Average Order Value</p>
-                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(analyticsData.revenue.averageOrderValue)}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm text-gray-500">Projected Annual</p>
-                                <p className="text-2xl font-bold text-green-600">{formatCurrency(analyticsData.revenue.projectedRevenue)}</p>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-3">6-Month Revenue Trend</h4>
-                            <div className="flex items-end justify-between h-48 gap-2">
-                                {analyticsData.monthlyTrends.map((data, index) => {
-                                    const maxRevenue = Math.max(...analyticsData.monthlyTrends.map(d => d.revenue));
-                                    const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
-                                    return (
-                                        <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                                            <div 
-                                                className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t hover:from-green-600 hover:to-green-500 transition-all cursor-pointer relative group"
-                                                style={{ height: `${height}%`, minHeight: '10px' }}
-                                                title={`${data.month}: ${formatCurrency(data.revenue)}`}
-                                            >
-                                                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                    {formatCurrency(data.revenue)}
+                                <h4 className="text-sm font-medium text-gray-700 mb-3">6-Month Revenue Trend</h4>
+                                <div className="flex items-end justify-between h-48 gap-2">
+                                    {analyticsData.monthlyTrends.map((data, index) => {
+                                        const maxRevenue = Math.max(...analyticsData.monthlyTrends.map(d => d.revenue));
+                                        const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
+                                        return (
+                                            <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                                                <div 
+                                                    className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t hover:from-green-600 hover:to-green-500 transition-all cursor-pointer relative group"
+                                                    style={{ height: `${height}%`, minHeight: '10px' }}
+                                                    title={`${data.month}: ${formatCurrency(data.revenue)}`}
+                                                >
+                                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                        {formatCurrency(data.revenue)}
+                                                    </div>
                                                 </div>
+                                                <span className="text-xs text-gray-600 transform -rotate-45 mt-2">{data.month}</span>
                                             </div>
-                                            <span className="text-xs text-gray-600 transform -rotate-45 mt-2">{data.month}</span>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Payment Status */}
                 <div className="bg-white border border-gray-200 rounded-xl p-5">

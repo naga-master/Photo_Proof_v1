@@ -374,7 +374,7 @@ const UploadWizardContent: React.FC<UploadWizardProps> = ({ onExit, onProjectCre
                   disabled={!continueEnabled}
                   className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
                     continueEnabled 
-                      ? 'bg-slate-800 hover:bg-slate-700' 
+                      ? 'bg-primary hover:bg-primary-hover' 
                       : 'bg-slate-400 cursor-not-allowed'
                   }`}
                   title={!continueEnabled ? 'Please fill all required fields' : ''}

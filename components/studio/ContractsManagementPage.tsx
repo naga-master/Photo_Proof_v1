@@ -7,8 +7,11 @@ import CreateContractModal from '../CreateContractModal';
 import SendContractModal from '../SendContractModal';
 import StatusBadge from '../StatusBadge';
 import SignatureCanvas from 'react-signature-canvas';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 export default function ContractsManagementPage() {
+  const { hasPermission } = useAccessControl();
+  
   // Use contract store for cached data
   const { 
     contracts, 
@@ -187,8 +190,8 @@ export default function ContractsManagementPage() {
             
             {/* Action Buttons */}
             <div className="flex gap-2">
-              {/* Send Button - for draft, sent, viewed */}
-              {['draft', 'sent', 'viewed'].includes(contract.status) && (
+              {/* Send Button - for draft, sent, viewed - requires canEditContracts */}
+              {['draft', 'sent', 'viewed'].includes(contract.status) && hasPermission('canEditContracts') && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -201,8 +204,8 @@ export default function ContractsManagementPage() {
                 </button>
               )}
               
-              {/* Delete Button - only if allowed */}
-              {canDelete && (
+              {/* Delete Button - only if allowed and has permission */}
+              {canDelete && hasPermission('canDeleteContracts') && (
                 <button
                   onClick={(e) => handleDeleteContract(contract, e)}
                   className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
@@ -367,13 +370,15 @@ export default function ContractsManagementPage() {
             <h1 className="text-3xl font-bold text-gray-900">Contracts</h1>
             <p className="text-gray-600 mt-1">Manage your photography contracts</p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-hover transition-colors flex items-center gap-2"
-          >
-            <span>➕</span>
-            <span>New Contract</span>
-          </button>
+          {hasPermission('canCreateContracts') && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-hover transition-colors flex items-center gap-2"
+            >
+              <span>➕</span>
+              <span>New Contract</span>
+            </button>
+          )}
         </div>
 
         {error && (
