@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Photo } from '../../types';
 import { CloseIcon, XCircleIcon, ShoppingCartIcon } from '../icons';
+import { AuthenticatedImage } from '../common/AuthenticatedImage';
 
 interface CompareModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, compareLis
                 {compareList.map(photo => (
                     <div key={photo.id} className="relative group flex flex-col gap-4">
                         <div className="relative">
-                            <img src={photo.src} alt={photo.alt} className="w-full h-auto max-h-[70vh] object-contain" />
+                            <AuthenticatedImage photoId={photo.id} quality="high" alt={photo.alt} className="w-full h-auto max-h-[70vh] object-contain" />
                             <button 
                                 onClick={() => onRemoveFromCompare(photo.id)}
                                 className="absolute top-2 right-2 p-1 bg-white/70 rounded-full text-gray-600 hover:text-red-500 hover:bg-white"

@@ -97,7 +97,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({ view, setView, onLogout, 
     { view: 'projects', label: 'Projects', icon: <ProjectsIcon className="w-5 h-5" />, permission: 'canViewProjects', feature: 'projects_module' },
     { view: 'clients', label: 'Clients', icon: <ClientsIcon className="w-5 h-5" />, permission: 'canViewClients', feature: 'clients_module' },
     { view: 'invoices', label: 'Invoices', icon: <InvoicesIcon className="w-5 h-5" />, permission: 'canViewInvoices', feature: 'invoices_module' },
-    { view: 'contracts', label: 'Contracts', icon: <ContractsIcon className="w-5 h-5" />, feature: 'contracts_module' },
+    { view: 'contracts', label: 'Contracts', icon: <ContractsIcon className="w-5 h-5" />, permission: 'canViewContracts', feature: 'contracts_module' },
     { view: 'analytics', label: 'Analytics', icon: <AnalyticsIcon className="w-5 h-5" />, permission: 'canViewAnalytics', feature: 'analytics_module' },
   ];
 

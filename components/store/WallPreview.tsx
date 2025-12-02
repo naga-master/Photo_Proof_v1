@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Photo } from '../../types';
+import { AuthenticatedImage } from '../common/AuthenticatedImage';
 
 interface WallPreviewProps {
     photo: Photo;
@@ -12,7 +13,7 @@ const WallPreview: React.FC<WallPreviewProps> = ({ photo, mockupSrc, isThumbnail
         return (
              <div className="relative w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${mockupSrc})` }}>
                 <div className="absolute inset-0 grid place-items-center p-8">
-                     <img src={photo.src} alt={photo.alt} className="max-w-full max-h-full object-contain border-2 border-white shadow-lg"/>
+                     <AuthenticatedImage photoId={photo.id} quality="medium" alt={photo.alt} className="max-w-full max-h-full object-contain border-2 border-white shadow-lg"/>
                 </div>
             </div>
         )
@@ -27,8 +28,9 @@ const WallPreview: React.FC<WallPreviewProps> = ({ photo, mockupSrc, isThumbnail
             />
             {/* This container defines the 'frame' area on the mockup */}
             <div className="w-1/2 h-1/2 col-start-1 row-start-1 flex items-center justify-center pointer-events-none">
-                 <img
-                    src={photo.src}
+                 <AuthenticatedImage
+                    photoId={photo.id}
+                    quality="high"
                     alt={photo.alt}
                     className="max-w-full max-h-full object-contain border-4 md:border-8 border-white shadow-2xl"
                 />

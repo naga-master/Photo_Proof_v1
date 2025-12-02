@@ -1,6 +1,7 @@
 import React from 'react';
 import type { CartItem } from '../../types';
 import { PlusIcon, MinusIcon, XCircleIcon } from '../icons';
+import { AuthenticatedImage } from '../common/AuthenticatedImage';
 
 interface ShoppingCartPageProps {
   cartItems: CartItem[];
@@ -29,7 +30,7 @@ const ShoppingCartPage: React.FC<ShoppingCartPageProps> = ({ cartItems, onUpdate
                         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm divide-y divide-gray-200">
                             {cartItems.map(item => (
                                 <div key={item.id} className="p-6 flex gap-6">
-                                    <img src={item.photo.src} alt={item.photo.alt} className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-md flex-shrink-0" />
+                                    <AuthenticatedImage photoId={item.photo.id} quality="thumbnail" alt={item.photo.alt} className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-md flex-shrink-0" />
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
                                             <h3 className="text-lg font-semibold text-gray-800">{item.product.name}</h3>

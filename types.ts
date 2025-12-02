@@ -382,6 +382,12 @@ export interface StudioUserPermissions {
   canEditPhotos: boolean;
   canDeletePhotos: boolean;
   
+  // Contracts
+  canViewContracts: boolean;
+  canCreateContracts: boolean;
+  canEditContracts: boolean;
+  canDeleteContracts: boolean;
+  
   // Services & Packages
   canManageServices: boolean;
   canManagePackages: boolean;
@@ -394,6 +400,13 @@ export interface StudioUserPermissions {
   // Communication
   canSendNotifications: boolean;
   canManageCommunication: boolean;
+  
+  // Advanced / Fine-grained
+  canDownloadOriginals: boolean;
+  canManageComments: boolean;
+  canApplyDiscounts: boolean;
+  canViewRevenue: boolean;
+  canShareExternally: boolean;
 }
 
 export interface StudioUser {

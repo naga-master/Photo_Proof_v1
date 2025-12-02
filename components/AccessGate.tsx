@@ -94,6 +94,7 @@ export const CanView: React.FC<{ module: string; children: ReactNode; fallback?:
         projects: 'canViewProjects',
         invoices: 'canViewInvoices',
         analytics: 'canViewAnalytics',
+        contracts: 'canViewContracts',
     };
     
     return (
@@ -112,6 +113,7 @@ export const CanCreate: React.FC<{ module: string; children: ReactNode; fallback
         clients: 'canCreateClients',
         projects: 'canCreateProjects',
         invoices: 'canCreateInvoices',
+        contracts: 'canCreateContracts',
     };
     
     return (
@@ -131,6 +133,7 @@ export const CanEdit: React.FC<{ module: string; children: ReactNode; fallback?:
         projects: 'canEditProjects',
         invoices: 'canEditInvoices',
         photos: 'canEditPhotos',
+        contracts: 'canEditContracts',
     };
     
     return (
@@ -150,6 +153,7 @@ export const CanDelete: React.FC<{ module: string; children: ReactNode; fallback
         projects: 'canDeleteProjects',
         invoices: 'canDeleteInvoices',
         photos: 'canDeletePhotos',
+        contracts: 'canDeleteContracts',
     };
     
     return (

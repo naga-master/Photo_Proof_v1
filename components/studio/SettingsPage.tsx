@@ -48,6 +48,10 @@ const getDefaultPermissions = (role: StudioUserRole): StudioUserPermissions => {
         canUploadPhotos: false,
         canEditPhotos: false,
         canDeletePhotos: false,
+        canViewContracts: false,
+        canCreateContracts: false,
+        canEditContracts: false,
+        canDeleteContracts: false,
         canManageServices: false,
         canManagePackages: false,
         canManageSettings: false,
@@ -55,6 +59,11 @@ const getDefaultPermissions = (role: StudioUserRole): StudioUserPermissions => {
         canManageBranding: false,
         canSendNotifications: false,
         canManageCommunication: false,
+        canDownloadOriginals: false,
+        canManageComments: false,
+        canApplyDiscounts: false,
+        canViewRevenue: false,
+        canShareExternally: false,
     };
 
     switch (role) {
@@ -224,6 +233,12 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
             { key: 'canEditPhotos' as keyof StudioUserPermissions, label: 'Edit Photos' },
             { key: 'canDeletePhotos' as keyof StudioUserPermissions, label: 'Delete Photos' },
         ],
+        'Contracts': [
+            { key: 'canViewContracts' as keyof StudioUserPermissions, label: 'View Contracts' },
+            { key: 'canCreateContracts' as keyof StudioUserPermissions, label: 'Create Contracts' },
+            { key: 'canEditContracts' as keyof StudioUserPermissions, label: 'Edit Contracts' },
+            { key: 'canDeleteContracts' as keyof StudioUserPermissions, label: 'Delete Contracts' },
+        ],
         'Services': [
             { key: 'canManageServices' as keyof StudioUserPermissions, label: 'Manage Services' },
             { key: 'canManagePackages' as keyof StudioUserPermissions, label: 'Manage Packages' },
@@ -234,6 +249,13 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({ isOpen, onClose, onSa
             { key: 'canManageBranding' as keyof StudioUserPermissions, label: 'Manage Branding' },
             { key: 'canSendNotifications' as keyof StudioUserPermissions, label: 'Send Notifications' },
             { key: 'canManageCommunication' as keyof StudioUserPermissions, label: 'Manage Communication' },
+        ],
+        'Advanced': [
+            { key: 'canDownloadOriginals' as keyof StudioUserPermissions, label: 'Download Originals' },
+            { key: 'canManageComments' as keyof StudioUserPermissions, label: 'Manage Comments' },
+            { key: 'canApplyDiscounts' as keyof StudioUserPermissions, label: 'Apply Discounts' },
+            { key: 'canViewRevenue' as keyof StudioUserPermissions, label: 'View Revenue' },
+            { key: 'canShareExternally' as keyof StudioUserPermissions, label: 'Share Externally' },
         ],
     };
 
@@ -391,10 +413,26 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
     const [usersLoading, setUsersLoading] = useState(true);
     const [invitationLink, setInvitationLink] = useState<string | null>(null);
     
-    // Fetch studio users from API
+    // Cache constants for studio users
+    const USERS_CACHE_KEY = 'studio_users_cache';
+    const USERS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    
+    // Fetch studio users from API with caching
     useEffect(() => {
         const fetchStudioUsers = async () => {
             try {
+                // Check cache first
+                const cached = sessionStorage.getItem(USERS_CACHE_KEY);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < USERS_CACHE_TTL) {
+                        console.log('[SettingsPage] Using cached studio users');
+                        setStudioUsers(data);
+                        setUsersLoading(false);
+                        return;
+                    }
+                }
+                
                 setUsersLoading(true);
                 const token = localStorage.getItem('auth_token');
                 const response = await fetch('/api/studio/users', {
@@ -440,6 +478,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         };
                     });
                     setStudioUsers(mappedUsers);
+                    // Cache the results
+                    sessionStorage.setItem(USERS_CACHE_KEY, JSON.stringify({
+                        data: mappedUsers,
+                        timestamp: Date.now()
+                    }));
                 } else {
                     console.error('Failed to fetch studio users');
                     // Fallback to current user if API fails
@@ -641,9 +684,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                 });
                 
                 if (response.ok) {
+                    const updatedData = await response.json();
+                    // Map API response to StudioUser format
+                    const role = mapApiRoleToStudioRole(updatedData.role);
+                    const defaults = getDefaultPermissions(role);
+                    let permissions: StudioUserPermissions;
+                    if (updatedData.permissions && Object.keys(updatedData.permissions).length > 0) {
+                        const allFalseBase = Object.keys(defaults).reduce((acc, key) => {
+                            acc[key as keyof StudioUserPermissions] = false;
+                            return acc;
+                        }, {} as StudioUserPermissions);
+                        permissions = { ...allFalseBase, ...updatedData.permissions };
+                    } else {
+                        permissions = defaults;
+                    }
+                    
+                    const updatedUser: StudioUser = {
+                        ...userToSave,
+                        permissions, // Use permissions from API response
+                    };
+                    
                     const newUsers = [...studioUsers];
-                    newUsers[existingIndex] = userToSave;
+                    newUsers[existingIndex] = updatedUser;
                     setStudioUsers(newUsers);
+                    // Clear cache so next load gets fresh data
+                    sessionStorage.removeItem(USERS_CACHE_KEY);
                 } else {
                     const error = await response.json();
                     alert(`Failed to update user: ${error.detail || 'Unknown error'}`);
@@ -677,6 +742,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         id: data.id,
                     };
                     setStudioUsers([...studioUsers, newUser]);
+                    // Clear cache
+                    sessionStorage.removeItem(USERS_CACHE_KEY);
                 } else {
                     const error = await response.json();
                     alert(`Failed to invite user: ${error.detail || 'Unknown error'}`);
@@ -711,6 +778,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                 setStudioUsers(studioUsers.map(u => 
                     u.id === userId ? { ...u, isActive: !u.isActive } : u
                 ));
+                // Clear cache
+                sessionStorage.removeItem(USERS_CACHE_KEY);
             } else {
                 const error = await response.json();
                 alert(`Failed to toggle user status: ${error.detail || 'Unknown error'}`);
@@ -739,6 +808,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
             
             if (response.ok) {
                 setStudioUsers(studioUsers.filter(u => u.id !== userId));
+                // Clear cache
+                sessionStorage.removeItem(USERS_CACHE_KEY);
             } else {
                 const error = await response.json();
                 alert(`Failed to delete user: ${error.detail || 'Unknown error'}`);
@@ -1190,6 +1261,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                                                     Settings
                                                                 </span>
                                                             )}
+                                                            {studioUser.permissions.canViewClients && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                                                    Clients
+                                                                </span>
+                                                            )}
+                                                            {studioUser.permissions.canViewProjects && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                                    Projects
+                                                                </span>
+                                                            )}
                                                             {studioUser.permissions.canUploadPhotos && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
                                                                     Upload
@@ -1200,9 +1281,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                                                     Edit
                                                                 </span>
                                                             )}
-                                                            {studioUser.permissions.canDeleteProjects && (
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                                                    Delete
+                                                            {studioUser.permissions.canViewInvoices && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-800">
+                                                                    Invoices
+                                                                </span>
+                                                            )}
+                                                            {studioUser.permissions.canViewContracts && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800">
+                                                                    Contracts
                                                                 </span>
                                                             )}
                                                             {studioUser.permissions.canViewAnalytics && (
