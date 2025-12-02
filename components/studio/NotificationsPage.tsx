@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Notification, NotificationType } from '../../types';
 import { BellIcon, ChatBubbleIcon, HeartIcon, InvoicesIcon, ShoppingCartIcon } from '../icons';
-import ApiNotificationService from '../../services/apiNotificationService';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const UploadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
@@ -40,38 +40,22 @@ const groupNotifications = (notifications: Notification[]) => {
 
 
 const NotificationsPage: React.FC = () => {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const { 
+        notifications, 
+        unreadCount: apiUnreadCount, 
+        isLoading: loading, 
+        fetchByType,
+        markAsRead,
+        markAllAsRead 
+    } = useNotifications();
     const [filter, setFilter] = useState<'all' | 'unread'>('all');
     const [typeFilter, setTypeFilter] = useState<NotificationType | 'all'>('all');
-    const [loading, setLoading] = useState(true);
-    const [apiUnreadCount, setApiUnreadCount] = useState(0);
 
-    // Fetch notifications from API
+    // Fetch by type when typeFilter changes
     useEffect(() => {
-        const fetchNotifications = async () => {
-            setLoading(true);
-            try {
-                const typeParam = typeFilter === 'all' ? undefined : typeFilter;
-                const { notifications: apiNotifications, unreadCount } = await ApiNotificationService.getNotifications(typeParam);
-                setNotifications(apiNotifications);
-                setApiUnreadCount(unreadCount);
-                console.log('[NotificationsPage] Fetched', apiNotifications.length, 'notifications from API');
-                console.log('[NotificationsPage] Notifications:', apiNotifications.map(n => ({ 
-                    id: n.id, 
-                    type: n.type, 
-                    title: n.title, 
-                    message: n.message,
-                    timestamp: n.timestamp 
-                })));
-            } catch (error) {
-                console.error('[NotificationsPage] Failed to fetch notifications:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        
-        fetchNotifications();
-    }, [typeFilter]);
+        const typeParam = typeFilter === 'all' ? undefined : typeFilter;
+        fetchByType(typeParam);
+    }, [typeFilter, fetchByType]);
 
     const filteredNotifications = useMemo(() => {
         return filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications;
@@ -80,21 +64,11 @@ const NotificationsPage: React.FC = () => {
     const groupedNotifications = useMemo(() => groupNotifications(filteredNotifications), [filteredNotifications]);
 
     const handleMarkAsRead = async (id: string) => {
-        // Optimistically update UI
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-        setApiUnreadCount(prev => Math.max(0, prev - 1));
-        
-        // Call API
-        await ApiNotificationService.markAsRead(id);
+        await markAsRead(id);
     };
 
     const handleMarkAllAsRead = async () => {
-        // Optimistically update UI
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setApiUnreadCount(0);
-        
-        // Call API
-        await ApiNotificationService.markAllRead();
+        await markAllAsRead();
     };
 
     const totalCount = filteredNotifications.length;

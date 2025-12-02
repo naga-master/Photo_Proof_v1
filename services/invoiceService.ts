@@ -63,7 +63,7 @@ class InvoiceService {
     if (status) params.status_filter = status;
     if (clientId) params.client_id = clientId;
     
-    return apiClient.get<Invoice[]>('/v2/invoices', params);
+    return apiClient.get<Invoice[]>('/v2/invoices/', params);
   }
 
   /**
@@ -77,7 +77,7 @@ class InvoiceService {
    * Create new invoice
    */
   async createInvoice(data: CreateInvoiceRequest): Promise<Invoice> {
-    return apiClient.post<Invoice>('/v2/invoices', data);
+    return apiClient.post<Invoice>('/v2/invoices/', data);
   }
 
   /**

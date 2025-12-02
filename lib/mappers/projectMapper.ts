@@ -32,6 +32,7 @@ export const mapProjectToAlbum = (project: BackendProject): Album => {
         photoCount: project.photo_count ?? 0,
         totalComments: project.total_comments ?? 0,
         isLocked: project.is_locked ?? false,
+        isPasswordProtected: project.is_password_protected ?? false,
         layout: project.layout as LayoutId | undefined,
         paymentStatus: normalizePaymentStatus(project.payment_status),
         price: project.price ? Number(project.price) : undefined,

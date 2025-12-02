@@ -121,7 +121,7 @@ class ProjectService {
     if (studioId) params.studio_id = studioId;
     if (status) params.status = status;
     
-    return apiClient.get<ProjectListResponse>('/api/projects', params);
+    return apiClient.get<ProjectListResponse>('/api/projects/', params);
   }
 
   /**
@@ -135,7 +135,7 @@ class ProjectService {
    * Create new project
    */
   async createProject(data: CreateProjectRequest): Promise<Project> {
-    return apiClient.post<Project>('/api/projects', data);
+    return apiClient.post<Project>('/api/projects/', data);
   }
 
   /**

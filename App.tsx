@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 // Fix: Import Transition type from framer-motion.
 import { motion, AnimatePresence, Transition } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
@@ -45,29 +45,35 @@ if ('serviceWorker' in navigator && import.meta.env.PROD === false) {
 }
 
 import type { Album, Client, Photo, UserRole, CartItem, Product, ProjectDetails, UploadFile, LayoutId, ServicePackage, Invoice, InvoiceTemplateId, CommunicationSettings, Folder } from './types';
-import CoverPage from './components/CoverPage';
-import GalleryPage from './components/GalleryPage';
-import GalleryFoldersPage from './components/GalleryFoldersPage';
-import AlbumFoldersView from './components/AlbumFoldersView';
-import AlbumsPage from './components/AlbumsPage';
+
+// Critical path components (loaded immediately)
 import LoginPage from './components/LoginPage';
-import DashboardPage from './components/DashboardPage';
 import TopNavBar from './components/TopNavBar';
-import StorePage from './components/StorePage';
-import AboutPage from './components/AboutPage';
-import ProductDetailPage from './components/store/ProductDetailPage';
-import PhotoSelectionPage from './components/store/PhotoSelectionPage';
-import CartConfigPage from './components/store/CartConfigPage';
-import ShoppingCartPage from './components/store/ShoppingCartPage';
-import CheckoutPage from './components/store/CheckoutPage';
-import OrderConfirmationPage from './components/store/OrderConfirmationPage';
-import ContractsPage from './components/ContractsPage';
-import ClientContractsPage from './components/ClientContractsPage';
-import ContractViewerPage from './components/ContractViewerPage';
-import ConsentScreen from './src/components/ConsentScreen';
-import PrivacyPolicy from './src/pages/PrivacyPolicy';
-import TermsOfService from './src/pages/TermsOfService';
-import PrivacySettings from './src/pages/PrivacySettings';
+import { PageSkeleton } from './components/common/PageSkeleton';
+
+// Lazy loaded components (code-split for better initial load)
+const CoverPage = lazy(() => import('./components/CoverPage'));
+const GalleryPage = lazy(() => import('./components/GalleryPage'));
+const GalleryFoldersPage = lazy(() => import('./components/GalleryFoldersPage'));
+const AlbumFoldersView = lazy(() => import('./components/AlbumFoldersView'));
+const AlbumsPage = lazy(() => import('./components/AlbumsPage'));
+const DashboardPage = lazy(() => import('./components/DashboardPage'));
+const StorePage = lazy(() => import('./components/StorePage'));
+const AboutPage = lazy(() => import('./components/AboutPage'));
+const ProductDetailPage = lazy(() => import('./components/store/ProductDetailPage'));
+const PhotoSelectionPage = lazy(() => import('./components/store/PhotoSelectionPage'));
+const CartConfigPage = lazy(() => import('./components/store/CartConfigPage'));
+const ShoppingCartPage = lazy(() => import('./components/store/ShoppingCartPage'));
+const CheckoutPage = lazy(() => import('./components/store/CheckoutPage'));
+const OrderConfirmationPage = lazy(() => import('./components/store/OrderConfirmationPage'));
+const ContractsPage = lazy(() => import('./components/ContractsPage'));
+const ClientContractsPage = lazy(() => import('./components/ClientContractsPage'));
+const ContractViewerPage = lazy(() => import('./components/ContractViewerPage'));
+const ConsentScreen = lazy(() => import('./src/components/ConsentScreen'));
+const PrivacyPolicy = lazy(() => import('./src/pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./src/pages/TermsOfService'));
+const PrivacySettings = lazy(() => import('./src/pages/PrivacySettings'));
+const GalleryPasswordPrompt = lazy(() => import('./components/GalleryPasswordPrompt'));
 
 // Import API services
 import { projectService, getCoverPhotoVariantUrl } from './services/projectService';
@@ -124,6 +130,8 @@ const AppContent: React.FC = () => {
     const [page, setPage] = useState<Page>('login');
     const [userRole, setUserRole] = useState<UserRole>(null);
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
+    const [pendingPasswordAlbum, setPendingPasswordAlbum] = useState<Album | null>(null);
+    const [verifiedProjects, setVerifiedProjects] = useState<Set<string>>(new Set());
     const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
     const [galleryContent, setGalleryContent] = useState<{photos: Photo[], title: string} | null>(null);
     const [favorites, setFavorites] = useState<string[]>([]);
@@ -365,6 +373,7 @@ const AppContent: React.FC = () => {
     const [defaultTemplateId, setDefaultTemplateId] = useState<InvoiceTemplateId>('modern');
     const [studioPhoto, setStudioPhoto] = useState<string | null>(null);
     const [studioDescription, setStudioDescription] = useState<string>('');
+    const [studioDisplayImage, setStudioDisplayImage] = useState<string | null>(null);
     
     // Communication Settings
     const [communicationSettings, setCommunicationSettings] = useState<CommunicationSettings>({
@@ -384,15 +393,25 @@ const AppContent: React.FC = () => {
         }
     }, [theme]);
 
+    // Ref to prevent double data loading (useEffect + handleLogin race condition)
+    const dataLoadedRef = useRef(false);
+
     // Load initial data from API when user is authenticated
     useEffect(() => {
         const loadInitialData = async () => {
-            // Only load data if user is authenticated
+            // Only load data if user is authenticated and data hasn't been loaded yet
             if (!isAuthenticated || authLoading) {
                 console.log('[App] Not authenticated or auth loading, skipping data load');
                 setIsLoadingData(false);
                 return;
             }
+
+            // Prevent double loading
+            if (dataLoadedRef.current) {
+                console.log('[App] Data already loaded, skipping duplicate load');
+                return;
+            }
+            dataLoadedRef.current = true;
 
             console.log('[App] User authenticated, loading initial data from API...');
             setIsLoadingData(true);
@@ -533,8 +552,8 @@ const AppContent: React.FC = () => {
     const handleLogin = async (role: UserRole) => {
         setUserRole(role);
         
-        // Load data from API after successful login
-        await loadDataFromAPI();
+        // Data loading is handled by useEffect when isAuthenticated changes
+        // Removed duplicate loadDataFromAPI() call to prevent double loading
         
         if (role === 'client') {
             setPage('albums');
@@ -548,6 +567,7 @@ const AppContent: React.FC = () => {
     const handleLogout = async () => {
         console.log('[App] Logout requested');
         await authLogout();  // Use AuthContext logout
+        dataLoadedRef.current = false; // Reset so data reloads on next login
         setPage('login');
         setUserRole(null);
         setCurrentAlbum(null);
@@ -557,6 +577,7 @@ const AppContent: React.FC = () => {
         setPreviousPage(null);
         setStudioReturnToProject(null);
         setNavigationStack([]);
+        setVerifiedProjects(new Set()); // Clear verified projects on logout
     };
 
     const handleOpenGallery = (album?: Album) => {
@@ -624,6 +645,15 @@ const AppContent: React.FC = () => {
             toast.warn('This gallery is locked. Please contact the studio for access.');
             return;
         }
+        
+        // Check if album is password protected (for clients only)
+        // Skip prompt if already verified this session
+        if (album.isPasswordProtected && !verifiedProjects.has(album.id) && !isStudioUser()) {
+            console.log('[App] Password protected album, showing password prompt');
+            setPendingPasswordAlbum(album);
+            return;
+        }
+        
         setCurrentAlbum(album);
         
         // For studio users from dashboard, add to navigation stack
@@ -639,6 +669,18 @@ const AppContent: React.FC = () => {
                 setNavigationStack([...navigationStack, 'cover']);
                 setPage('cover');
             }
+        }
+    };
+    
+    const handlePasswordVerified = () => {
+        if (pendingPasswordAlbum) {
+            console.log('[App] Password verified, proceeding to album:', pendingPasswordAlbum.id);
+            // Remember this project as verified for this session
+            setVerifiedProjects(prev => new Set([...prev, pendingPasswordAlbum.id]));
+            setCurrentAlbum(pendingPasswordAlbum);
+            setPendingPasswordAlbum(null);
+            setNavigationStack([...navigationStack, 'cover']);
+            setPage('cover');
         }
     };
     
@@ -1532,6 +1574,7 @@ const AppContent: React.FC = () => {
                         defaultTemplateId,
                         studioPhoto,
                         studioDescription,
+                        studioDisplayImage,
                     }}
                     onUpdateBranding={{
                         setLogo,
@@ -1541,6 +1584,7 @@ const AppContent: React.FC = () => {
                         setDefaultTemplateId,
                         setStudioPhoto,
                         setStudioDescription,
+                        setStudioDisplayImage,
                     }}
                     communicationSettings={communicationSettings}
                     onUpdateCommunicationSettings={setCommunicationSettings}
@@ -1732,20 +1776,36 @@ const AppContent: React.FC = () => {
     // Show consent screen if user is authenticated but hasn't consented yet
     if (isAuthenticated && needsConsent && consentChecked) {
         const userType = (user?.role === 'client') ? 'client' : 'studio';
-        return <ConsentScreen userType={userType} onConsent={handleConsentGiven} />;
+        return (
+            <Suspense fallback={<PageSkeleton />}>
+                <ConsentScreen userType={userType} onConsent={handleConsentGiven} />
+            </Suspense>
+        );
     }
     
     // Handle privacy policy and terms pages
     if (page === 'privacyPolicy') {
-        return <PrivacyPolicy />;
+        return (
+            <Suspense fallback={<PageSkeleton />}>
+                <PrivacyPolicy />
+            </Suspense>
+        );
     }
     
     if (page === 'termsOfService') {
-        return <TermsOfService />;
+        return (
+            <Suspense fallback={<PageSkeleton />}>
+                <TermsOfService />
+            </Suspense>
+        );
     }
     
     if (page === 'privacySettings') {
-        return <PrivacySettings />;
+        return (
+            <Suspense fallback={<PageSkeleton />}>
+                <PrivacySettings />
+            </Suspense>
+        );
     }
     
     return (
@@ -1757,7 +1817,19 @@ const AppContent: React.FC = () => {
                 </div>
             )}
             
-            {page !== 'login' && page !== 'dashboard' && page !== 'cover' && (
+            {/* Gallery Password Prompt for protected albums */}
+            {pendingPasswordAlbum && (
+                <Suspense fallback={<PageSkeleton />}>
+                    <GalleryPasswordPrompt
+                        projectId={pendingPasswordAlbum.id}
+                        projectTitle={pendingPasswordAlbum.title}
+                        onPasswordVerified={handlePasswordVerified}
+                        onCancel={() => setPendingPasswordAlbum(null)}
+                    />
+                </Suspense>
+            )}
+            
+            {!pendingPasswordAlbum && page !== 'login' && page !== 'dashboard' && page !== 'cover' && (
                 <TopNavBar 
                     onNavigate={handleNavigate} 
                     cartCount={cart.length} 
@@ -1767,12 +1839,16 @@ const AppContent: React.FC = () => {
                     onBack={handleBack}
                 />
             )}
-            <AnimatePresence mode="wait">
-                {renderPage()}
-            </AnimatePresence>
+            {!pendingPasswordAlbum && (
+                <Suspense fallback={<PageSkeleton />}>
+                    <AnimatePresence mode="wait">
+                        {renderPage()}
+                    </AnimatePresence>
+                </Suspense>
+            )}
             
             {/* Global Upload Status Widget */}
-            <UploadStatusWidget />
+            {!pendingPasswordAlbum && <UploadStatusWidget />}
             
             <ToastContainer
                 position="bottom-right"

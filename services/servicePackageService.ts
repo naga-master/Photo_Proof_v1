@@ -66,7 +66,7 @@ class ServicePackageService {
     if (studioId) params.studio_id = studioId;
     if (category) params.category = category;
     
-    return apiClient.get<ServicePackageListResponse>('/v2/packages', params);
+    return apiClient.get<ServicePackageListResponse>('/v2/packages/', params);
   }
 
   /**
@@ -80,7 +80,7 @@ class ServicePackageService {
    * Create new service package
    */
   async createServicePackage(data: CreateServicePackageRequest): Promise<ServicePackage> {
-    return apiClient.post<ServicePackage>('/v2/packages', data);
+    return apiClient.post<ServicePackage>('/v2/packages/', data);
   }
 
   /**

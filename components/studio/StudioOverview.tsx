@@ -3,7 +3,7 @@ import type { Album, Comment, Photo, DashboardView, Notification } from '../../t
 import { PlusIcon, ChatBubbleIcon, ShoppingCartIcon, BellIcon, UploadCloudIcon, DocumentTextIcon, CurrencyDollarIcon } from '../icons';
 import { AuthenticatedImage } from '../common/AuthenticatedImage';
 import { ImagePlaceholder } from '../common/ImagePlaceholder';
-import ApiNotificationService from '../../services/apiNotificationService';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { studioService, DashboardMetrics } from '../../services/studioService';
 import { useAccessControl } from '../../contexts/AccessControlContext';
 
@@ -25,10 +25,12 @@ const activityIcons: Record<string, React.ReactNode> = {
 
 const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
     const { hasPermission } = useAccessControl();
-    const [recentActivity, setRecentActivity] = useState<Notification[]>([]);
-    const [activityLoading, setActivityLoading] = useState(true);
+    const { notifications, isLoading: activityLoading } = useNotifications();
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
     const [metricsLoading, setMetricsLoading] = useState(true);
+
+    // Get recent activity from notification context (limited to 8 items)
+    const recentActivity = notifications.slice(0, 8);
 
     // Fetch dashboard metrics from API (accurate counts)
     useEffect(() => {
@@ -43,7 +45,11 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
                     total_projects: albums.length,
                     total_photos: albums.reduce((sum, album) => sum + album.photoCount, 0),
                     total_comments: albums.reduce((sum, album) => sum + (album.totalComments || 0), 0),
-                    active_clients: new Set(albums.map(a => a.clientId)).size
+                    active_clients: new Set(albums.map(a => a.clientId)).size,
+                    projects_delta: 0,
+                    photos_delta: 0,
+                    comments_delta: 0,
+                    clients_delta: 0
                 });
             } finally {
                 setMetricsLoading(false);
@@ -51,21 +57,6 @@ const StudioOverview: React.FC<StudioOverviewProps> = ({ albums, setView }) => {
         };
         fetchMetrics();
     }, [albums]);
-
-    // Fetch recent activity from API
-    useEffect(() => {
-        const fetchActivity = async () => {
-            try {
-                const { notifications } = await ApiNotificationService.getNotifications();
-                setRecentActivity(notifications.slice(0, 8));
-            } catch (err) {
-                console.error('[StudioOverview] Failed to fetch activity:', err);
-            } finally {
-                setActivityLoading(false);
-            }
-        };
-        fetchActivity();
-    }, []);
 
     // Use dynamic metrics or fallback to calculated values
     const totalProjects = metrics?.total_projects ?? albums.length;

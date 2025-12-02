@@ -74,7 +74,7 @@ class ClientService {
     if (studioId) params.studio_id = studioId;
     if (search) params.search = search;
     
-    return apiClient.get<Client[]>('/v2/clients', params);
+    return apiClient.get<Client[]>('/v2/clients/', params);
   }
 
   /**
@@ -88,7 +88,7 @@ class ClientService {
    * Create new client
    */
   async createClient(data: CreateClientRequest, force: boolean = false): Promise<Client> {
-    const url = force ? '/v2/clients?force=true' : '/v2/clients';
+    const url = force ? '/v2/clients/?force=true' : '/v2/clients/';
     return apiClient.post<Client>(url, data);
   }
 
