@@ -18,8 +18,8 @@ const StudioProjects: React.FC<StudioProjectsProps> = ({ albums, clients, packag
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
 
-  const getClientName = (clientId: number) => {
-    return clients.find(c => c.id === clientId)?.name || 'N/A';
+  const getClientName = (clientId: string | number) => {
+    return clients.find(c => String(c.id) === String(clientId))?.name || 'N/A';
   };
 
   // Filter and sort albums

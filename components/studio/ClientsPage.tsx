@@ -427,7 +427,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onManageClient, onCr
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div>
-                            <span className="font-medium text-gray-700">User:</span> {client.username || client.email}
+                            <span className="font-medium text-gray-700">Username:</span> {client.email}
                         </div>
                          <div className="flex items-center">
                             <span className="font-medium text-gray-700 mr-1">Pass:</span>

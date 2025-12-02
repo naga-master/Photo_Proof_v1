@@ -30,6 +30,7 @@ export interface User {
   username: string;
   name: string;
   role: string;
+  permissions?: Record<string, boolean> | null;  // RBAC permissions
   studio_id?: string | null;
   is_active: boolean;
   email_verified: boolean;

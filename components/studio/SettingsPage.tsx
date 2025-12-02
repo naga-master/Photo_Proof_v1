@@ -107,6 +107,7 @@ const getDefaultPermissions = (role: StudioUserRole): StudioUserPermissions => {
                 canUploadPhotos: true,
                 canEditPhotos: true,
                 canSendNotifications: true,
+                canViewAnalytics: true,
             };
         
         case 'viewer':
@@ -412,7 +413,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         email: u.email,
                         username: u.username,
                         role: mapApiRoleToStudioRole(u.role),
-                        permissions: getDefaultPermissions(mapApiRoleToStudioRole(u.role)),
+                        // Use permissions from API if available, otherwise use role defaults
+                        permissions: u.permissions || getDefaultPermissions(mapApiRoleToStudioRole(u.role)),
                         avatarUrl: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=6366f1&color=fff&size=150`,
                         isActive: u.is_active,
                         lastLogin: u.last_login_at,
@@ -616,6 +618,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         name: userToSave.name,
                         role: mapStudioRoleToApiRole(userToSave.role),
                         is_active: userToSave.isActive,
+                        permissions: userToSave.permissions,
                     }),
                 });
                 
@@ -640,6 +643,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                         email: userToSave.email,
                         name: userToSave.name,
                         role: mapStudioRoleToApiRole(userToSave.role),
+                        permissions: userToSave.permissions,
                     }),
                 });
                 
@@ -1019,7 +1023,74 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
             case 'administration':
                 return (
                     <div className="space-y-8">
-                        {/* Studio Users Management */}
+                        {/* My Profile Section */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                My Profile
+                            </h3>
+                            <div className="flex items-start gap-6">
+                                {/* Avatar */}
+                                <div className="flex-shrink-0">
+                                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                                        {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
+                                    </div>
+                                </div>
+                                {/* Info */}
+                                <div className="flex-1">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Name</label>
+                                            <p className="mt-1 text-sm font-medium text-gray-900">{user?.name || 'Unknown'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Email</label>
+                                            <p className="mt-1 text-sm text-gray-700">{user?.email || 'No email'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Role</label>
+                                            <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                user?.role === 'studio_owner' ? 'bg-purple-100 text-purple-800' :
+                                                user?.role === 'studio_admin' ? 'bg-blue-100 text-blue-800' :
+                                                user?.role === 'studio_photographer' ? 'bg-green-100 text-green-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {user?.role === 'studio_owner' ? 'Owner' :
+                                                 user?.role === 'studio_admin' ? 'Admin' :
+                                                 user?.role === 'studio_photographer' ? 'Editor' :
+                                                 user?.role || 'Unknown'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Status</label>
+                                            <span className="mt-1 inline-flex items-center gap-1.5 text-sm text-green-600">
+                                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                                Active
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {/* Permissions Summary */}
+                                    {user?.permissions && (
+                                        <div className="mt-4 pt-4 border-t border-gray-100">
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">My Permissions</label>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {user.permissions.canManageUsers && <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">Users</span>}
+                                                {user.permissions.canManageSettings && <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded">Settings</span>}
+                                                {user.permissions.canUploadPhotos && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-xs rounded">Upload</span>}
+                                                {user.permissions.canEditPhotos && <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-xs rounded">Edit</span>}
+                                                {user.permissions.canDeletePhotos && <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">Delete</span>}
+                                                {user.permissions.canViewAnalytics && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Analytics</span>}
+                                                {user.permissions.canCreateClients && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">Clients</span>}
+                                                {user.permissions.canCreateProjects && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Projects</span>}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Studio Users Management - Only visible to users with canManageUsers permission */}
+                        {(user?.role === 'studio_owner' || user?.permissions?.canManageUsers) ? (
                         <div>
                             <div className="flex justify-between items-center mb-4">
                                 <div>
@@ -1053,60 +1124,70 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                            {studioUsers.map((user) => (
-                                                <tr key={user.id} className="hover:bg-gray-50">
+                                            {studioUsers.map((studioUser) => (
+                                                <tr key={studioUser.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
-                                                            <div className="flex-shrink-0 h-10 w-10">
-                                                                <img className="h-10 w-10 rounded-full object-cover" src={user.avatarUrl || `https://i.pravatar.cc/150?u=${user.email}`} alt={user.name} />
+                                                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                                                                {studioUser.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
                                                             </div>
                                                             <div className="ml-4">
-                                                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                                                <div className="text-sm text-gray-500">{user.email}</div>
+                                                                <div className="text-sm font-medium text-gray-900">{studioUser.name}</div>
+                                                                <div className="text-sm text-gray-500">{studioUser.email}</div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                                            user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                                                            user.role === 'editor' ? 'bg-green-100 text-green-800' :
+                                                            studioUser.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                                            studioUser.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                                                            studioUser.role === 'editor' ? 'bg-green-100 text-green-800' :
                                                             'bg-gray-100 text-gray-800'
                                                         }`}>
-                                                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                                            {studioUser.role.charAt(0).toUpperCase() + studioUser.role.slice(1)}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <button
-                                                            onClick={() => handleToggleUserStatus(user.id)}
+                                                            onClick={() => handleToggleUserStatus(studioUser.id)}
                                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                                user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                                studioUser.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                             }`}
                                                         >
-                                                            {user.isActive ? 'Active' : 'Inactive'}
+                                                            {studioUser.isActive ? 'Active' : 'Inactive'}
                                                         </button>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                                        {studioUser.lastLogin ? new Date(studioUser.lastLogin).toLocaleDateString() : 'Never'}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-wrap gap-1">
-                                                            {user.permissions.canManageUsers && (
+                                                            {studioUser.permissions.canManageUsers && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                                                     Users
                                                                 </span>
                                                             )}
-                                                            {user.permissions.canManageSettings && (
+                                                            {studioUser.permissions.canManageSettings && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                                                     Settings
                                                                 </span>
                                                             )}
-                                                            {user.permissions.canDeleteProjects && (
+                                                            {studioUser.permissions.canUploadPhotos && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
+                                                                    Upload
+                                                                </span>
+                                                            )}
+                                                            {studioUser.permissions.canEditPhotos && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-800">
+                                                                    Edit
+                                                                </span>
+                                                            )}
+                                                            {studioUser.permissions.canDeleteProjects && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
                                                                     Delete
                                                                 </span>
                                                             )}
-                                                            {user.permissions.canViewAnalytics && (
+                                                            {studioUser.permissions.canViewAnalytics && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                                                     Analytics
                                                                 </span>
@@ -1115,14 +1196,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <button 
-                                                            onClick={() => handleEditUser(user)}
+                                                            onClick={() => handleEditUser(studioUser)}
                                                             className="text-indigo-600 hover:text-indigo-900 mr-4"
                                                         >
                                                             Edit
                                                         </button>
-                                                        {user.role !== 'admin' && (
+                                                        {studioUser.role !== 'admin' && (
                                                             <button 
-                                                                onClick={() => handleDeleteUser(user.id)}
+                                                                onClick={() => handleDeleteUser(studioUser.id)}
                                                                 className="text-red-600 hover:text-red-900"
                                                             >
                                                                 Delete
@@ -1156,6 +1237,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdateSettings,
                                 </div>
                             </div>
                         </div>
+                        ) : null}
                     </div>
                 );
             case 'billing':
