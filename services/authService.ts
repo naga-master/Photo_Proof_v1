@@ -124,6 +124,23 @@ class AuthService {
   }
 
   /**
+   * Request password reset email
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/api/auth/reset-password', {
+      token,
+      new_password: newPassword
+    });
+  }
+
+  /**
    * Store authentication data
    * Note: With httpOnly cookies, tokens are stored securely in cookies by the backend.
    * localStorage is used as fallback for backwards compatibility and client-side checks.

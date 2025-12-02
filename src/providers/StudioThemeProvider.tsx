@@ -64,6 +64,11 @@ export function StudioThemeProvider({ children }: { children: React.ReactNode })
       setTheme(studioTheme);
       setError(null);
       
+      // Update browser tab title with studio name
+      if (studioTheme.name) {
+        document.title = `${studioTheme.name} | Photo Gallery`;
+      }
+      
       // Cache in localStorage for faster subsequent loads
       localStorage.setItem('studio_theme', JSON.stringify(studioTheme));
       localStorage.setItem('studio_theme_timestamp', Date.now().toString());
@@ -85,6 +90,11 @@ export function StudioThemeProvider({ children }: { children: React.ReactNode })
           applyCustomCSS(cachedTheme.custom_css);
           setTheme(cachedTheme);
           setError(null); // Clear error if cache is available
+          
+          // Update browser tab title from cache
+          if (cachedTheme.name) {
+            document.title = `${cachedTheme.name} | Photo Gallery`;
+          }
         }
       }
     } finally {
